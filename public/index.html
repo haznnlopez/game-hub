@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Game Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
+    <link rel="icon" type="image/jpeg" href="images/game-hub-logo.jpg" />
+
+    <style>
+      :root {
+        --bg-dark: #0f172a;
+        --bg-med: #1e293b;
+        --bg-light: #334155;
+        --text-light: #f8fafc;
+        --text-med: #94a3b8;
+        --accent: #fbbf24;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+        font-family: "Montserrat", sans-serif;
+        background-color: var(--bg-dark);
+        color: var(--text-light);
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(15px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ── Splash ── */
+      #view-splash {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        min-height: 100vh;
+        padding: 1rem;
+      }
+
+      .splash-container {
+        max-width: 500px;
+        width: 100%;
+        animation: fadeIn 1s ease-in-out;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .welcome-text {
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: var(--text-med);
+        margin-bottom: 0.5rem;
+      }
+
+      .splash-logo {
+        width: 150px;
+        height: 150px;
+        border-radius: 20px;
+        object-fit: cover;
+        background-color: var(--bg-med);
+        flex-shrink: 0;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      }
+
+      .splash-logo-fallback {
+        width: 150px;
+        height: 150px;
+        border-radius: 20px;
+        background-color: var(--bg-med);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      }
+
+      .splash-button {
+        display: inline-block;
+        padding: 12px 48px;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #ffffff;
+        background: linear-gradient(135deg, var(--accent) 0%, #f59e0b 100%);
+        border: none;
+        border-radius: 30px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+        font-family: "Montserrat", sans-serif;
+      }
+
+      .splash-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+      }
+
+      /* ── Game Select ── */
+      #view-select {
+        display: none;
+        min-height: 100vh;
+        animation: fadeIn 0.6s ease-in-out;
+      }
+
+      .select-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 2rem 2rem 1rem;
+        border-bottom: 1px solid var(--bg-light);
+      }
+
+      .select-header h1 {
+        font-size: 2.25rem;
+        font-weight: 800;
+      }
+
+      .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.875rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background-color: var(--bg-med);
+        color: var(--text-light);
+        font-family: "Montserrat", sans-serif;
+      }
+
+      .back-button:hover {
+        background-color: var(--bg-light);
+        color: var(--accent);
+      }
+
+      /* ── Game Grid ── */
+      .game-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 1.5rem;
+        padding: 2rem;
+      }
+
+      .game-logo-card {
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+        aspect-ratio: 1 / 1;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background-color: var(--bg-med);
+        text-decoration: none;
+      }
+
+      .game-logo-card img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+        display: block;
+      }
+
+      .game-logo-card .card-emoji-fallback {
+        width: 100%;
+        height: 100%;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        background: var(--bg-med);
+      }
+
+      .game-logo-card .game-name-hover {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 0.75rem;
+        background: linear-gradient(
+          to top,
+          rgba(0, 0, 0, 0.8),
+          rgba(0, 0, 0, 0)
+        );
+        color: white;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-align: center;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
+      }
+
+      .game-logo-card:hover {
+        transform: scale(1.1);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        z-index: 10;
+      }
+
+      .game-logo-card:hover .game-name-hover {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Card action buttons */
+      .card-actions {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: 20;
+      }
+
+      .game-logo-card:hover .card-actions {
+        opacity: 1;
+      }
+
+      .card-action-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+        transition: transform 0.15s ease;
+        line-height: 1;
+      }
+
+      .card-action-btn:hover {
+        transform: scale(1.15);
+      }
+      .card-btn-edit {
+        background: rgba(251, 191, 36, 0.92);
+        color: #000;
+      }
+      .card-btn-del {
+        background: rgba(239, 68, 68, 0.92);
+        color: #fff;
+      }
+
+      /* Add Game Card */
+      .add-game-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        aspect-ratio: 1 / 1;
+        border-radius: 16px;
+        border: 3px dashed var(--bg-light);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: var(--bg-light);
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      .add-game-card:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background-color: rgba(251, 191, 36, 0.07);
+      }
+
+      .add-game-card .add-icon {
+        font-size: 3.5rem;
+        line-height: 1;
+        transition: transform 0.3s ease;
+      }
+
+      .add-game-card:hover .add-icon {
+        transform: scale(1.1);
+      }
+
+      /* ── Modals ── */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      .modal-overlay.open {
+        display: flex;
+      }
+
+      .modal-container {
+        background: var(--bg-med);
+        border-radius: 20px;
+        padding: 2rem;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        animation: slideUp 0.3s ease-out;
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .modal-header h2 {
+        font-size: 1.5rem;
+        color: var(--text-light);
+      }
+
+      .modal-close-btn {
+        background: none;
+        border: none;
+        color: var(--text-med);
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: color 0.2s;
+        line-height: 1;
+      }
+
+      .modal-close-btn:hover {
+        color: var(--accent);
+      }
+
+      .emoji-preview {
+        font-size: 3rem;
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.25rem;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--text-light);
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--bg-light);
+        border-radius: 8px;
+        background-color: var(--bg-dark);
+        color: var(--text-light);
+        font-family: "Montserrat", sans-serif;
+        font-size: 0.95rem;
+        transition: border-color 0.2s;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+
+      .form-group small {
+        display: block;
+        margin-top: 0.3rem;
+        font-size: 0.78rem;
+        color: var(--text-med);
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 1.5rem;
+      }
+
+      .modal-btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: "Montserrat", sans-serif;
+      }
+
+      .modal-btn-cancel {
+        background-color: var(--bg-light);
+        color: var(--text-light);
+      }
+      .modal-btn-cancel:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .modal-btn-submit {
+        background: linear-gradient(135deg, var(--accent) 0%, #f59e0b 100%);
+        color: #000;
+        font-weight: 700;
+      }
+
+      .modal-btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+      }
+      .modal-btn-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* ── Confirm Delete Modal ── */
+      #confirm-modal .modal-container {
+        max-width: 380px;
+        text-align: center;
+      }
+      #confirm-modal h2 {
+        justify-content: center;
+      }
+      #confirm-modal p {
+        color: var(--text-med);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+      }
+      .modal-btn-delete {
+        background: #ef4444;
+        color: #fff;
+        font-weight: 700;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: "Montserrat", sans-serif;
+        transition: all 0.2s;
+      }
+      .modal-btn-delete:hover {
+        background: #dc2626;
+        transform: translateY(-1px);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── SPLASH VIEW ── -->
+    <div id="view-splash">
+      <main class="splash-container">
+        <h2 class="welcome-text">Welcome to</h2>
+        <img
+          src="images/game-hub-logo.jpg"
+          alt="Game Hub Logo"
+          class="splash-logo"
+          onerror="
+            this.style.display = 'none';
+            document.getElementById('splash-fallback').style.display = 'flex';
+          "
+        />
+        <div
+          id="splash-fallback"
+          class="splash-logo-fallback"
+          style="display: none"
+        >
+          🎮
+        </div>
+        <button class="splash-button" onclick="showSelect()">Start</button>
+      </main>
+    </div>
+
+    <!-- ── GAME SELECT VIEW ── -->
+    <div id="view-select">
+      <main class="container">
+        <header class="select-header">
+          <h1>Select Game</h1>
+          <button class="back-button" onclick="showSplash()">
+            <span class="material-symbols-outlined" style="font-size: 1.25rem"
+              >arrow_back</span
+            >
+            <span>Back</span>
+          </button>
+        </header>
+
+        <div id="game-grid" class="game-grid">
+          <div
+            id="add-game-button"
+            class="add-game-card"
+            onclick="openAddModal()"
+          >
+            <span class="add-icon">+</span>
+            <span>Add Game</span>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ── ADD / EDIT MODAL ── -->
+    <div id="game-modal" class="modal-overlay">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2 id="modal-title">Add New Game</h2>
+          <button class="modal-close-btn" onclick="closeGameModal()">
+            &times;
+          </button>
+        </div>
+        <div class="emoji-preview" id="emoji-preview">🎮</div>
+        <div class="form-group">
+          <label for="f-name">Game Name *</label>
+          <input type="text" id="f-name" required oninput="onFormInput()" />
+        </div>
+        <div class="form-group">
+          <label for="f-emoji">Emoji Icon</label>
+          <input
+            type="text"
+            id="f-emoji"
+            placeholder="🎮"
+            maxlength="4"
+            oninput="onEmojiInput()"
+          />
+          <small>Shown when no image is available. Leave blank for 🎮</small>
+        </div>
+        <div class="form-group">
+          <label for="f-img">Logo Image Path (optional)</label>
+          <input
+            type="text"
+            id="f-img"
+            placeholder="images/my-game.jpg or https://..."
+          />
+          <small>Overrides emoji icon when provided</small>
+        </div>
+        <div class="form-group">
+          <label for="f-file">Game File / URL *</label>
+          <input
+            type="text"
+            id="f-file"
+            placeholder="my-game.html or https://..."
+            required
+            oninput="onFormInput()"
+          />
+          <small id="file-hint"></small>
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="modal-btn modal-btn-cancel"
+            onclick="closeGameModal()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="modal-btn modal-btn-submit"
+            id="btn-save"
+            onclick="saveGame()"
+            disabled
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CONFIRM DELETE MODAL ── -->
+    <div id="confirm-modal" class="modal-overlay">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2 id="confirm-title">Remove Game?</h2>
+          <button class="modal-close-btn" onclick="closeConfirmModal()">
+            &times;
+          </button>
+        </div>
+        <p id="confirm-text">This will remove the game from your hub.</p>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="modal-btn modal-btn-cancel"
+            onclick="closeConfirmModal()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="modal-btn-delete"
+            onclick="confirmDelete()"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Custom (manually-added) games, not tied to an auto-detected file.
+      const CUSTOM_KEY = "game_hub_added_games_v2";
+      // Per-file overrides (name/emoji/img edits, or hidden flag) for
+      // games that were auto-detected from the public folder.
+      const OVERRIDES_KEY = "game_hub_overrides_v1";
+      // Last successful /api/games response, so the grid still shows
+      // something if that request ever fails (e.g. briefly offline).
+      const AUTO_CACHE_KEY = "game_hub_auto_cache_v1";
+
+      let editingId = null;
+      let deletingId = null;
+      let currentGames = []; // populated by renderGrid(), used for lookups
+
+      /* ── Storage helpers ── */
+      function loadCustom() {
+        try {
+          return JSON.parse(localStorage.getItem(CUSTOM_KEY) || "[]");
+        } catch {
+          return [];
+        }
+      }
+      function saveCustom(list) {
+        localStorage.setItem(CUSTOM_KEY, JSON.stringify(list));
+      }
+
+      function loadOverrides() {
+        try {
+          return JSON.parse(localStorage.getItem(OVERRIDES_KEY) || "{}");
+        } catch {
+          return {};
+        }
+      }
+      function saveOverrides(obj) {
+        localStorage.setItem(OVERRIDES_KEY, JSON.stringify(obj));
+      }
+
+      function uid() {
+        return (
+          "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+        );
+      }
+
+      /* ── Auto-detected games (server scans public/ for .html files) ── */
+      async function fetchAutoGames() {
+        try {
+          const res = await fetch("/api/games");
+          if (!res.ok) throw new Error("bad response");
+          const data = await res.json();
+          const games = data.games || [];
+          localStorage.setItem(AUTO_CACHE_KEY, JSON.stringify(games));
+          return games;
+        } catch {
+          try {
+            return JSON.parse(localStorage.getItem(AUTO_CACHE_KEY) || "[]");
+          } catch {
+            return [];
+          }
+        }
+      }
+
+      async function loadGames() {
+        const auto = await fetchAutoGames();
+        const overrides = loadOverrides();
+
+        const autoGames = auto
+          .filter((g) => !(overrides[g.file] && overrides[g.file].hidden))
+          .map((g) => {
+            const ov = overrides[g.file] || {};
+            return {
+              id: "auto:" + g.file,
+              file: g.file,
+              name: ov.name || g.name,
+              emoji: ov.emoji || "",
+              img: ov.img !== undefined ? ov.img : g.img,
+              isAuto: true,
+            };
+          });
+
+        return [...autoGames, ...loadCustom()];
+      }
+
+      /* ── Views ── */
+      function showSplash() {
+        document.getElementById("view-splash").style.display = "flex";
+        document.getElementById("view-select").style.display = "none";
+      }
+
+      async function showSelect() {
+        document.getElementById("view-splash").style.display = "none";
+        document.getElementById("view-select").style.display = "block";
+        await renderGrid();
+      }
+
+      /* ── Render ── */
+      async function renderGrid() {
+        const grid = document.getElementById("game-grid");
+        const addBtn = document.getElementById("add-game-button");
+        grid.querySelectorAll(".game-logo-card").forEach((c) => c.remove());
+
+        currentGames = await loadGames();
+
+        currentGames.forEach((game) => {
+          const card = document.createElement("a");
+          card.href = game.file;
+          card.className = "game-logo-card";
+          card.title = game.name;
+
+          const deleteTitle = game.isAuto ? "Hide from hub" : "Remove game";
+
+          card.innerHTML = `
+            <img src="${game.img || ""}" alt="${game.name}"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <div class="card-emoji-fallback" style="${game.img ? "" : "display:flex;"}">${game.emoji || "🎮"}</div>
+            <div class="game-name-hover">${game.name}</div>
+            <div class="card-actions">
+              <button class="card-action-btn card-btn-edit" title="Edit game"
+                onclick="openEditModal('${game.id}', event)">✎</button>
+              <button class="card-action-btn card-btn-del" title="${deleteTitle}"
+                onclick="openConfirmModal('${game.id}', event)">✕</button>
+            </div>`;
+
+          grid.insertBefore(card, addBtn);
+        });
+      }
+
+      /* ── Add / Edit Modal ── */
+      function openAddModal() {
+        editingId = null;
+        document.getElementById("modal-title").textContent = "Add New Game";
+        document.getElementById("f-name").value = "";
+        document.getElementById("f-emoji").value = "";
+        document.getElementById("f-img").value = "";
+        document.getElementById("f-file").value = "";
+        document.getElementById("f-file").disabled = false;
+        document.getElementById("file-hint").textContent = "";
+        document.getElementById("emoji-preview").textContent = "🎮";
+        document.getElementById("btn-save").disabled = true;
+        document.getElementById("game-modal").classList.add("open");
+      }
+
+      function openEditModal(id, e) {
+        e.preventDefault();
+        e.stopPropagation();
+        editingId = id;
+        const game = currentGames.find((g) => g.id === id);
+        if (!game) return;
+        document.getElementById("modal-title").textContent = "Edit Game";
+        document.getElementById("f-name").value = game.name;
+        document.getElementById("f-emoji").value = game.emoji || "";
+        document.getElementById("f-img").value = game.img || "";
+        document.getElementById("f-file").value = game.file || "";
+        document.getElementById("f-file").disabled = !!game.isAuto;
+        document.getElementById("file-hint").textContent = game.isAuto
+          ? "Auto-detected from the public folder — file can't be changed here."
+          : "";
+        document.getElementById("emoji-preview").textContent =
+          game.emoji || "🎮";
+        document.getElementById("btn-save").disabled = false;
+        document.getElementById("game-modal").classList.add("open");
+      }
+
+      function closeGameModal() {
+        document.getElementById("game-modal").classList.remove("open");
+      }
+
+      function onFormInput() {
+        const name = document.getElementById("f-name").value.trim();
+        const file = document.getElementById("f-file").value.trim();
+        document.getElementById("btn-save").disabled = !(name && file);
+      }
+
+      function onEmojiInput() {
+        const v = document.getElementById("f-emoji").value || "🎮";
+        document.getElementById("emoji-preview").textContent = v;
+      }
+
+      async function saveGame() {
+        const name = document.getElementById("f-name").value.trim();
+        const emoji = document.getElementById("f-emoji").value.trim() || "🎮";
+        const img = document.getElementById("f-img").value.trim();
+        const file = document.getElementById("f-file").value.trim();
+        if (!name || !file) return;
+
+        if (editingId) {
+          const game = currentGames.find((g) => g.id === editingId);
+          if (game && game.isAuto) {
+            // Auto-detected game: store the edit as an override keyed by
+            // filename, keep the file itself untouched.
+            const overrides = loadOverrides();
+            overrides[game.file] = {
+              ...(overrides[game.file] || {}),
+              name,
+              emoji,
+              img,
+            };
+            saveOverrides(overrides);
+          } else {
+            const custom = loadCustom();
+            const idx = custom.findIndex((g) => g.id === editingId);
+            if (idx >= 0) custom[idx] = { id: editingId, name, emoji, img, file };
+            saveCustom(custom);
+          }
+        } else {
+          const custom = loadCustom();
+          custom.push({ id: uid(), name, emoji, img, file });
+          saveCustom(custom);
+        }
+
+        closeGameModal();
+        await renderGrid();
+      }
+
+      /* ── Delete / Hide Modal ── */
+      function openConfirmModal(id, e) {
+        e.preventDefault();
+        e.stopPropagation();
+        deletingId = id;
+        const game = currentGames.find((g) => g.id === id);
+        const isAuto = !!(game && game.isAuto);
+        document.getElementById("confirm-title").textContent = isAuto
+          ? "Hide Game?"
+          : "Remove Game?";
+        document.getElementById("confirm-text").textContent = isAuto
+          ? `Hide "${game ? game.name : "this game"}" from your hub? The file stays on the server — this just removes its tile.`
+          : `Remove "${game ? game.name : "this game"}" from your hub?`;
+        document.getElementById("confirm-modal").classList.add("open");
+      }
+
+      function closeConfirmModal() {
+        document.getElementById("confirm-modal").classList.remove("open");
+      }
+
+      async function confirmDelete() {
+        if (!deletingId) return;
+        const game = currentGames.find((g) => g.id === deletingId);
+        if (game && game.isAuto) {
+          const overrides = loadOverrides();
+          overrides[game.file] = {
+            ...(overrides[game.file] || {}),
+            hidden: true,
+          };
+          saveOverrides(overrides);
+        } else {
+          const custom = loadCustom().filter((g) => g.id !== deletingId);
+          saveCustom(custom);
+        }
+        closeConfirmModal();
+        await renderGrid();
+      }
+
+      /* ── Close modals on backdrop click ── */
+      document.getElementById("game-modal").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("game-modal"))
+          closeGameModal();
+      });
+      document
+        .getElementById("confirm-modal")
+        .addEventListener("click", (e) => {
+          if (e.target === document.getElementById("confirm-modal"))
+            closeConfirmModal();
+        });
+    </script>
+  </body>
+</html>

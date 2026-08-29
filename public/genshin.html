@@ -1735,6 +1735,9 @@
         top: -6px;
         right: -6px;
       }
+      .misc-item:hover .costume-thumb-actions {
+        opacity: 1;
+      }
       .misc-add-tile {
         width: 120px;
         height: 120px;
@@ -2237,8 +2240,10 @@
       body:not(.is-admin) [onclick*="deleteCostume("],
       body:not(.is-admin) [onclick*="openTcgModal("],
       body:not(.is-admin) [onclick*="deleteTcgCard("],
+      body:not(.is-admin) [onclick*="deleteTcgCardFromModal("],
       body:not(.is-admin) [onclick*="openStickerModal("],
       body:not(.is-admin) [onclick*="deleteStickerItem("],
+      body:not(.is-admin) [onclick*="deleteStickerFromModal("],
       body:not(.is-admin) [onclick*="saveAttribute("],
       body:not(.is-admin) [onclick*="editAttribute("],
       body:not(.is-admin) [onclick*="deleteAttribute("],
@@ -3282,6 +3287,14 @@
             padding-top: 1rem;
           "
         >
+          <button
+            class="btn btn-danger"
+            id="tcg-modal-delete-btn"
+            onclick="deleteTcgCardFromModal()"
+            style="display: none; margin-right: auto"
+          >
+            Delete
+          </button>
           <button class="btn btn-secondary" onclick="closeTcgModal()">
             Cancel
           </button>
@@ -3346,6 +3359,14 @@
             padding-top: 1rem;
           "
         >
+          <button
+            class="btn btn-danger"
+            id="sticker-modal-delete-btn"
+            onclick="deleteStickerFromModal()"
+            style="display: none; margin-right: auto"
+          >
+            Delete
+          </button>
           <button class="btn btn-secondary" onclick="closeStickerModal()">
             Cancel
           </button>
@@ -6622,7 +6643,7 @@
             .map(
               (url, idx) => `
             <div class="misc-item">
-                <img src="${url}" class="tcg-card-img" onclick="window.open('${url}','_blank')">
+                <img src="${url}" class="tcg-card-img" onclick="openTcgModal('${realId}', ${idx})">
                 <div class="costume-thumb-actions">
                     <div class="ct-action-btn" title="Edit" onclick="event.stopPropagation(); openTcgModal('${realId}', ${idx})"><span class="material-symbols-outlined">edit</span></div>
                     <div class="ct-action-btn danger" title="Delete" onclick="event.stopPropagation(); deleteTcgCard('${realId}', ${idx})"><span class="material-symbols-outlined">delete</span></div>
@@ -6648,6 +6669,8 @@
         document.getElementById("tcg-url-input").value = url;
         document.getElementById("tcg-modal-title").textContent =
           index === null ? "Add TCG Card" : "Edit TCG Card";
+        document.getElementById("tcg-modal-delete-btn").style.display =
+          index === null ? "none" : "inline-flex";
         document.getElementById("tcg-modal-overlay").classList.add("open");
       }
 
@@ -6687,6 +6710,23 @@
         });
       }
 
+      // Delete button inside the Add/Edit modal itself — reads the
+      // hidden charId/index fields already populated by openTcgModal.
+      function deleteTcgCardFromModal() {
+        const charId = document.getElementById("tcg-edit-char-id").value;
+        const idxRaw = document.getElementById("tcg-edit-index").value;
+        if (idxRaw === "") return;
+        showConfirm("Delete this TCG card?", () => {
+          const char = characters.find((c) => c.id === charId);
+          if (!char || !char.tcgCards) return;
+          char.tcgCards.splice(parseInt(idxRaw), 1);
+          saveChars();
+          closeTcgModal();
+          refreshModalTcgCards(char);
+          showToast("TCG card deleted", "success");
+        });
+      }
+
       // ─── Sticker Logic (managed from the character modal) ───────────────────
 
       function refreshModalStickers(char) {
@@ -6701,7 +6741,7 @@
             .map(
               (s, idx) => `
             <div class="misc-item" style="text-align:center;">
-                <img src="${s.url}" class="misc-img" style="width:80px; height:80px; object-fit:contain; border:none;" data-tip="${s.name || ""}">
+                <img src="${s.url}" class="misc-img" style="width:80px; height:80px; object-fit:contain; border:none; cursor:pointer;" data-tip="${s.name || ""}" onclick="openStickerModal('${realId}', ${idx})">
                 <div class="costume-thumb-actions">
                     <div class="ct-action-btn" title="Edit" onclick="event.stopPropagation(); openStickerModal('${realId}', ${idx})"><span class="material-symbols-outlined">edit</span></div>
                     <div class="ct-action-btn danger" title="Delete" onclick="event.stopPropagation(); deleteStickerItem('${realId}', ${idx})"><span class="material-symbols-outlined">delete</span></div>
@@ -6729,6 +6769,8 @@
         document.getElementById("sticker-url-input").value = data.url || "";
         document.getElementById("sticker-modal-title").textContent =
           index === null ? "Add Sticker" : "Edit Sticker";
+        document.getElementById("sticker-modal-delete-btn").style.display =
+          index === null ? "none" : "inline-flex";
         document.getElementById("sticker-modal-overlay").classList.add("open");
       }
 
@@ -6767,6 +6809,23 @@
           if (!char || !char.emojis) return;
           char.emojis.splice(index, 1);
           saveChars();
+          refreshModalStickers(char);
+          showToast("Sticker deleted", "success");
+        });
+      }
+
+      // Delete button inside the Add/Edit modal itself — reads the
+      // hidden charId/index fields already populated by openStickerModal.
+      function deleteStickerFromModal() {
+        const charId = document.getElementById("sticker-edit-char-id").value;
+        const idxRaw = document.getElementById("sticker-edit-index").value;
+        if (idxRaw === "") return;
+        showConfirm("Delete this sticker?", () => {
+          const char = characters.find((c) => c.id === charId);
+          if (!char || !char.emojis) return;
+          char.emojis.splice(parseInt(idxRaw), 1);
+          saveChars();
+          closeStickerModal();
           refreshModalStickers(char);
           showToast("Sticker deleted", "success");
         });

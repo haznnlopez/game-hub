@@ -1245,51 +1245,46 @@
         overflow-x: auto;
         padding-bottom: 2rem;
       }
-      .matrix-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 6px;
-        min-width: 800px;
+      .matrix-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
       }
-      .matrix-table th,
-      .matrix-table td {
-        padding: 10px;
-        text-align: center;
-        border-radius: 8px;
-        position: relative;
-      }
-      .matrix-table th {
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(5px);
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-      }
-      .matrix-table th.row-header {
-        left: 0;
-        z-index: 1;
-        width: 80px;
-        background: rgba(24, 25, 38, 0.95);
-      }
-      .matrix-table td {
-        min-width: 200px;
-        text-align: center;
-        vertical-align: middle;
+      .matrix-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
         background: rgba(255, 255, 255, 0.02);
-        height: 100px;
-        transition: background 0.2s;
-        border: 1px solid transparent;
-        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 12px 16px;
       }
-      .matrix-table td:hover {
-        z-index: 12;
-        transform: scale(1.1);
-        transition:
-          ease-in 0.2s,
-          ease-out 0.2s;
-        background: rgba(255, 255, 255, 0.08);
-        border-color: var(--accent);
+      .matrix-row-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 0 0 160px;
+        font-weight: 700;
+        color: var(--text-light);
+      }
+      .matrix-row-count {
+        margin-left: auto;
+        font-size: 0.75rem;
+        color: var(--text-med);
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 999px;
+        padding: 2px 8px;
+      }
+      .matrix-row-chars {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        flex: 1;
+      }
+      .matrix-row-empty {
+        color: #555;
+        font-size: 0.85rem;
+        font-style: italic;
       }
       .matrix-icon {
         width: 40px;
@@ -1311,83 +1306,73 @@
         transform: scale(1.2);
         border-color: var(--accent);
       }
-      .matrix-cell-content {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        justify-content: center;
-        pointer-events: none;
-        align-items: center;
-      }
 
       /* --- Calendar Styles --- */
-      .calendar-year-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1.5rem;
-        padding-bottom: 2rem;
-      }
-      .month-card {
-        background: var(--bg-med);
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        overflow: hidden;
+      .calendar-nav {
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
       }
-      .month-header {
-        background: rgba(212, 192, 134, 0.1);
-        padding: 15px;
+      .calendar-month-label {
+        font-size: 1.3rem;
         font-weight: 800;
-        text-align: center;
         color: var(--accent);
         text-transform: uppercase;
         letter-spacing: 2px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        min-width: 220px;
+        text-align: center;
       }
-      .month-body {
-        padding: 15px;
-        flex-grow: 1;
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+      }
+      .calendar-dow-label {
+        text-align: center;
+        font-weight: 700;
+        font-size: 0.75rem;
+        color: var(--text-med);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding-bottom: 8px;
+      }
+      .calendar-cell {
+        background: var(--bg-med);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        min-height: 100px;
+        padding: 8px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        min-height: 100px;
+        gap: 6px;
       }
-      .calendar-day-row {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        background: rgba(0, 0, 0, 0.2);
-        padding: 8px 12px;
-        border-radius: 8px;
-        transition: background 0.2s;
+      .calendar-cell-empty {
+        background: transparent;
+        border-color: transparent;
       }
-      .calendar-day-row:hover {
-        background: rgba(255, 255, 255, 0.05);
+      .calendar-cell-today {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent) inset;
+        background: rgba(212, 192, 134, 0.08);
       }
-      .calendar-date-badge {
-        width: 32px;
-        height: 32px;
-        background: var(--bg-light);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .calendar-date-num {
         font-weight: 700;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         color: var(--text-med);
-        flex-shrink: 0;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
       }
-      .calendar-chars {
+      .calendar-cell-today .calendar-date-num {
+        color: var(--accent);
+      }
+      .calendar-cell-chars {
         display: flex;
-        gap: 8px;
         flex-wrap: wrap;
+        gap: 4px;
       }
       .calendar-char-img {
-        width: 42px;
-        height: 42px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
         object-fit: cover;
         cursor: pointer;
@@ -1695,6 +1680,26 @@
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.7);
         border-color: var(--accent);
       }
+      .tier-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: 6px;
+        padding: 3px 8px;
+        color: #1a1a1a;
+        font-weight: 700;
+        font-size: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        margin: 2px 4px 2px 0;
+      }
+      .tier-pill-board {
+        opacity: 0.75;
+        font-weight: 600;
+      }
+      .tier-pill-rank {
+        font-weight: 900;
+      }
+
       .element-tabs {
         display: flex;
         flex-wrap: wrap;
@@ -1752,52 +1757,6 @@
       }
       .close-modal:hover {
         color: var(--danger);
-      }
-
-      /* Summary Modal */
-      #matrix-summary-modal .modal-content {
-        height: auto;
-        max-height: 80vh;
-        max-width: 800px;
-        display: flex;
-        flex-direction: column;
-      }
-      #matrix-summary-modal .modal-header {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 1.5rem;
-        background: #181926;
-        position: relative;
-      }
-      #matrix-summary-modal .modal-body {
-        padding: 2rem;
-        overflow-y: auto;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1.5rem;
-        justify-content: center;
-      }
-      .summary-char-card {
-        width: 100px;
-        text-align: center;
-        cursor: pointer;
-        transition: transform 0.2s;
-      }
-      .summary-char-card:hover {
-        transform: scale(1.1);
-      }
-      .summary-avatar {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        border: 3px solid #333;
-        object-fit: cover;
-        margin-bottom: 0.5rem;
-        background: #000;
-      }
-      .summary-name {
-        font-weight: 700;
-        color: var(--text-light);
-        font-size: 0.9rem;
       }
 
       /* Toast Notifications */
@@ -2575,51 +2534,7 @@
                 <span id="mx-mode-text">Show: Avatar</span>
               </button>
             </div>
-            <div class="filters-bar">
-              <div style="flex: 1">
-                <label class="form-label">Rows (Y-Axis)</label>
-                <select
-                  id="matrix-row-attr"
-                  class="form-select"
-                  onchange="renderMatrixPage()"
-                >
-                  <option value="elements" selected>Elements</option>
-                  <option value="weapons">Weapons</option>
-                  <option value="nations">Nations</option>
-                  <option value="roles">Roles</option>
-                  <option value="rarity">Rarity</option>
-                </select>
-              </div>
-              <div
-                style="
-                  display: flex;
-                  align-items: flex-end;
-                  padding-bottom: 5px;
-                "
-              >
-                <button
-                  class="btn btn-secondary"
-                  onclick="swapMatrixAxes()"
-                  title="Swap Axes"
-                >
-                  <span class="material-symbols-outlined">swap_horiz</span>
-                </button>
-              </div>
-              <div style="flex: 1">
-                <label class="form-label">Columns (X-Axis)</label>
-                <select
-                  id="matrix-col-attr"
-                  class="form-select"
-                  onchange="renderMatrixPage()"
-                >
-                  <option value="elements">Elements</option>
-                  <option value="weapons" selected>Weapons</option>
-                  <option value="nations">Nations</option>
-                  <option value="roles">Roles</option>
-                  <option value="rarity">Rarity</option>
-                </select>
-              </div>
-            </div>
+            <div class="element-tabs" id="matrix-attr-tabs"></div>
             <div class="matrix-container" id="matrix-wrapper"></div>
           </div>
 
@@ -3045,8 +2960,8 @@
                 </h3>
                 <p style="font-size: 0.8rem; color: #888; margin: 4px 0 0">
                   Materials, talents & constellation below are edited
-                  per-element. Switching tabs saves your edits for the current
-                  tab automatically.
+                  per-element. Switching tabs saves your edits for the
+                  current tab automatically.
                 </p>
                 <div class="element-tabs" id="traveler-form-tabs"></div>
               </div>
@@ -3341,7 +3256,9 @@
           "
           >×</span
         >
-        <div class="costume-modal-title" id="tcg-modal-title">Add TCG Card</div>
+        <div class="costume-modal-title" id="tcg-modal-title">
+          Add TCG Card
+        </div>
         <input type="hidden" id="tcg-edit-char-id" />
         <input type="hidden" id="tcg-edit-index" />
 
@@ -3452,23 +3369,6 @@
       </div>
     </div>
 
-    <!-- Matrix Summary Modal -->
-    <div class="modal-overlay" id="matrix-summary-modal">
-      <div class="modal-content">
-        <span class="close-modal" onclick="closeSummaryModal()">×</span>
-        <div class="modal-header">
-          <h3
-            class="modal-title"
-            id="summary-title"
-            style="margin: 0; color: var(--text-light)"
-          >
-            Summary
-          </h3>
-        </div>
-        <div class="modal-body" id="summary-body"></div>
-      </div>
-    </div>
-
     <div id="toast-container"></div>
     <div id="tooltip"></div>
     <div id="url-image-preview"><img src="" alt="Preview" /></div>
@@ -3505,6 +3405,61 @@
       ];
       function isTravelerChar(c) {
         return !!(c && c.name && c.name.trim().toLowerCase() === "traveler");
+      }
+
+      // Virtual per-element ids look like "<realId>::<Element>". Anywhere
+      // that needs the actual saved character record (costumes, TCG cards,
+      // stickers, editing, tier-list membership storage keys) should
+      // resolve through these first.
+      function getRealCharId(id) {
+        return typeof id === "string" && id.includes("::")
+          ? id.split("::")[0]
+          : id;
+      }
+
+      // Expands the Traveler into one card per element for the roster,
+      // filters, tier lists, and matrix — every other character passes
+      // through unchanged (just gets a baseId that equals its own id).
+      // Each virtual entry carries that element's own materials/talents/
+      // constellation so it filters, ranks, and displays independently.
+      function getDisplayCharacters() {
+        const out = [];
+        characters.forEach((c) => {
+          if (isTravelerChar(c)) {
+            TRAVELER_ELEMENTS.forEach((el) => {
+              const variant = getCharacterVariant(c, el);
+              out.push(
+                Object.assign({}, c, {
+                  id: `${c.id}::${el}`,
+                  baseId: c.id,
+                  element: el,
+                  variantElement: el,
+                  isTravelerVariant: true,
+                  materials: variant.materials,
+                  talents: variant.talents,
+                  roles: variant.roles,
+                  constellationName: variant.constellationName,
+                  constellationImage: variant.constellationImage,
+                  constellations: variant.constellations,
+                  constellationLines: variant.constellationLines,
+                }),
+              );
+            });
+          } else {
+            out.push(Object.assign({}, c, { baseId: c.id }));
+          }
+        });
+        return out;
+      }
+
+      // For onclick handlers that only have an id string to work with
+      // (e.g. inside a Matrix summary list) — resolves virtual Traveler
+      // ids too, unlike a plain characters.find().
+      function openModalById(id) {
+        const char =
+          getDisplayCharacters().find((x) => x.id === id) ||
+          characters.find((x) => x.id === id);
+        if (char) openModal(char);
       }
 
       // Supports both uid (new) and name (legacy) lookups
@@ -4856,7 +4811,7 @@
           bannerContainer.innerHTML = "";
         }
 
-        const filtered = characters
+        const filtered = getDisplayCharacters()
           .filter((c) => {
             if (search && !c.name.toLowerCase().includes(search)) return false;
             if (fElem && c.element !== fElem) return false;
@@ -4892,6 +4847,10 @@
             rolesHtml = c.roles.map((r) => getRoleBadge(r, true)).join("");
           }
 
+          const cardTitle = c.isTravelerVariant
+            ? `${c.name} (${c.element})`
+            : c.name;
+
           card.innerHTML = `
                 <div class="card-bg-layer"><img src="${c.namecard || "https://placehold.co/600x400/222/333?text=Card"}" class="card-namecard-img" onerror="this.src='https://placehold.co/600x400/222/333?text=Card'"></div>
                 <div class="card-gradient-overlay"></div>
@@ -4899,7 +4858,7 @@
                 <div class="card-info-layer">
                     <div class="card-header-row">
                          <div class="card-avatar-circle"><img src="${c.avatarIcon || c.splashArt}" onerror="this.src='https://placehold.co/100?text=?'"></div>
-                         <div class="card-title-block"><h3>${c.name}</h3><div class="card-rarity-stars">${stars}</div></div>
+                         <div class="card-title-block"><h3>${cardTitle}</h3><div class="card-rarity-stars">${stars}</div></div>
                     </div>
                     <div class="card-attributes-row">
                         ${c.debutPatch ? `<div class="card-attr-badge" style="background:rgba(255,255,255,0.15); color:var(--text-light); border-color:var(--text-med);">v${c.debutPatch}</div>` : ""}
@@ -4909,8 +4868,8 @@
                     </div>
                 </div>
                 <div class="card-actions">
-                    <div class="action-btn" onclick="event.stopPropagation(); editChar('${c.id}')"><span class="material-symbols-outlined">edit</span></div>
-                    <div class="action-btn" onclick="event.stopPropagation(); deleteChar('${c.id}')" style="border-color:var(--danger); color:var(--danger);"><span class="material-symbols-outlined">delete</span></div>
+                    <div class="action-btn" onclick="event.stopPropagation(); editChar('${c.baseId}', '${c.variantElement || ""}')"><span class="material-symbols-outlined">edit</span></div>
+                    <div class="action-btn" onclick="event.stopPropagation(); deleteChar('${c.baseId}')" style="border-color:var(--danger); color:var(--danger);"><span class="material-symbols-outlined">delete</span></div>
                 </div>`;
           card.onclick = () => openModal(c);
           grid.appendChild(card);
@@ -5046,36 +5005,79 @@
         updateAttrFormUI();
       }
       // Characters store attribute values by NAME (not uid), so renaming an
-      // attribute (element/weapon/nation/role) must cascade into every
-      // character record that referenced the old name — otherwise those
-      // characters silently stop matching anywhere (Matrix, roster filters,
-      // badges, etc.) because the stored name no longer exists in the list.
+      // attribute must cascade into every character record that referenced
+      // the old name — otherwise those characters silently stop matching
+      // anywhere (Matrix, roster filters, badges, ascension materials, etc.)
+      // because the stored name no longer exists in the list. This covers
+      // elements/weapons/nations/roles AND the six materials categories
+      // (ascension gem, boss drop, local specialty, enemy drop, talent
+      // book, weekly boss), plus the Traveler's per-element variant data.
       function cascadeAttributeRename(cat, oldName, newName) {
         const fieldMap = {
           elements: "element",
           weapons: "weaponType",
           nations: "nation",
         };
+        const materialsFieldMap = {
+          ascension_gems: "gem",
+          boss_drops: "boss",
+          local_specialties: "local",
+          enemy_drops: "enemy",
+          talent_books: "book",
+          weekly_boss: "weekly",
+        };
+        const field = fieldMap[cat];
+        const matField = materialsFieldMap[cat];
         let updatedCount = 0;
 
-        if (cat === "roles") {
-          characters.forEach((c) => {
-            if (Array.isArray(c.roles) && c.roles.includes(oldName)) {
-              c.roles = c.roles.map((r) => (r === oldName ? newName : r));
-              updatedCount++;
+        const renamedRoles = (rolesArr) => {
+          if (!Array.isArray(rolesArr) || !rolesArr.includes(oldName))
+            return null;
+          return rolesArr.map((r) => (r === oldName ? newName : r));
+        };
+
+        characters.forEach((c) => {
+          let changed = false;
+
+          if (cat === "roles") {
+            const newRoles = renamedRoles(c.roles);
+            if (newRoles) {
+              c.roles = newRoles;
+              changed = true;
             }
-          });
-        } else {
-          const field = fieldMap[cat];
-          if (field) {
-            characters.forEach((c) => {
-              if (c[field] === oldName) {
-                c[field] = newName;
-                updatedCount++;
+          }
+          if (field && c[field] === oldName) {
+            c[field] = newName;
+            changed = true;
+          }
+          if (matField && c.materials && c.materials[matField] === oldName) {
+            c.materials[matField] = newName;
+            changed = true;
+          }
+
+          // Traveler: each element's own materials/roles need the same fix.
+          if (c.travelerVariants) {
+            Object.values(c.travelerVariants).forEach((variant) => {
+              if (cat === "roles") {
+                const newRoles = renamedRoles(variant.roles);
+                if (newRoles) {
+                  variant.roles = newRoles;
+                  changed = true;
+                }
+              }
+              if (
+                matField &&
+                variant.materials &&
+                variant.materials[matField] === oldName
+              ) {
+                variant.materials[matField] = newName;
+                changed = true;
               }
             });
           }
-        }
+
+          if (changed) updatedCount++;
+        });
 
         if (updatedCount > 0) saveChars();
         return updatedCount;
@@ -5411,6 +5413,14 @@
         };
       }
 
+      function snapshotFormRoles() {
+        const roles = [];
+        document
+          .querySelectorAll("#roles-selector-container .role-tag.active")
+          .forEach((tag) => roles.push(tag.textContent.trim()));
+        return roles;
+      }
+
       // Saves whatever is currently in the form into travelerFormData under
       // the currently active element tab.
       function snapshotCurrentFormTab() {
@@ -5418,6 +5428,7 @@
         travelerFormData[currentFormElement] = {
           materials: snapshotFormMaterials(),
           talents: snapshotFormTalents(),
+          roles: snapshotFormRoles(),
           ...snapshotFormConstellation(),
         };
       }
@@ -5426,6 +5437,7 @@
         const data = travelerFormData[element] || {
           materials: {},
           talents: [],
+          roles: [],
           constellationName: "",
           constellationImage: "",
           constellations: [],
@@ -5478,6 +5490,8 @@
         document.getElementById("talents-container").innerHTML = "";
         (data.talents || []).forEach((t) => addTalentRow(t));
 
+        renderRolesSelector(data.roles || []);
+
         document.getElementById("inp-const-name").value =
           data.constellationName || "";
         document.getElementById("inp-const-img").value =
@@ -5518,7 +5532,7 @@
         renderTravelerFormTabs();
       }
 
-      function openCharForm(id = null) {
+      function openCharForm(id = null, targetElement = null) {
         showPage("page-char-form");
         document.getElementById("char-form").reset();
         document.getElementById("talents-container").innerHTML = "";
@@ -5731,6 +5745,7 @@
                   travelerFormData[el] = {
                     materials: c.materials || {},
                     talents: c.talents || [],
+                    roles: c.roles || [],
                     constellationName: c.constellationName || "",
                     constellationImage: c.constellationImage || "",
                     constellations: c.constellations || [],
@@ -5744,6 +5759,16 @@
               document.getElementById("traveler-tabs-wrap").style.display =
                 "block";
               renderTravelerFormTabs();
+
+              if (
+                targetElement &&
+                TRAVELER_ELEMENTS.includes(targetElement) &&
+                targetElement !== currentFormElement
+              ) {
+                currentFormElement = targetElement;
+                loadFormTabData(targetElement);
+                renderTravelerFormTabs();
+              }
             }
           }
         } else {
@@ -5784,17 +5809,12 @@
         const tcgCards = existingChar.tcgCards || [];
         const emojis = existingChar.emojis || [];
 
-        const activeRoles = [];
-        document
-          .querySelectorAll("#roles-selector-container .role-tag.active")
-          .forEach((tag) => activeRoles.push(tag.textContent.trim()));
-
         // Traveler: the tab active at save time becomes the primary
         // element (its data lands in the top-level fields, same as any
         // other character); every other tab's data is stashed in
         // travelerVariants for the modal to pull from later.
         const travelerActive = currentFormElement !== null;
-        let element, materials, talents, constellationName;
+        let element, materials, talents, roles, constellationName;
         let constellationImage, constellations, constellationLines;
         let travelerVariants;
 
@@ -5808,6 +5828,7 @@
             name: t.name,
             icon: cleanImageUrl(t.icon || ""),
           }));
+          roles = primaryData.roles || [];
           constellationName = primaryData.constellationName || "";
           constellationImage = cleanImageUrl(
             primaryData.constellationImage || "",
@@ -5829,6 +5850,7 @@
                 name: t.name,
                 icon: cleanImageUrl(t.icon || ""),
               })),
+              roles: d.roles || [],
               constellationName: d.constellationName || "",
               constellationImage: cleanImageUrl(d.constellationImage || ""),
               constellations: (d.constellations || []).map((con) => ({
@@ -5856,6 +5878,10 @@
               icon: cleanImageUrl(row.querySelector(".t-icon").value),
             });
           });
+          roles = [];
+          document
+            .querySelectorAll("#roles-selector-container .role-tag.active")
+            .forEach((tag) => roles.push(tag.textContent.trim()));
           constellations = [];
           for (let i = 1; i <= 6; i++) {
             const n = document.getElementById(`c${i}-name`).value;
@@ -5886,7 +5912,7 @@
           element,
           weaponType: document.getElementById("inp-weapon").value,
           nation: document.getElementById("inp-nation").value,
-          roles: activeRoles,
+          roles,
           signatureWeapon: document.getElementById("inp-sig-wep").value,
           signatureWeaponImg: cleanImageUrl(
             document.getElementById("inp-sig-wep-url").value,
@@ -5930,8 +5956,8 @@
           showToast("Deleted", "success");
         });
       }
-      function editChar(id) {
-        openCharForm(id);
+      function editChar(id, element) {
+        openCharForm(id, element || null);
       }
 
       function openModal(c) {
@@ -5945,19 +5971,9 @@
           attributes.nations.find((n) => n.name === c.nation) ||
           attributes.nations.find((n) => n.uid === c.nation);
 
-        const roleBadges =
-          c.roles && c.roles.length > 0
-            ? c.roles.map((r) => getRoleBadge(r, true)).join("")
-            : '<span style="color:#666">None</span>';
-
-        // Find tier for this character
-        const charTierObj = (() => {
-          for (const tier of tierConfigs.overall || []) {
-            if ((tierLists.overall?.[tier.id] || []).includes(c.id))
-              return tier;
-          }
-          return null;
-        })();
+        // Find every tier board this character (or this specific Traveler
+        // element) has been ranked on.
+        const tierPillsHtml = buildTierPillsHtml(c.id);
 
         const traveler = isTravelerChar(c);
         const initialElement = traveler
@@ -5965,10 +5981,15 @@
           : c.element;
         const variant = getCharacterVariant(c, initialElement);
 
+        const roleBadges =
+          variant.roles && variant.roles.length > 0
+            ? variant.roles.map((r) => getRoleBadge(r, true)).join("")
+            : '<span style="color:#666">None</span>';
+
         const tabsHtml = traveler
           ? `<div class="element-tabs" id="modal-element-tabs">${TRAVELER_ELEMENTS.map(
               (el) =>
-                `<button type="button" class="element-tab${el === initialElement ? " active" : ""}" style="--el-color:${ElementColors[el]}" data-element="${el}" onclick="switchModalElement('${c.id}','${el}')">${el}</button>`,
+                `<button type="button" class="element-tab${el === initialElement ? " active" : ""}" style="--el-color:${ElementColors[el]}" data-element="${el}" onclick="switchModalElement('${c.baseId || c.id}','${el}')">${el}</button>`,
             ).join("")}</div>`
           : "";
 
@@ -5985,9 +6006,9 @@
                         <span style="font-weight:600;">${c.signatureWeapon || "None"}</span>
                     </div>
                 </div>
-                <div class="info-item"><label>Roles</label><span style="flex-wrap:wrap;">${roleBadges}</span></div>
+                <div class="info-item"><label>Roles</label><span id="modal-role-badges" style="flex-wrap:wrap;">${roleBadges}</span></div>
                 <div class="info-item"><label>Birthday</label><span>${c.birthdayDate || "Unknown"}</span></div>
-                <div class="info-item"><label>Tier Rank</label><span>${charTierObj ? `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 8px;border-radius:6px;background:${charTierObj.color};color:#1a1a1a;font-weight:900;font-size:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.4);">${charTierObj.label}</span>` : '<span style="color:#666">Unranked</span>'}</span></div>
+                <div class="info-item"><label>Tier Rank</label><span id="modal-tier-pills" style="flex-wrap:wrap;">${tierPillsHtml}</span></div>
                 <div class="info-item"><label>Dish</label><span>${c.signatureDish && typeof c.signatureDish === "object" ? (c.signatureDish.url ? `<img src="${c.signatureDish.url}" style="width:30px;height:30px;object-fit:cover;border-radius:4px;margin-right:5px;">` : "") + c.signatureDish.name : c.signatureDish || "Unknown"}</span></div>
             </div>
             ${tabsHtml}
@@ -6005,7 +6026,9 @@
         // Populate costumes strip
         const costumeStripEl = document.getElementById("modal-costumes-strip");
         if (costumeStripEl) {
-          const charCostumes = costumes.filter((ct) => ct.charId === c.id);
+          const charCostumes = costumes.filter(
+            (ct) => ct.charId === (c.baseId || c.id),
+          );
           renderCostumesStrip(costumeStripEl, c, charCostumes);
         }
 
@@ -6024,6 +6047,7 @@
           return {
             materials: c.materials || {},
             talents: c.talents || [],
+            roles: c.roles || [],
             constellationName: c.constellationName || "",
             constellationImage: c.constellationImage || "",
             constellations: c.constellations || [],
@@ -6034,6 +6058,7 @@
         return {
           materials: v.materials || {},
           talents: v.talents || [],
+          roles: v.roles || [],
           constellationName: v.constellationName || "",
           constellationImage: v.constellationImage || "",
           constellations: v.constellations || [],
@@ -6061,8 +6086,12 @@
                 [5, 6],
               ];
         linesToDraw.forEach((pair) => {
-          const n1 = variant.constellations.find((con) => con.level == pair[0]);
-          const n2 = variant.constellations.find((con) => con.level == pair[1]);
+          const n1 = variant.constellations.find(
+            (con) => con.level == pair[0],
+          );
+          const n2 = variant.constellations.find(
+            (con) => con.level == pair[1],
+          );
           if (n1 && n2) {
             linesSvg += `<line x1="${n1.x || 50}%" y1="${n1.y || 50}%" x2="${n2.x || 50}%" y2="${n2.y || 50}%"></line>`;
           }
@@ -6092,7 +6121,9 @@
                 <div class="talent-card" style="padding:0.8rem;">
                     ${(() => {
                       const bossItem =
-                        attributes.boss_drops.find((x) => x.uid === mat.boss) ||
+                        attributes.boss_drops.find(
+                          (x) => x.uid === mat.boss,
+                        ) ||
                         attributes.boss_drops.find((x) => x.name === mat.boss);
                       return bossItem && bossItem.bossIcon
                         ? `<img src="${bossItem.bossIcon}" class="talent-icon" style="border-radius:0; border:none; background:transparent;" title="${bossItem.name}">`
@@ -6133,8 +6164,12 @@
                 <div class="talent-card" style="border:1px solid var(--accent); background:rgba(212,192,134,0.1); width:100%;"><img src="${findImg(attributes.talent_books, mat.book, "icon") || ""}" class="talent-icon" style="border-color:var(--accent);"><div><div style="font-weight:bold; color:var(--accent);">Talent Book</div><div style="font-size:0.8rem; color:var(--text-light);">${resolveAttrName(attributes.talent_books, mat.book) || "None"}</div></div></div>
                 ${(() => {
                   const wItem =
-                    attributes.weekly_boss.find((x) => x.uid === mat.weekly) ||
-                    attributes.weekly_boss.find((x) => x.name === mat.weekly);
+                    attributes.weekly_boss.find(
+                      (x) => x.uid === mat.weekly,
+                    ) ||
+                    attributes.weekly_boss.find(
+                      (x) => x.name === mat.weekly,
+                    );
                   return `<div class="talent-card" style="border:1px solid var(--text-med);">${wItem && wItem.bossIcon ? `<img src="${wItem.bossIcon}" class="talent-icon" style="border-radius:0;border:none;background:transparent;" title="${wItem.name}">` : ""}<img src="${findImg(attributes.weekly_boss, mat.weekly, "matIcon") || ""}" class="talent-icon"><div><div style="font-weight:bold;">Weekly Boss</div><div style="font-size:0.8rem; color:var(--text-light); opacity:0.8">${resolveAttrName(attributes.weekly_boss, mat.weekly) || "None"}</div></div></div>`;
                 })()}
                 ${
@@ -6178,7 +6213,43 @@
         const variant = getCharacterVariant(c, element);
         const container = document.getElementById("modal-variant-sections");
         if (container) container.innerHTML = buildVariantSectionsHtml(variant);
+
+        const rolesEl = document.getElementById("modal-role-badges");
+        if (rolesEl) {
+          rolesEl.innerHTML =
+            variant.roles && variant.roles.length > 0
+              ? variant.roles.map((r) => getRoleBadge(r, true)).join("")
+              : '<span style="color:#666">None</span>';
+        }
+
+        const pillsEl = document.getElementById("modal-tier-pills");
+        if (pillsEl) {
+          const displayId = isTravelerChar(c) ? `${c.id}::${element}` : c.id;
+          pillsEl.innerHTML = buildTierPillsHtml(displayId);
+        }
+
         restartEnemyIconCycling();
+      }
+
+      // Every tier board this exact character id (real id, or a virtual
+      // "<realId>::<Element>" id for a Traveler variant) is ranked on.
+      function buildTierPillsHtml(charId) {
+        const pills = [];
+        TIER_BOARDS.forEach((board) => {
+          const cfg = tierConfigs[board.id] || [];
+          const list = tierLists[board.id] || {};
+          for (const tier of cfg) {
+            if ((list[tier.id] || []).includes(charId)) {
+              pills.push(
+                `<span class="tier-pill" style="background:${tier.color};" title="${board.label}"><span class="tier-pill-board">${board.label}</span><span class="tier-pill-rank">${tier.label}</span></span>`,
+              );
+              break;
+            }
+          }
+        });
+        return pills.length
+          ? pills.join("")
+          : '<span style="color:#666">Unranked</span>';
       }
 
       function restartEnemyIconCycling() {
@@ -6416,7 +6487,8 @@
       function refreshModalCostumes(char) {
         const strip = document.getElementById("modal-costumes-strip");
         if (!strip) return;
-        const charCostumes = costumes.filter((c) => c.charId === char.id);
+        const realId = char.baseId || char.id;
+        const charCostumes = costumes.filter((c) => c.charId === realId);
         renderCostumesStrip(strip, char, charCostumes);
       }
 
@@ -6450,6 +6522,7 @@
         container.appendChild(defaultThumb);
 
         // ── Skin thumbs (with edit/delete overlay) ──
+        const realCharId = char.baseId || char.id;
         charCostumes.forEach((ct) => {
           const thumb = document.createElement("div");
           thumb.className = "costume-thumb";
@@ -6467,7 +6540,7 @@
               <div class="ct-action-btn" title="Edit" onclick="event.stopPropagation(); openCostumeModal('${ct.id}')">
                 <span class="material-symbols-outlined">edit</span>
               </div>
-              <div class="ct-action-btn danger" title="Delete" onclick="event.stopPropagation(); deleteCostumeFromStrip('${ct.id}', '${char.id}')">
+              <div class="ct-action-btn danger" title="Delete" onclick="event.stopPropagation(); deleteCostumeFromStrip('${ct.id}', '${realCharId}')">
                 <span class="material-symbols-outlined">delete</span>
               </div>
             </div>`;
@@ -6489,7 +6562,7 @@
         const addBtn = document.createElement("div");
         addBtn.className = "costume-thumb-add";
         addBtn.innerHTML = `<span class="material-symbols-outlined">add_photo_alternate</span><span>Add Skin</span>`;
-        addBtn.onclick = () => openCostumeModal(null, char.id);
+        addBtn.onclick = () => openCostumeModal(null, realCharId);
         container.appendChild(addBtn);
       }
 
@@ -6516,6 +6589,7 @@
       function refreshModalTcgCards(char) {
         const grid = document.getElementById("modal-tcg-grid");
         if (!grid) return;
+        const realId = char.baseId || char.id;
         const cards = char.tcgCards || [];
         grid.innerHTML =
           cards
@@ -6524,13 +6598,13 @@
             <div class="misc-item">
                 <img src="${url}" class="tcg-card-img" onclick="window.open('${url}','_blank')">
                 <div class="costume-thumb-actions">
-                    <div class="ct-action-btn" title="Edit" onclick="event.stopPropagation(); openTcgModal('${char.id}', ${idx})"><span class="material-symbols-outlined">edit</span></div>
-                    <div class="ct-action-btn danger" title="Delete" onclick="event.stopPropagation(); deleteTcgCard('${char.id}', ${idx})"><span class="material-symbols-outlined">delete</span></div>
+                    <div class="ct-action-btn" title="Edit" onclick="event.stopPropagation(); openTcgModal('${realId}', ${idx})"><span class="material-symbols-outlined">edit</span></div>
+                    <div class="ct-action-btn danger" title="Delete" onclick="event.stopPropagation(); deleteTcgCard('${realId}', ${idx})"><span class="material-symbols-outlined">delete</span></div>
                 </div>
             </div>`,
             )
             .join("") +
-          `<div class="costume-thumb-add misc-add-tile" onclick="openTcgModal('${char.id}')">
+          `<div class="costume-thumb-add misc-add-tile" onclick="openTcgModal('${realId}')">
                 <span class="material-symbols-outlined">add</span>
                 <span>Add Card</span>
             </div>`;
@@ -6592,6 +6666,7 @@
       function refreshModalStickers(char) {
         const grid = document.getElementById("modal-sticker-grid");
         if (!grid) return;
+        const realId = char.baseId || char.id;
         const stickers = (char.emojis || []).map((e) =>
           typeof e === "string" ? { name: "", url: e } : e,
         );
@@ -6602,13 +6677,13 @@
             <div class="misc-item" style="text-align:center;">
                 <img src="${s.url}" class="misc-img" style="width:80px; height:80px; object-fit:contain; border:none;" data-tip="${s.name || ""}">
                 <div class="costume-thumb-actions">
-                    <div class="ct-action-btn" title="Edit" onclick="event.stopPropagation(); openStickerModal('${char.id}', ${idx})"><span class="material-symbols-outlined">edit</span></div>
-                    <div class="ct-action-btn danger" title="Delete" onclick="event.stopPropagation(); deleteStickerItem('${char.id}', ${idx})"><span class="material-symbols-outlined">delete</span></div>
+                    <div class="ct-action-btn" title="Edit" onclick="event.stopPropagation(); openStickerModal('${realId}', ${idx})"><span class="material-symbols-outlined">edit</span></div>
+                    <div class="ct-action-btn danger" title="Delete" onclick="event.stopPropagation(); deleteStickerItem('${realId}', ${idx})"><span class="material-symbols-outlined">delete</span></div>
                 </div>
             </div>`,
             )
             .join("") +
-          `<div class="costume-thumb-add misc-add-tile" style="width:80px; height:80px;" onclick="openStickerModal('${char.id}')">
+          `<div class="costume-thumb-add misc-add-tile" style="width:80px; height:80px;" onclick="openStickerModal('${realId}')">
                 <span class="material-symbols-outlined">add</span>
                 <span>Add</span>
             </div>`;
@@ -6706,6 +6781,7 @@
         pool.innerHTML = "";
         const cfg = tierConfigs[activeTierBoard] || [];
         const list = tierLists[activeTierBoard] || {};
+        const displayChars = getDisplayCharacters();
         const rankedIds = new Set();
         cfg.forEach((tier) => {
           const t = tier.id;
@@ -6737,7 +6813,7 @@
           row.appendChild(contentDiv);
 
           (list[t] || []).forEach((id) => {
-            const char = characters.find((x) => x.id === id);
+            const char = displayChars.find((x) => x.id === id);
             if (char) {
               contentDiv.appendChild(createTierItem(char));
               rankedIds.add(id);
@@ -6745,7 +6821,7 @@
           });
           c.appendChild(row);
         });
-        characters.forEach((char) => {
+        displayChars.forEach((char) => {
           if (!rankedIds.has(char.id)) {
             if (!search || char.name.toLowerCase().includes(search)) {
               pool.appendChild(createTierItem(char));
@@ -6850,75 +6926,82 @@
             : "";
         div.innerHTML = `<img src="${url}" class="${imgClass}" data-char-id="${c.id}" data-idx="0" style="width:100%; height:100%; ${style}" onerror="this.src='https://placehold.co/100?text=?'">`;
         div.onclick = () => openModal(c);
-        div.dataset.tip = c.name;
+        div.dataset.tip = c.isTravelerVariant
+          ? `${c.name} (${c.element})`
+          : c.name;
         return div;
       }
 
-      function renderMatrixPage() {
-        const container = document.getElementById("matrix-wrapper");
-        const rowAttr = document.getElementById("matrix-row-attr").value;
-        const colAttr = document.getElementById("matrix-col-attr").value;
+      const MATRIX_ATTR_TYPES = [
+        { id: "elements", label: "Elements" },
+        { id: "weapons", label: "Weapons" },
+        { id: "nations", label: "Nations" },
+        { id: "roles", label: "Roles" },
+        { id: "rarity", label: "Rarity" },
+      ];
+      let activeMatrixAttr = "elements";
 
-        const getAttrList = (type) => {
-          if (type === "elements") return attributes.elements;
-          if (type === "weapons") return attributes.weapons;
-          if (type === "nations") return attributes.nations;
-          if (type === "roles") return attributes.roles;
-          if (type === "rarity")
+      function renderMatrixAttrTabs() {
+        const wrap = document.getElementById("matrix-attr-tabs");
+        if (!wrap) return;
+        wrap.innerHTML = MATRIX_ATTR_TYPES.map(
+          (t) =>
+            `<button type="button" class="element-tab${t.id === activeMatrixAttr ? " active" : ""}" onclick="switchMatrixAttr('${t.id}')">${t.label}</button>`,
+        ).join("");
+      }
+
+      function switchMatrixAttr(type) {
+        activeMatrixAttr = type;
+        renderMatrixPage();
+      }
+
+      // Lists characters horizontally under each attribute value (e.g. one
+      // row per Element), instead of the old row/column cross-tab table.
+      function renderMatrixPage() {
+        renderMatrixAttrTabs();
+        const container = document.getElementById("matrix-wrapper");
+        const displayChars = getDisplayCharacters();
+        const type = activeMatrixAttr;
+
+        const getAttrList = (t) => {
+          if (t === "elements") return attributes.elements;
+          if (t === "weapons") return attributes.weapons;
+          if (t === "nations") return attributes.nations;
+          if (t === "roles") return attributes.roles;
+          if (t === "rarity")
             return [
               { name: "5", icon: null },
               { name: "4", icon: null },
             ];
           return [];
         };
-
-        const rows = getAttrList(rowAttr);
-        const cols = getAttrList(colAttr);
-        let html =
-          '<table class="matrix-table"><thead><tr><th class="row-header"></th>';
-        cols.forEach((col) => {
-          const content = col.icon
-            ? `<img src="${col.icon}" class="matrix-icon" title="${col.name}">`
-            : col.name;
-          html += `<th>${content}</th>`;
-        });
-        html += "</tr></thead><tbody>";
+        const getCharVal = (c) =>
+          type === "rarity"
+            ? c.rarity
+            : type === "roles"
+              ? c.roles
+              : type === "weapons"
+                ? c.weaponType
+                : type === "nations"
+                  ? c.nation
+                  : c.element;
 
         const checkMatch = (charVal, targetVal) =>
           Array.isArray(charVal)
             ? charVal.includes(targetVal)
             : charVal === targetVal;
 
-        rows.forEach((row) => {
-          const rowLabel = row.icon
-            ? `<img src="${row.icon}" class="matrix-icon" title="${row.name}">`
-            : row.name;
-          html += `<tr><th class="row-header">${rowLabel}</th>`;
-          cols.forEach((col) => {
-            const matches = characters.filter((c) => {
-              const rVal =
-                rowAttr === "rarity"
-                  ? c.rarity
-                  : rowAttr === "roles"
-                    ? c.roles
-                    : rowAttr === "weapons"
-                      ? c.weaponType
-                      : rowAttr === "nations"
-                        ? c.nation
-                        : c.element;
-              const cVal =
-                colAttr === "rarity"
-                  ? c.rarity
-                  : colAttr === "roles"
-                    ? c.roles
-                    : colAttr === "weapons"
-                      ? c.weaponType
-                      : colAttr === "nations"
-                        ? c.nation
-                        : c.element;
-              return checkMatch(rVal, row.name) && checkMatch(cVal, col.name);
-            });
-            const cellContent = matches
+        const items = getAttrList(type);
+        let html = '<div class="matrix-list">';
+        items.forEach((item) => {
+          const matches = displayChars.filter((c) =>
+            checkMatch(getCharVal(c), item.name),
+          );
+          const label = item.icon
+            ? `<img src="${item.icon}" class="matrix-icon" title="${item.name}"><span>${item.name}</span>`
+            : `<span>${item.name}</span>`;
+          const charsHtml =
+            matches
               .map((m) => {
                 const url = getVisualUrl(m);
                 const style =
@@ -6929,23 +7012,39 @@
                   displayMode === "emoji" && m.emojis && m.emojis.length > 1
                     ? "matrix-char-img cycling-emoji"
                     : "matrix-char-img";
-                return `<img src="${url}" class="${imgClass}" data-char-id="${m.id}" data-idx="0" title="${m.name}" style="${style}">`;
+                const title = m.isTravelerVariant
+                  ? `${m.name} (${m.element})`
+                  : m.name;
+                return `<img src="${url}" class="${imgClass}" data-char-id="${m.id}" data-idx="0" title="${title}" style="${style}" onclick="openModalById('${m.id}')">`;
               })
-              .join("");
-            html += `<td onclick="openMatrixSummary('${row.name} ${col.name}', [${matches.map((m) => `'${m.id}'`).join(",")}])"><div class="matrix-cell-content">${cellContent}</div></td>`;
-          });
-          html += "</tr>";
+              .join("") || '<span class="matrix-row-empty">None</span>';
+          html += `
+            <div class="matrix-row">
+                <div class="matrix-row-label">${label}<span class="matrix-row-count">${matches.length}</span></div>
+                <div class="matrix-row-chars">${charsHtml}</div>
+            </div>`;
         });
-        html += "</tbody></table>";
+        html += "</div>";
         container.innerHTML = html;
       }
 
       // --- Calendar Page Logic ---
+      let calendarViewDate = new Date();
+
+      function navigateCalendar(delta) {
+        calendarViewDate = new Date(
+          calendarViewDate.getFullYear(),
+          calendarViewDate.getMonth() + delta,
+          1,
+        );
+        renderCalendarPage();
+      }
+
       function renderCalendarPage() {
         const container = document.getElementById("calendar-wrapper");
         container.innerHTML = "";
 
-        const months = [
+        const monthNames = [
           "January",
           "February",
           "March",
@@ -6959,93 +7058,86 @@
           "November",
           "December",
         ];
+        const dowLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-        // Group characters by month and day
-        const calendarData = Array.from({ length: 12 }, () => ({})); // Array of objects keyed by day
+        const year = calendarViewDate.getFullYear();
+        const month = calendarViewDate.getMonth();
 
-        characters.forEach((c) => {
+        const nav = document.createElement("div");
+        nav.className = "calendar-nav";
+        nav.innerHTML = `
+            <button class="btn btn-secondary btn-sm" onclick="navigateCalendar(-1)"><span class="material-symbols-outlined">chevron_left</span></button>
+            <div class="calendar-month-label">${monthNames[month]} ${year}</div>
+            <button class="btn btn-secondary btn-sm" onclick="navigateCalendar(1)"><span class="material-symbols-outlined">chevron_right</span></button>
+        `;
+        container.appendChild(nav);
+
+        // Group display characters (Traveler split by element) by day, for
+        // the currently shown month only.
+        const dayMap = {};
+        getDisplayCharacters().forEach((c) => {
           const mIdx = getBirthdayMonthIndex(c.birthdayDate);
           const d = getBirthdayDay(c.birthdayDate);
-          if (mIdx !== -1 && d !== 99) {
-            if (!calendarData[mIdx][d]) calendarData[mIdx][d] = [];
-            calendarData[mIdx][d].push(c);
+          if (mIdx === month && d !== 99) {
+            if (!dayMap[d]) dayMap[d] = [];
+            dayMap[d].push(c);
           }
         });
 
-        months.forEach((monthName, mIdx) => {
-          const monthCard = document.createElement("div");
-          monthCard.className = "month-card";
+        const grid = document.createElement("div");
+        grid.className = "calendar-grid";
+        dowLabels.forEach((l) => {
+          const label = document.createElement("div");
+          label.className = "calendar-dow-label";
+          label.textContent = l;
+          grid.appendChild(label);
+        });
 
-          const days = Object.keys(calendarData[mIdx]).sort(
-            (a, b) => parseInt(a) - parseInt(b),
-          );
+        const firstDow = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
+        const isCurrentMonth =
+          today.getFullYear() === year && today.getMonth() === month;
 
-          let daysHtml = "";
-          if (days.length === 0) {
-            daysHtml = `<div style="text-align:center; color:#555; padding:20px;">No birthdays</div>`;
-          } else {
-            days.forEach((day) => {
-              const chars = calendarData[mIdx][day];
-              const charsHtml = chars
-                .map((c) => {
-                  const url = getVisualUrl(c);
-                  const imgClass =
-                    displayMode === "emoji" && c.emojis && c.emojis.length > 1
-                      ? "calendar-char-img cycling-emoji"
-                      : "calendar-char-img";
-                  const style =
-                    displayMode === "emoji"
-                      ? "object-fit:contain; border:none; background:transparent;"
-                      : "";
-                  return `<img src="${url}" class="${imgClass}" data-char-id="${c.id}" data-idx="0" title="${c.name}" onclick="openModal(characters.find(ch => ch.id === '${c.id}'))" style="${style}">`;
-                })
-                .join("");
+        for (let i = 0; i < firstDow; i++) {
+          const blank = document.createElement("div");
+          blank.className = "calendar-cell calendar-cell-empty";
+          grid.appendChild(blank);
+        }
 
-              daysHtml += `
-                        <div class="calendar-day-row">
-                            <div class="calendar-date-badge">${day}</div>
-                            <div class="calendar-chars">${charsHtml}</div>
-                        </div>
-                    `;
-            });
-          }
+        for (let d = 1; d <= daysInMonth; d++) {
+          const cell = document.createElement("div");
+          cell.className = "calendar-cell";
+          if (isCurrentMonth && today.getDate() === d)
+            cell.classList.add("calendar-cell-today");
 
-          monthCard.innerHTML = `
-                <div class="month-header">${monthName}</div>
-                <div class="month-body">${daysHtml}</div>
+          const chars = dayMap[d] || [];
+          const charsHtml = chars
+            .map((c) => {
+              const url = getVisualUrl(c);
+              const imgClass =
+                displayMode === "emoji" && c.emojis && c.emojis.length > 1
+                  ? "calendar-char-img cycling-emoji"
+                  : "calendar-char-img";
+              const style =
+                displayMode === "emoji"
+                  ? "object-fit:contain; border:none; background:transparent;"
+                  : "";
+              const title = c.isTravelerVariant
+                ? `${c.name} (${c.element})`
+                : c.name;
+              return `<img src="${url}" class="${imgClass}" data-char-id="${c.id}" data-idx="0" title="${title}" onclick="openModalById('${c.id}')" style="${style}">`;
+            })
+            .join("");
+
+          cell.innerHTML = `
+                <div class="calendar-date-num">${d}</div>
+                <div class="calendar-cell-chars">${charsHtml}</div>
             `;
-          container.appendChild(monthCard);
-        });
-      }
+          grid.appendChild(cell);
+        }
 
-      function swapMatrixAxes() {
-        const r = document.getElementById("matrix-row-attr");
-        const c = document.getElementById("matrix-col-attr");
-        const temp = r.value;
-        r.value = c.value;
-        c.value = temp;
-        renderMatrixPage();
-      }
-      function openMatrixSummary(title, charIds) {
-        if (charIds.length === 0) return;
-        const modal = document.getElementById("matrix-summary-modal");
-        const body = document.getElementById("summary-body");
-        document.getElementById("summary-title").textContent =
-          title + " (" + charIds.length + ")";
-        body.innerHTML = charIds
-          .map((id) => {
-            const char = characters.find((c) => c.id === id);
-            if (!char) return "";
-            const url = getVisualUrl(char);
-            return `<div class="summary-char-card" onclick="closeSummaryModal(); setTimeout(() => openModal(characters.find(c => c.id === '${char.id}')), 200)"><img src="${url}" class="summary-avatar" style="${displayMode === "emoji" ? "object-fit:contain; border:none; background:transparent;" : ""}"><div class="summary-name">${char.name}</div></div>`;
-          })
-          .join("");
-        modal.classList.add("open");
-      }
-      function closeSummaryModal() {
-        document
-          .getElementById("matrix-summary-modal")
-          .classList.remove("open");
+        container.appendChild(grid);
       }
 
       function setupUrlPreviews() {
@@ -7184,6 +7276,7 @@
           document.getElementById("tooltip").style.display = "none";
         }
       });
+
     </script>
   </body>
 </html>

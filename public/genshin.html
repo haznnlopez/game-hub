@@ -1695,6 +1695,49 @@
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.7);
         border-color: var(--accent);
       }
+      .element-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 0.75rem 0 0.5rem;
+      }
+      .element-tab {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-med);
+        padding: 0.4rem 0.9rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+      .element-tab:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+      .element-tab.active {
+        background: var(--el-color, var(--accent));
+        border-color: var(--el-color, var(--accent));
+        color: #14141f;
+      }
+      .misc-item {
+        position: relative;
+        flex-shrink: 0;
+      }
+      .misc-item .costume-thumb-actions {
+        top: -6px;
+        right: -6px;
+      }
+      .misc-add-tile {
+        width: 120px;
+        height: 120px;
+        border-radius: 8px;
+      }
+      .misc-add-tile .material-symbols-outlined {
+        font-size: 26px;
+      }
 
       .close-modal {
         position: absolute;
@@ -1907,39 +1950,6 @@
         border-radius: 4px;
       }
 
-      /* NEW: Ability Video Preview */
-      #ability-preview {
-        position: fixed;
-        z-index: 9999;
-        width: 320px;
-        height: 180px;
-        background: #000;
-        border: 2px solid var(--accent);
-        border-radius: 8px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
-        display: none;
-        pointer-events: none;
-        overflow: hidden;
-      }
-      #ability-preview video,
-      #ability-preview img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: none; /* Hidden by default, toggled by JS */
-      }
-      #ability-preview-placeholder {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #666;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        font-weight: 700;
-      }
-
       /* Talent Form Styles */
       .talent-row-wrapper {
         background: rgba(0, 0, 0, 0.2);
@@ -1953,42 +1963,6 @@
         grid-template-columns: 1fr 1fr 1fr auto;
         gap: 10px;
         margin-bottom: 5px;
-      }
-      .video-section {
-        padding-top: 10px;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-        margin-top: 5px;
-      }
-      .video-section h5 {
-        margin: 0 0 5px 0;
-        font-size: 0.75rem;
-        color: var(--accent);
-        text-transform: uppercase;
-      }
-      .video-input-row {
-        margin-bottom: 5px;
-      }
-
-      /* Spinner */
-      .preview-spinner {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 40px;
-        height: 40px;
-        border: 4px solid rgba(255, 255, 255, 0.1);
-        border-left-color: var(--accent);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        display: none;
-        z-index: 10;
-        pointer-events: none;
-      }
-      @keyframes spin {
-        100% {
-          transform: translate(-50%, -50%) rotate(360deg);
-        }
       }
 
       /* --- Costumes Page --- */
@@ -2302,15 +2276,18 @@
       body:not(.is-admin) [onclick*="deleteChar("],
       body:not(.is-admin) [onclick*="openCostumeModal("],
       body:not(.is-admin) [onclick*="deleteCostume("],
+      body:not(.is-admin) [onclick*="openTcgModal("],
+      body:not(.is-admin) [onclick*="deleteTcgCard("],
+      body:not(.is-admin) [onclick*="openStickerModal("],
+      body:not(.is-admin) [onclick*="deleteStickerItem("],
       body:not(.is-admin) [onclick*="saveAttribute("],
       body:not(.is-admin) [onclick*="editAttribute("],
       body:not(.is-admin) [onclick*="deleteAttribute("],
       body:not(.is-admin) [onclick*="addTalentRow("],
-      body:not(.is-admin) [onclick*="addUrlInput("],
-      body:not(.is-admin) [onclick*="addStickerInput("],
       body:not(.is-admin) [onclick*="addExtraEnemyIconInput("],
-      body:not(.is-admin) [onclick*="addVideoInput("],
       body:not(.is-admin) [onclick*="saveCostume("],
+      body:not(.is-admin) [onclick*="saveTcgCard("],
+      body:not(.is-admin) [onclick*="saveStickerItem("],
       body:not(.is-admin) [onclick*="addTier("],
       body:not(.is-admin) [onclick*="renameTier("],
       body:not(.is-admin) [onclick*="deleteTier("],
@@ -2374,16 +2351,6 @@
     >
       <span class="material-symbols-outlined">arrow_upward</span>
     </button>
-
-    <!-- NEW: Ability Video Preview Container -->
-    <div id="ability-preview">
-      <div id="preview-spinner" class="preview-spinner"></div>
-      <video id="ability-preview-video" muted loop playsinline></video>
-      <img id="ability-preview-img" alt="Preview" />
-      <div id="ability-preview-placeholder" style="display: none">
-        No Preview Available
-      </div>
-    </div>
 
     <div class="app-layout">
       <aside class="sidebar" id="sidebar">
@@ -2894,6 +2861,7 @@
                     required
                     autocomplete="off"
                     name="char_name_field"
+                    oninput="checkTravelerNameToggle()"
                   />
                 </div>
                 <div class="form-group">
@@ -3062,6 +3030,27 @@
                 </div>
               </div>
 
+              <div
+                id="traveler-tabs-wrap"
+                style="display: none; margin-top: 1.5rem"
+              >
+                <h3
+                  style="
+                    color: var(--accent);
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                    padding-bottom: 0.5rem;
+                  "
+                >
+                  Traveler Element
+                </h3>
+                <p style="font-size: 0.8rem; color: #888; margin: 4px 0 0">
+                  Materials, talents & constellation below are edited
+                  per-element. Switching tabs saves your edits for the current
+                  tab automatically.
+                </p>
+                <div class="element-tabs" id="traveler-form-tabs"></div>
+              </div>
+
               <h3
                 style="
                   color: var(--accent);
@@ -3214,41 +3203,6 @@
 
               <div id="constellations-names-container"></div>
 
-              <h3
-                style="
-                  color: var(--accent);
-                  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                  padding-bottom: 0.5rem;
-                  margin-top: 1rem;
-                "
-              >
-                Miscellaneous
-              </h3>
-
-              <div class="form-group">
-                <label class="form-label">TCG Card</label>
-                <div id="tcg-list-container"></div>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-primary"
-                  onclick="addUrlInput('tcg-list-container')"
-                >
-                  + Add Card URL
-                </button>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Paimon's Paintings</label>
-                <div id="emoji-list-container"></div>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-primary"
-                  onclick="addStickerInput()"
-                >
-                  + Add Sticker
-                </button>
-              </div>
-
               <div
                 style="
                   text-align: right;
@@ -3370,6 +3324,122 @@
       </div>
     </div>
 
+    <!-- TCG Card Add/Edit Modal -->
+    <div class="costume-modal-overlay" id="tcg-modal-overlay">
+      <div class="costume-modal-box">
+        <span
+          class="close-modal"
+          onclick="closeTcgModal()"
+          style="
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--text-med);
+            line-height: 1;
+          "
+          >×</span
+        >
+        <div class="costume-modal-title" id="tcg-modal-title">Add TCG Card</div>
+        <input type="hidden" id="tcg-edit-char-id" />
+        <input type="hidden" id="tcg-edit-index" />
+
+        <div class="form-group">
+          <label class="form-label">Card Image URL</label>
+          <input
+            type="url"
+            id="tcg-url-input"
+            class="form-input"
+            placeholder="https://..."
+            autocomplete="off"
+          />
+        </div>
+
+        <div
+          style="
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 1rem;
+          "
+        >
+          <button class="btn btn-secondary" onclick="closeTcgModal()">
+            Cancel
+          </button>
+          <button class="btn btn-primary" onclick="saveTcgCard()">
+            Save Card
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticker Add/Edit Modal -->
+    <div class="costume-modal-overlay" id="sticker-modal-overlay">
+      <div class="costume-modal-box">
+        <span
+          class="close-modal"
+          onclick="closeStickerModal()"
+          style="
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--text-med);
+            line-height: 1;
+          "
+          >×</span
+        >
+        <div class="costume-modal-title" id="sticker-modal-title">
+          Add Sticker
+        </div>
+        <input type="hidden" id="sticker-edit-char-id" />
+        <input type="hidden" id="sticker-edit-index" />
+
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input
+            type="text"
+            id="sticker-name-input"
+            class="form-input"
+            placeholder="Sticker name"
+            autocomplete="off"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Image URL</label>
+          <input
+            type="url"
+            id="sticker-url-input"
+            class="form-input"
+            placeholder="https://..."
+            autocomplete="off"
+          />
+        </div>
+
+        <div
+          style="
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 1rem;
+          "
+        >
+          <button class="btn btn-secondary" onclick="closeStickerModal()">
+            Cancel
+          </button>
+          <button class="btn btn-primary" onclick="saveStickerItem()">
+            Save Sticker
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Character Detail Modal -->
     <div class="modal-overlay" id="char-modal">
       <div class="modal-content">
@@ -3421,6 +3491,37 @@
         Cryo: "#4682B4",
         Geo: "#DEBD6C",
       };
+
+      // The 7 elements the Traveler can tab between. Any other character
+      // just uses their single c.element as normal.
+      const TRAVELER_ELEMENTS = [
+        "Anemo",
+        "Geo",
+        "Electro",
+        "Dendro",
+        "Hydro",
+        "Pyro",
+        "Cryo",
+      ];
+      function isTravelerChar(c) {
+        return !!(c && c.name && c.name.trim().toLowerCase() === "traveler");
+      }
+
+      // Supports both uid (new) and name (legacy) lookups
+      function findImg(list, nameOrUid, key) {
+        if (!nameOrUid) return null;
+        const item =
+          (list || []).find((x) => x.uid === nameOrUid) ||
+          (list || []).find((x) => x.name === nameOrUid);
+        return item ? item[key] : null;
+      }
+      function resolveAttrName(list, nameOrUid) {
+        if (!nameOrUid) return null;
+        const item =
+          (list || []).find((x) => x.uid === nameOrUid) ||
+          (list || []).find((x) => x.name === nameOrUid);
+        return item ? item.name : nameOrUid;
+      }
 
       const RoleIcons = {
         "Main DPS": "swords",
@@ -3752,6 +3853,13 @@
       let isLinkMode = false;
       let linkStartNode = null;
 
+      // Traveler form tabbing: holds each element's edited data
+      // (materials/talents/constellation) while the form is open, keyed by
+      // element name. currentFormElement is null unless the Name field is
+      // currently "Traveler".
+      let travelerFormData = {};
+      let currentFormElement = null;
+
       // Debounce utility
       function debounce(func, delay) {
         let timeout;
@@ -4081,6 +4189,39 @@
 
         if (changed) saveChars();
         return changed;
+      }
+
+      // Ensures a "None" (or "Unknown" for Nations) placeholder option always
+      // exists in these attribute categories, so it can be selected in forms
+      // when a value doesn't apply. Runs on every load in case a category
+      // was created before this option existed.
+      function ensureNoneAttributeOptions() {
+        const noneCats = [
+          "elements",
+          "ascension_gems",
+          "boss_drops",
+          "weekly_boss",
+          "enemy_drops",
+          "talent_books",
+          "local_specialties",
+        ];
+        let changed = false;
+
+        noneCats.forEach((cat) => {
+          if (!attributes[cat]) attributes[cat] = [];
+          if (!attributes[cat].some((a) => a.name === "None")) {
+            attributes[cat].unshift({ name: "None", icon: "" });
+            changed = true;
+          }
+        });
+
+        if (!attributes.nations) attributes.nations = [];
+        if (!attributes.nations.some((a) => a.name === "Unknown")) {
+          attributes.nations.unshift({ name: "Unknown", icon: "" });
+          changed = true;
+        }
+
+        if (changed) saveAttrs();
       }
 
       function saveAttrs() {
@@ -5188,12 +5329,202 @@
       }
 
       // --- Form Logic ---
+
+      // Shows/hides the Traveler element tab bar as the Name field changes,
+      // and seeds the first tab the moment "Traveler" is typed so nothing
+      // already filled in gets lost.
+      function checkTravelerNameToggle() {
+        const nameVal = document
+          .getElementById("inp-name")
+          .value.trim()
+          .toLowerCase();
+        const wrap = document.getElementById("traveler-tabs-wrap");
+        const isTrav = nameVal === "traveler";
+        wrap.style.display = isTrav ? "block" : "none";
+        if (isTrav && !currentFormElement) {
+          const currentElementVal =
+            document.getElementById("inp-element").value ||
+            TRAVELER_ELEMENTS[0];
+          currentFormElement = TRAVELER_ELEMENTS.includes(currentElementVal)
+            ? currentElementVal
+            : TRAVELER_ELEMENTS[0];
+          renderTravelerFormTabs();
+        } else if (!isTrav) {
+          currentFormElement = null;
+        }
+      }
+
+      function renderTravelerFormTabs() {
+        const bar = document.getElementById("traveler-form-tabs");
+        if (!bar) return;
+        bar.innerHTML = TRAVELER_ELEMENTS.map(
+          (el) =>
+            `<button type="button" class="element-tab${el === currentFormElement ? " active" : ""}" style="--el-color:${ElementColors[el]}" onclick="switchFormTravelerTab('${el}')">${el}</button>`,
+        ).join("");
+      }
+
+      function snapshotFormMaterials() {
+        return {
+          gem: document.getElementById("inp-gem").value,
+          boss: document.getElementById("inp-boss").value,
+          local: document.getElementById("inp-local").value,
+          enemy: document.getElementById("inp-enemy").value,
+          book: document.getElementById("inp-book").value,
+          weekly: document.getElementById("inp-weekly").value,
+        };
+      }
+
+      function snapshotFormTalents() {
+        const talents = [];
+        document
+          .querySelectorAll("#talents-container .talent-row-wrapper")
+          .forEach((row) => {
+            talents.push({
+              type: row.querySelector(".t-type").value,
+              name: row.querySelector(".t-name").value,
+              icon: row.querySelector(".t-icon").value,
+            });
+          });
+        return talents;
+      }
+
+      function snapshotFormConstellation() {
+        const constellations = [];
+        for (let i = 1; i <= 6; i++) {
+          const n = document.getElementById(`c${i}-name`).value;
+          const u = document.getElementById(`c${i}-url`).value;
+          const coords = mapperNodes[i] || { x: 50, y: 50 };
+          if (n)
+            constellations.push({
+              level: i,
+              name: n,
+              icon: u,
+              x: coords.x,
+              y: coords.y,
+            });
+        }
+        return {
+          constellationName: document.getElementById("inp-const-name").value,
+          constellationImage: document.getElementById("inp-const-img").value,
+          constellations,
+          constellationLines: mapperLines,
+        };
+      }
+
+      // Saves whatever is currently in the form into travelerFormData under
+      // the currently active element tab.
+      function snapshotCurrentFormTab() {
+        if (!currentFormElement) return;
+        travelerFormData[currentFormElement] = {
+          materials: snapshotFormMaterials(),
+          talents: snapshotFormTalents(),
+          ...snapshotFormConstellation(),
+        };
+      }
+
+      function loadFormTabData(element) {
+        const data = travelerFormData[element] || {
+          materials: {},
+          talents: [],
+          constellationName: "",
+          constellationImage: "",
+          constellations: [],
+          constellationLines: null,
+        };
+
+        setupCustomSelect(
+          "wrapper-inp-gem",
+          "inp-gem",
+          attributes.ascension_gems,
+          null,
+          data.materials.gem,
+        );
+        setupCustomSelect(
+          "wrapper-inp-boss",
+          "inp-boss",
+          attributes.boss_drops,
+          null,
+          data.materials.boss,
+        );
+        setupCustomSelect(
+          "wrapper-inp-local",
+          "inp-local",
+          attributes.local_specialties,
+          null,
+          data.materials.local,
+        );
+        setupCustomSelect(
+          "wrapper-inp-enemy",
+          "inp-enemy",
+          attributes.enemy_drops,
+          null,
+          data.materials.enemy,
+        );
+        setupCustomSelect(
+          "wrapper-inp-book",
+          "inp-book",
+          attributes.talent_books,
+          null,
+          data.materials.book,
+        );
+        setupCustomSelect(
+          "wrapper-inp-weekly",
+          "inp-weekly",
+          attributes.weekly_boss,
+          null,
+          data.materials.weekly,
+        );
+
+        document.getElementById("talents-container").innerHTML = "";
+        (data.talents || []).forEach((t) => addTalentRow(t));
+
+        document.getElementById("inp-const-name").value =
+          data.constellationName || "";
+        document.getElementById("inp-const-img").value =
+          data.constellationImage || "";
+        updateMapperImage();
+        initMapper(data.constellations, data.constellationLines);
+
+        for (let i = 1; i <= 6; i++) {
+          const nameInp = document.getElementById(`c${i}-name`);
+          const urlInp = document.getElementById(`c${i}-url`);
+          if (nameInp) nameInp.value = "";
+          if (urlInp) urlInp.value = "";
+        }
+        (data.constellations || []).forEach((con) => {
+          const nameInp = document.getElementById(`c${con.level}-name`);
+          const urlInp = document.getElementById(`c${con.level}-url`);
+          if (nameInp) nameInp.value = con.name;
+          if (urlInp) urlInp.value = con.icon || "";
+        });
+
+        // Keep the Element select in sync with the active tab — it's
+        // informational for the Traveler, driven by the tab rather than
+        // edited independently.
+        setupCustomSelect(
+          "wrapper-inp-element",
+          "inp-element",
+          attributes.elements,
+          null,
+          element,
+        );
+      }
+
+      function switchFormTravelerTab(element) {
+        if (element === currentFormElement) return;
+        snapshotCurrentFormTab();
+        currentFormElement = element;
+        loadFormTabData(element);
+        renderTravelerFormTabs();
+      }
+
       function openCharForm(id = null) {
         showPage("page-char-form");
         document.getElementById("char-form").reset();
         document.getElementById("talents-container").innerHTML = "";
-        document.getElementById("tcg-list-container").innerHTML = "";
-        document.getElementById("emoji-list-container").innerHTML = "";
+        travelerFormData = {};
+        currentFormElement = null;
+        document.getElementById("traveler-tabs-wrap").style.display = "none";
         isLinkMode = false;
         document.getElementById("btn-toggle-link").textContent =
           "Link Mode: OFF";
@@ -5393,15 +5724,26 @@
                 });
             }
 
-            if (c.tcgCards)
-              c.tcgCards.forEach((url) =>
-                addUrlInput("tcg-list-container", url),
-              );
-            if (c.emojis) {
-              c.emojis.forEach((e) => {
-                const val = typeof e === "string" ? { name: "", url: e } : e;
-                addStickerInput(val);
+            if (isTravelerChar(c)) {
+              travelerFormData = {};
+              TRAVELER_ELEMENTS.forEach((el) => {
+                if (el === c.element) {
+                  travelerFormData[el] = {
+                    materials: c.materials || {},
+                    talents: c.talents || [],
+                    constellationName: c.constellationName || "",
+                    constellationImage: c.constellationImage || "",
+                    constellations: c.constellations || [],
+                    constellationLines: c.constellationLines || null,
+                  };
+                } else if (c.travelerVariants && c.travelerVariants[el]) {
+                  travelerFormData[el] = c.travelerVariants[el];
+                }
               });
+              currentFormElement = c.element || TRAVELER_ELEMENTS[0];
+              document.getElementById("traveler-tabs-wrap").style.display =
+                "block";
+              renderTravelerFormTabs();
             }
           }
         } else {
@@ -5415,135 +5757,125 @@
         }
       }
 
-      // UPDATED: Dynamic Talent Row with Multiple Videos & Passive Detection
+      // Dynamic Talent Row
       function addTalentRow(data = {}) {
-        const timestamp = Date.now() + Math.random().toString(16).slice(2);
         const div = document.createElement("div");
         div.className = "talent-row-wrapper";
 
-        // Handle migration from single preview to array
-        const previews = data.previews || (data.preview ? [data.preview] : []);
-
-        let videoInputsHtml = "";
-        previews.forEach((url) => {
-          videoInputsHtml += `<div class="dynamic-list-row video-input-row">
-                <input type="url" class="form-input t-video" placeholder="Video URL (mp4/webm)" value="${url}" autocomplete="off">
-                <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()" style="padding:0 0.5rem;">×</button>
-            </div>`;
-        });
-
-        // Auto-hide video section if type contains "Passive"
-        const isPassive =
-          data.type && data.type.toLowerCase().includes("passive");
-
         div.innerHTML = `
             <div class="talent-top-row">
-                <input type="text" class="form-input t-type" placeholder="Type" value="${data.type || ""}" autocomplete="off" oninput="toggleVideoSection(this)">
+                <input type="text" class="form-input t-type" placeholder="Type" value="${data.type || ""}" autocomplete="off">
                 <input type="text" class="form-input t-name" placeholder="Name" value="${data.name || ""}" autocomplete="off">
                 <input type="url" class="form-input t-icon" placeholder="Icon URL" value="${data.icon || ""}" autocomplete="off">
                 <button type="button" class="btn btn-danger" onclick="this.closest('.talent-row-wrapper').remove()" style="padding:0 0.5rem;">×</button>
             </div>
-            <div class="video-section" style="${isPassive ? "display:none;" : "display:block;"}">
-                <h5>Ability Previews</h5>
-                <div class="video-list" id="vids-${timestamp}">
-                    ${videoInputsHtml}
-                </div>
-                <button type="button" class="btn btn-sm btn-secondary" onclick="addVideoInput('${timestamp}')" style="font-size:0.7rem; margin-top:5px; padding: 4px 10px;">+ Add Video</button>
-            </div>
         `;
         document.getElementById("talents-container").appendChild(div);
-      }
-
-      function addVideoInput(ts) {
-        const list = document.getElementById(`vids-${ts}`);
-        const div = document.createElement("div");
-        div.className = "dynamic-list-row video-input-row";
-        div.innerHTML = `<input type="url" class="form-input t-video" placeholder="Video URL (mp4/webm)" value="" autocomplete="off"><button type="button" class="btn btn-danger" onclick="this.parentElement.remove()" style="padding:0 0.5rem;">×</button>`;
-        list.appendChild(div);
-      }
-
-      function toggleVideoSection(input) {
-        const val = input.value.toLowerCase();
-        const section = input
-          .closest(".talent-row-wrapper")
-          .querySelector(".video-section");
-        if (val.includes("passive")) {
-          section.style.display = "none";
-        } else {
-          section.style.display = "block";
-        }
-      }
-
-      function addUrlInput(containerId, value = "") {
-        const container = document.getElementById(containerId);
-        const div = document.createElement("div");
-        div.className = "dynamic-list-row";
-        div.innerHTML = `<input type="url" class="form-input list-url" value="${value}" style="width:100%" autocomplete="off" name="list_url_${Date.now()}"><button type="button" class="btn btn-danger" onclick="this.parentElement.remove()" style="padding:0 0.5rem;">×</button>`;
-        container.appendChild(div);
-      }
-      function addStickerInput(data = { name: "", url: "" }) {
-        const container = document.getElementById("emoji-list-container");
-        const div = document.createElement("div");
-        div.className = "dynamic-list-row";
-        div.innerHTML = `<input type="text" class="form-input sticker-name" placeholder="Name" value="${data.name || ""}" style="flex:1" autocomplete="off" name="stick_name_${Date.now()}"><input type="url" class="form-input sticker-url" placeholder="URL" value="${data.url || ""}" style="flex:2" autocomplete="off" name="stick_url_${Date.now()}"><button type="button" class="btn btn-danger" onclick="this.parentElement.remove()" style="padding:0 0.5rem;">×</button>`;
-        container.appendChild(div);
       }
 
       document.getElementById("char-form").addEventListener("submit", (e) => {
         e.preventDefault();
         const id =
           document.getElementById("char-id").value || Date.now().toString();
+        const existingChar = characters.find((x) => x.id === id) || {};
 
-        // UPDATED: Capture multiple previews
-        const talents = [];
-        document.querySelectorAll(".talent-row-wrapper").forEach((row) => {
-          const previews = [];
-          row.querySelectorAll(".t-video").forEach((v) => {
-            if (v.value) previews.push(cleanImageUrl(v.value));
-          });
-
-          talents.push({
-            type: row.querySelector(".t-type").value,
-            name: row.querySelector(".t-name").value,
-            icon: cleanImageUrl(row.querySelector(".t-icon").value),
-            previews: previews, // Store array of URLs
-          });
-        });
-
-        const constellations = [];
-        for (let i = 1; i <= 6; i++) {
-          const n = document.getElementById(`c${i}-name`).value;
-          const u = document.getElementById(`c${i}-url`).value;
-          const coords = mapperNodes[i] || { x: 50, y: 50 };
-          if (n)
-            constellations.push({
-              level: i,
-              name: n,
-              icon: cleanImageUrl(u),
-              x: coords.x,
-              y: coords.y,
-            });
-        }
-        const tcgCards = [];
-        document
-          .querySelectorAll("#tcg-list-container .list-url")
-          .forEach((i) => {
-            if (i.value) tcgCards.push(cleanImageUrl(i.value));
-          });
-        // REMOVED: Birthday Arts logic
-        const emojis = [];
-        document
-          .querySelectorAll("#emoji-list-container .dynamic-list-row")
-          .forEach((row) => {
-            const n = row.querySelector(".sticker-name").value;
-            const u = row.querySelector(".sticker-url").value;
-            if (u) emojis.push({ name: n, url: cleanImageUrl(u) });
-          });
+        // TCG cards & stickers are managed from the character modal now,
+        // so carry over whatever is already saved for this character.
+        const tcgCards = existingChar.tcgCards || [];
+        const emojis = existingChar.emojis || [];
 
         const activeRoles = [];
         document
           .querySelectorAll("#roles-selector-container .role-tag.active")
           .forEach((tag) => activeRoles.push(tag.textContent.trim()));
+
+        // Traveler: the tab active at save time becomes the primary
+        // element (its data lands in the top-level fields, same as any
+        // other character); every other tab's data is stashed in
+        // travelerVariants for the modal to pull from later.
+        const travelerActive = currentFormElement !== null;
+        let element, materials, talents, constellationName;
+        let constellationImage, constellations, constellationLines;
+        let travelerVariants;
+
+        if (travelerActive) {
+          snapshotCurrentFormTab();
+          element = currentFormElement;
+          const primaryData = travelerFormData[element] || {};
+          materials = primaryData.materials || {};
+          talents = (primaryData.talents || []).map((t) => ({
+            type: t.type,
+            name: t.name,
+            icon: cleanImageUrl(t.icon || ""),
+          }));
+          constellationName = primaryData.constellationName || "";
+          constellationImage = cleanImageUrl(
+            primaryData.constellationImage || "",
+          );
+          constellations = (primaryData.constellations || []).map((con) => ({
+            ...con,
+            icon: cleanImageUrl(con.icon || ""),
+          }));
+          constellationLines = primaryData.constellationLines || [];
+
+          travelerVariants = {};
+          Object.keys(travelerFormData).forEach((el) => {
+            if (el === element) return;
+            const d = travelerFormData[el];
+            travelerVariants[el] = {
+              materials: d.materials || {},
+              talents: (d.talents || []).map((t) => ({
+                type: t.type,
+                name: t.name,
+                icon: cleanImageUrl(t.icon || ""),
+              })),
+              constellationName: d.constellationName || "",
+              constellationImage: cleanImageUrl(d.constellationImage || ""),
+              constellations: (d.constellations || []).map((con) => ({
+                ...con,
+                icon: cleanImageUrl(con.icon || ""),
+              })),
+              constellationLines: d.constellationLines || [],
+            };
+          });
+        } else {
+          element = document.getElementById("inp-element").value;
+          materials = {
+            gem: document.getElementById("inp-gem").value,
+            boss: document.getElementById("inp-boss").value,
+            local: document.getElementById("inp-local").value,
+            enemy: document.getElementById("inp-enemy").value,
+            book: document.getElementById("inp-book").value,
+            weekly: document.getElementById("inp-weekly").value,
+          };
+          talents = [];
+          document.querySelectorAll(".talent-row-wrapper").forEach((row) => {
+            talents.push({
+              type: row.querySelector(".t-type").value,
+              name: row.querySelector(".t-name").value,
+              icon: cleanImageUrl(row.querySelector(".t-icon").value),
+            });
+          });
+          constellations = [];
+          for (let i = 1; i <= 6; i++) {
+            const n = document.getElementById(`c${i}-name`).value;
+            const u = document.getElementById(`c${i}-url`).value;
+            const coords = mapperNodes[i] || { x: 50, y: 50 };
+            if (n)
+              constellations.push({
+                level: i,
+                name: n,
+                icon: cleanImageUrl(u),
+                x: coords.x,
+                y: coords.y,
+              });
+          }
+          constellationName = document.getElementById("inp-const-name").value;
+          constellationImage = cleanImageUrl(
+            document.getElementById("inp-const-img").value,
+          );
+          constellationLines = mapperLines;
+        }
 
         const newChar = {
           id,
@@ -5551,7 +5883,7 @@
           rarity: document.getElementById("inp-rarity").value,
           debutPatch: document.getElementById("inp-patch").value,
           birthdayDate: document.getElementById("inp-birthday-smart").value,
-          element: document.getElementById("inp-element").value,
+          element,
           weaponType: document.getElementById("inp-weapon").value,
           nation: document.getElementById("inp-nation").value,
           roles: activeRoles,
@@ -5570,25 +5902,17 @@
             name: document.getElementById("inp-dish-name").value,
             url: cleanImageUrl(document.getElementById("inp-dish-url").value),
           },
-          constellationName: document.getElementById("inp-const-name").value,
-          constellationImage: cleanImageUrl(
-            document.getElementById("inp-const-img").value,
-          ),
-          materials: {
-            gem: document.getElementById("inp-gem").value,
-            boss: document.getElementById("inp-boss").value,
-            local: document.getElementById("inp-local").value,
-            enemy: document.getElementById("inp-enemy").value,
-            book: document.getElementById("inp-book").value,
-            weekly: document.getElementById("inp-weekly").value,
-          },
+          constellationName,
+          constellationImage,
+          materials,
           talents,
           constellations,
           tcgCards,
           emojis,
-          constellationLines: mapperLines,
+          constellationLines,
           // birthdayArts is removed from saved object structure for simplicity
         };
+        if (travelerActive) newChar.travelerVariants = travelerVariants;
 
         const idx = characters.findIndex((x) => x.id === id);
         if (idx > -1) characters[idx] = newChar;
@@ -5620,56 +5944,11 @@
         const natObj =
           attributes.nations.find((n) => n.name === c.nation) ||
           attributes.nations.find((n) => n.uid === c.nation);
-        // Supports both uid (new) and name (legacy) lookups
-        const findImg = (list, nameOrUid, key) => {
-          if (!nameOrUid) return null;
-          const item =
-            list.find((x) => x.uid === nameOrUid) ||
-            list.find((x) => x.name === nameOrUid);
-          return item ? item[key] : null;
-        };
-        const resolveAttrName = (list, nameOrUid) => {
-          if (!nameOrUid) return null;
-          const item =
-            list.find((x) => x.uid === nameOrUid) ||
-            list.find((x) => x.name === nameOrUid);
-          return item ? item.name : nameOrUid;
-        };
 
         const roleBadges =
           c.roles && c.roles.length > 0
             ? c.roles.map((r) => getRoleBadge(r, true)).join("")
             : '<span style="color:#666">None</span>';
-
-        let constHtml = '<span style="color:#666">None</span>';
-        if (
-          c.constellationImage &&
-          c.constellations &&
-          c.constellations.length > 0
-        ) {
-          let linesSvg = "";
-          const linesToDraw = c.constellationLines || [
-            [1, 2],
-            [2, 3],
-            [3, 4],
-            [4, 5],
-            [5, 6],
-          ];
-          linesToDraw.forEach((pair) => {
-            const n1 = c.constellations.find((con) => con.level == pair[0]);
-            const n2 = c.constellations.find((con) => con.level == pair[1]);
-            if (n1 && n2) {
-              linesSvg += `<line x1="${n1.x || 50}%" y1="${n1.y || 50}%" x2="${n2.x || 50}%" y2="${n2.y || 50}%"></line>`;
-            }
-          });
-          const nodesHtml = c.constellations
-            .map(
-              (con) =>
-                `<div class="c-node" style="left:${con.x || 50}%; top:${con.y || 50}%;">C${con.level}<div class="c-tooltip">${con.icon ? `<img src="${con.icon}">` : ""}<strong>${con.name}</strong><span>Lv. ${con.level}</span></div></div>`,
-            )
-            .join("");
-          constHtml = `<div class="constellation-stage"><img src="${c.constellationImage}" class="constellation-bg"><svg class="c-lines-svg">${linesSvg}</svg>${nodesHtml}</div>`;
-        }
 
         // Find tier for this character
         const charTierObj = (() => {
@@ -5680,13 +5959,25 @@
           return null;
         })();
 
-        // UPDATED: Modal now supports legacy 'preview' string OR new 'previews' array
+        const traveler = isTravelerChar(c);
+        const initialElement = traveler
+          ? c.element || TRAVELER_ELEMENTS[0]
+          : c.element;
+        const variant = getCharacterVariant(c, initialElement);
+
+        const tabsHtml = traveler
+          ? `<div class="element-tabs" id="modal-element-tabs">${TRAVELER_ELEMENTS.map(
+              (el) =>
+                `<button type="button" class="element-tab${el === initialElement ? " active" : ""}" style="--el-color:${ElementColors[el]}" data-element="${el}" onclick="switchModalElement('${c.id}','${el}')">${el}</button>`,
+            ).join("")}</div>`
+          : "";
+
         details.innerHTML = `
             <div class="char-header"><div class="char-title"><h2>${c.name}</h2><div style="font-size:1.2rem; color:var(--accent);">${"★".repeat(parseInt(c.rarity || 5))}</div></div>${natObj ? `<img src="${natObj.icon}" class="char-nation-icon">` : ""}</div>
             
             <div class="info-grid">
                 <div class="info-item"><label>Release</label><span>Version ${c.debutPatch || "Unknown"}</span></div>
-                <div class="info-item"><label>Combat</label><span><span style="color:${ElementColors[c.element]}">${c.element}</span> / ${c.weaponType}</span></div>
+                <div class="info-item"><label>Combat</label><span><span id="modal-combat-element" style="color:${ElementColors[initialElement]}">${initialElement}</span> / ${c.weaponType}</span></div>
                 <div class="info-item" style="position:relative;">
                     <label>Signature Weapon</label>
                     <div style="display:flex; align-items:center; gap:10px;">
@@ -5699,96 +5990,12 @@
                 <div class="info-item"><label>Tier Rank</label><span>${charTierObj ? `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 8px;border-radius:6px;background:${charTierObj.color};color:#1a1a1a;font-weight:900;font-size:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.4);">${charTierObj.label}</span>` : '<span style="color:#666">Unranked</span>'}</span></div>
                 <div class="info-item"><label>Dish</label><span>${c.signatureDish && typeof c.signatureDish === "object" ? (c.signatureDish.url ? `<img src="${c.signatureDish.url}" style="width:30px;height:30px;object-fit:cover;border-radius:4px;margin-right:5px;">` : "") + c.signatureDish.name : c.signatureDish || "Unknown"}</span></div>
             </div>
-            
-            <h3 style="color:var(--accent); border-bottom:1px solid rgba(255,255,255,0.1); margin-top:2rem;">Ascension Profile</h3>
-            <div class="talent-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                <div class="talent-card" style="padding:0.8rem;">
-                    <img src="${findImg(attributes.ascension_gems, c.materials.gem, "icon") || ""}" class="talent-icon" style="border-radius:0; border:none; background:transparent;">
-                    <div><div style="font-weight:bold; font-size:0.9rem;">Ascension Gem</div><div style="font-size:0.8rem; color:var(--accent);">${resolveAttrName(attributes.ascension_gems, c.materials.gem) || "None"}</div></div>
-                </div>
-                <div class="talent-card" style="padding:0.8rem;">
-                    ${(() => {
-                      const bossItem =
-                        attributes.boss_drops.find(
-                          (x) => x.uid === c.materials.boss,
-                        ) ||
-                        attributes.boss_drops.find(
-                          (x) => x.name === c.materials.boss,
-                        );
-                      return bossItem && bossItem.bossIcon
-                        ? `<img src="${bossItem.bossIcon}" class="talent-icon" style="border-radius:0; border:none; background:transparent;" title="${bossItem.name}">`
-                        : "";
-                    })()}
-                    <img src="${findImg(attributes.boss_drops, c.materials.boss, "matIcon") || ""}" class="talent-icon" style="border-radius:0; border:none; background:transparent;">
-                    <div><div style="font-weight:bold; font-size:0.9rem;">World Boss</div><div style="font-size:0.8rem; color:var(--accent);">${resolveAttrName(attributes.boss_drops, c.materials.boss) || "None"}</div></div>
-                </div>
-                <div class="talent-card" style="padding:0.8rem;">
-                    <img src="${findImg(attributes.local_specialties, c.materials.local, "icon") || ""}" class="talent-icon" style="border-radius:0; border:none; background:transparent;">
-                    <div><div style="font-weight:bold; font-size:0.9rem;">Local Specialty</div><div style="font-size:0.8rem; color:var(--accent);">${resolveAttrName(attributes.local_specialties, c.materials.local) || "None"}</div></div>
-                </div>
-                <div class="talent-card" style="padding:0.8rem;">
-                    ${(() => {
-                      const eItem =
-                        attributes.enemy_drops.find(
-                          (x) => x.uid === c.materials.enemy,
-                        ) ||
-                        attributes.enemy_drops.find(
-                          (x) => x.name === c.materials.enemy,
-                        );
-                      if (!eItem) return "";
-                      const allIcons = [
-                        eItem.enemyIcon,
-                        ...(eItem.extraEnemyIcons || []),
-                      ].filter(Boolean);
-                      return allIcons.length > 0
-                        ? `<div class="enemy-icons-cycling" data-icons='${JSON.stringify(allIcons)}' data-idx="0" style="cursor:default;">${allIcons.map((ic, i) => `<img src="${ic}" class="talent-icon" style="border-radius:0;border:none;background:transparent;${i === 0 ? "" : "display:none;"}" data-icon-idx="${i}">`).join("")}</div>`
-                        : "";
-                    })()}
-                    <img src="${findImg(attributes.enemy_drops, c.materials.enemy, "dropIcon") || ""}" class="talent-icon" style="border-radius:0; border:none; background:transparent;">
-                    <div><div style="font-weight:bold; font-size:0.9rem;">Common Enemy</div><div style="font-size:0.8rem; color:var(--accent);">${resolveAttrName(attributes.enemy_drops, c.materials.enemy) || "None"}</div></div>
-                </div>
-            </div>
-            
-            <h3 style="color:var(--accent); border-bottom:1px solid rgba(255,255,255,0.1); margin-top:2rem;">Talents & Passives</h3>
-            <div class="talent-grid">
-                <div class="talent-card" style="border:1px solid var(--accent); background:rgba(212,192,134,0.1); width:100%;"><img src="${findImg(attributes.talent_books, c.materials.book, "icon") || ""}" class="talent-icon" style="border-color:var(--accent);"><div><div style="font-weight:bold; color:var(--accent);">Talent Book</div><div style="font-size:0.8rem; color:var(--text-light);">${resolveAttrName(attributes.talent_books, c.materials.book) || "None"}</div></div></div>
-                ${(() => {
-                  const wItem =
-                    attributes.weekly_boss.find(
-                      (x) => x.uid === c.materials.weekly,
-                    ) ||
-                    attributes.weekly_boss.find(
-                      (x) => x.name === c.materials.weekly,
-                    );
-                  return `<div class="talent-card" style="border:1px solid var(--text-med);">${wItem && wItem.bossIcon ? `<img src="${wItem.bossIcon}" class="talent-icon" style="border-radius:0;border:none;background:transparent;" title="${wItem.name}">` : ""}<img src="${findImg(attributes.weekly_boss, c.materials.weekly, "matIcon") || ""}" class="talent-icon"><div><div style="font-weight:bold;">Weekly Boss</div><div style="font-size:0.8rem; color:var(--text-light); opacity:0.8">${resolveAttrName(attributes.weekly_boss, c.materials.weekly) || "None"}</div></div></div>`;
-                })()}
-                ${
-                  c.talents
-                    ? c.talents
-                        .map((t) => {
-                          const vidList =
-                            t.previews || (t.preview ? [t.preview] : []);
-                          const vidData =
-                            vidList.length > 0
-                              ? `data-previews='${JSON.stringify(vidList).replace(/'/g, "&#39;")}'`
-                              : "";
-                          return `
-                    <div class="talent-card" ${vidData} ${vidData ? `onmouseenter="showAbilityPreview(event, this)" onmousemove="moveAbilityPreview(event)" onmouseleave="hideAbilityPreview()"` : ""}>
-                        <img src="${t.icon || "https://placehold.co/50"}" class="talent-icon">
-                        <div>
-                            <div style="font-weight:bold; color:var(--text-light);">${t.name}</div>
-                            <div style="font-size:0.8rem; color:var(--accent); opacity:0.8">${t.type}</div>
-                        </div>
-                    </div>`;
-                        })
-                        .join("")
-                    : ""
-                }
-            </div>
-
-            <h3 style="color:var(--accent); border-bottom:1px solid rgba(255,255,255,0.1); margin-top:2rem;">Constellation</h3>${c.constellationName ? `<div style="color:var(--text-light); font-size:1.1rem; margin-bottom:1rem; font-weight:bold;">${c.constellationName}</div>` : ""}${constHtml}
-            ${c.tcgCards && c.tcgCards.length > 0 ? `<h3 style="color:var(--accent); border-bottom:1px solid rgba(255,255,255,0.1); margin-top:2rem;">Genius Invokation TCG</h3><div class="misc-grid">${c.tcgCards.map((url) => `<img src="${url}" class="tcg-card-img" onclick="window.open('${url}','_blank')">`).join("")}</div>` : ""}
-            ${c.emojis && c.emojis.length > 0 ? `<h3 style="color:var(--accent); border-bottom:1px solid rgba(255,255,255,0.1); margin-top:2rem;">Stickers</h3><div class="misc-grid">${c.emojis.map((e) => `<div style="text-align:center;"><img src="${typeof e === "string" ? e : e.url}" class="misc-img" style="width:80px; height:80px; object-fit:contain; border:none;" data-tip="${typeof e === "string" ? "" : e.name}"></div>`).join("")}</div>` : ""}
+            ${tabsHtml}
+            <div id="modal-variant-sections">${buildVariantSectionsHtml(variant)}</div>
+            <h3 style="color:var(--accent); border-bottom:1px solid rgba(255,255,255,0.1); margin-top:2rem;">Genius Invokation TCG</h3>
+            <div class="misc-grid" id="modal-tcg-grid"></div>
+            <h3 style="color:var(--accent); border-bottom:1px solid rgba(255,255,255,0.1); margin-top:2rem;">Stickers</h3>
+            <div class="misc-grid" id="modal-sticker-grid"></div>
             <h3 style="color:var(--accent); border-bottom:1px solid rgba(255,255,255,0.1); margin-top:2rem;">Costumes</h3>
             <div class="costumes-strip" id="modal-costumes-strip"></div>
         `;
@@ -5802,7 +6009,179 @@
           renderCostumesStrip(costumeStripEl, c, charCostumes);
         }
 
-        // Fix 4: Start cycling enemy icons in the modal
+        // Populate TCG cards & stickers
+        refreshModalTcgCards(c);
+        refreshModalStickers(c);
+
+        restartEnemyIconCycling();
+      }
+
+      // Resolves which set of materials/talents/constellation data to show:
+      // the character's own fields for their primary element, or (for the
+      // Traveler) the saved variant for whichever element tab is active.
+      function getCharacterVariant(c, element) {
+        if (!element || element === c.element) {
+          return {
+            materials: c.materials || {},
+            talents: c.talents || [],
+            constellationName: c.constellationName || "",
+            constellationImage: c.constellationImage || "",
+            constellations: c.constellations || [],
+            constellationLines: c.constellationLines || [],
+          };
+        }
+        const v = (c.travelerVariants && c.travelerVariants[element]) || {};
+        return {
+          materials: v.materials || {},
+          talents: v.talents || [],
+          constellationName: v.constellationName || "",
+          constellationImage: v.constellationImage || "",
+          constellations: v.constellations || [],
+          constellationLines: v.constellationLines || [],
+        };
+      }
+
+      function buildConstellationHtml(variant) {
+        if (
+          !variant.constellationImage ||
+          !variant.constellations ||
+          variant.constellations.length === 0
+        ) {
+          return '<span style="color:#666">None</span>';
+        }
+        let linesSvg = "";
+        const linesToDraw =
+          variant.constellationLines && variant.constellationLines.length
+            ? variant.constellationLines
+            : [
+                [1, 2],
+                [2, 3],
+                [3, 4],
+                [4, 5],
+                [5, 6],
+              ];
+        linesToDraw.forEach((pair) => {
+          const n1 = variant.constellations.find((con) => con.level == pair[0]);
+          const n2 = variant.constellations.find((con) => con.level == pair[1]);
+          if (n1 && n2) {
+            linesSvg += `<line x1="${n1.x || 50}%" y1="${n1.y || 50}%" x2="${n2.x || 50}%" y2="${n2.y || 50}%"></line>`;
+          }
+        });
+        const nodesHtml = variant.constellations
+          .map(
+            (con) =>
+              `<div class="c-node" style="left:${con.x || 50}%; top:${con.y || 50}%;">C${con.level}<div class="c-tooltip">${con.icon ? `<img src="${con.icon}">` : ""}<strong>${con.name}</strong><span>Lv. ${con.level}</span></div></div>`,
+          )
+          .join("");
+        return `<div class="constellation-stage"><img src="${variant.constellationImage}" class="constellation-bg"><svg class="c-lines-svg">${linesSvg}</svg>${nodesHtml}</div>`;
+      }
+
+      // Builds the Ascension Profile / Talents & Passives / Constellation
+      // sections for a given variant (the character's own data, or one
+      // Traveler element's data). Re-rendered on every tab switch.
+      function buildVariantSectionsHtml(variant) {
+        const mat = variant.materials || {};
+        const constHtml = buildConstellationHtml(variant);
+        return `
+            <h3 style="color:var(--accent); border-bottom:1px solid rgba(255,255,255,0.1); margin-top:2rem;">Ascension Profile</h3>
+            <div class="talent-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div class="talent-card" style="padding:0.8rem;">
+                    <img src="${findImg(attributes.ascension_gems, mat.gem, "icon") || ""}" class="talent-icon" style="border-radius:0; border:none; background:transparent;">
+                    <div><div style="font-weight:bold; font-size:0.9rem;">Ascension Gem</div><div style="font-size:0.8rem; color:var(--accent);">${resolveAttrName(attributes.ascension_gems, mat.gem) || "None"}</div></div>
+                </div>
+                <div class="talent-card" style="padding:0.8rem;">
+                    ${(() => {
+                      const bossItem =
+                        attributes.boss_drops.find((x) => x.uid === mat.boss) ||
+                        attributes.boss_drops.find((x) => x.name === mat.boss);
+                      return bossItem && bossItem.bossIcon
+                        ? `<img src="${bossItem.bossIcon}" class="talent-icon" style="border-radius:0; border:none; background:transparent;" title="${bossItem.name}">`
+                        : "";
+                    })()}
+                    <img src="${findImg(attributes.boss_drops, mat.boss, "matIcon") || ""}" class="talent-icon" style="border-radius:0; border:none; background:transparent;">
+                    <div><div style="font-weight:bold; font-size:0.9rem;">World Boss</div><div style="font-size:0.8rem; color:var(--accent);">${resolveAttrName(attributes.boss_drops, mat.boss) || "None"}</div></div>
+                </div>
+                <div class="talent-card" style="padding:0.8rem;">
+                    <img src="${findImg(attributes.local_specialties, mat.local, "icon") || ""}" class="talent-icon" style="border-radius:0; border:none; background:transparent;">
+                    <div><div style="font-weight:bold; font-size:0.9rem;">Local Specialty</div><div style="font-size:0.8rem; color:var(--accent);">${resolveAttrName(attributes.local_specialties, mat.local) || "None"}</div></div>
+                </div>
+                <div class="talent-card" style="padding:0.8rem;">
+                    ${(() => {
+                      const eItem =
+                        attributes.enemy_drops.find(
+                          (x) => x.uid === mat.enemy,
+                        ) ||
+                        attributes.enemy_drops.find(
+                          (x) => x.name === mat.enemy,
+                        );
+                      if (!eItem) return "";
+                      const allIcons = [
+                        eItem.enemyIcon,
+                        ...(eItem.extraEnemyIcons || []),
+                      ].filter(Boolean);
+                      return allIcons.length > 0
+                        ? `<div class="enemy-icons-cycling" data-icons='${JSON.stringify(allIcons)}' data-idx="0" style="cursor:default;">${allIcons.map((ic, i) => `<img src="${ic}" class="talent-icon" style="border-radius:0;border:none;background:transparent;${i === 0 ? "" : "display:none;"}" data-icon-idx="${i}">`).join("")}</div>`
+                        : "";
+                    })()}
+                    <img src="${findImg(attributes.enemy_drops, mat.enemy, "dropIcon") || ""}" class="talent-icon" style="border-radius:0; border:none; background:transparent;">
+                    <div><div style="font-weight:bold; font-size:0.9rem;">Common Enemy</div><div style="font-size:0.8rem; color:var(--accent);">${resolveAttrName(attributes.enemy_drops, mat.enemy) || "None"}</div></div>
+                </div>
+            </div>
+            
+            <h3 style="color:var(--accent); border-bottom:1px solid rgba(255,255,255,0.1); margin-top:2rem;">Talents & Passives</h3>
+            <div class="talent-grid">
+                <div class="talent-card" style="border:1px solid var(--accent); background:rgba(212,192,134,0.1); width:100%;"><img src="${findImg(attributes.talent_books, mat.book, "icon") || ""}" class="talent-icon" style="border-color:var(--accent);"><div><div style="font-weight:bold; color:var(--accent);">Talent Book</div><div style="font-size:0.8rem; color:var(--text-light);">${resolveAttrName(attributes.talent_books, mat.book) || "None"}</div></div></div>
+                ${(() => {
+                  const wItem =
+                    attributes.weekly_boss.find((x) => x.uid === mat.weekly) ||
+                    attributes.weekly_boss.find((x) => x.name === mat.weekly);
+                  return `<div class="talent-card" style="border:1px solid var(--text-med);">${wItem && wItem.bossIcon ? `<img src="${wItem.bossIcon}" class="talent-icon" style="border-radius:0;border:none;background:transparent;" title="${wItem.name}">` : ""}<img src="${findImg(attributes.weekly_boss, mat.weekly, "matIcon") || ""}" class="talent-icon"><div><div style="font-weight:bold;">Weekly Boss</div><div style="font-size:0.8rem; color:var(--text-light); opacity:0.8">${resolveAttrName(attributes.weekly_boss, mat.weekly) || "None"}</div></div></div>`;
+                })()}
+                ${
+                  variant.talents
+                    ? variant.talents
+                        .map(
+                          (t) => `
+                    <div class="talent-card">
+                        <img src="${t.icon || "https://placehold.co/50"}" class="talent-icon">
+                        <div>
+                            <div style="font-weight:bold; color:var(--text-light);">${t.name}</div>
+                            <div style="font-size:0.8rem; color:var(--accent); opacity:0.8">${t.type}</div>
+                        </div>
+                    </div>`,
+                        )
+                        .join("")
+                    : ""
+                }
+            </div>
+
+            <h3 style="color:var(--accent); border-bottom:1px solid rgba(255,255,255,0.1); margin-top:2rem;">Constellation</h3>${variant.constellationName ? `<div style="color:var(--text-light); font-size:1.1rem; margin-bottom:1rem; font-weight:bold;">${variant.constellationName}</div>` : ""}${constHtml}
+        `;
+      }
+
+      // Called when a Traveler element tab is clicked in the modal — only
+      // re-renders the sections that vary by element, without closing or
+      // rebuilding the whole modal.
+      function switchModalElement(charId, element) {
+        const c = characters.find((x) => x.id === charId);
+        if (!c) return;
+        document
+          .querySelectorAll("#modal-element-tabs .element-tab")
+          .forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.element === element);
+          });
+        const combatEl = document.getElementById("modal-combat-element");
+        if (combatEl) {
+          combatEl.textContent = element;
+          combatEl.style.color = ElementColors[element] || "";
+        }
+        const variant = getCharacterVariant(c, element);
+        const container = document.getElementById("modal-variant-sections");
+        if (container) container.innerHTML = buildVariantSectionsHtml(variant);
+        restartEnemyIconCycling();
+      }
+
+      function restartEnemyIconCycling() {
         clearInterval(window._enemyIconCycleInterval);
         window._enemyIconCycleInterval = setInterval(() => {
           document
@@ -6132,9 +6511,170 @@
 
       // ─── End Costumes Logic ────────────────────────────────────────────────
 
+      // ─── TCG Card Logic (managed from the character modal) ──────────────────
+
+      function refreshModalTcgCards(char) {
+        const grid = document.getElementById("modal-tcg-grid");
+        if (!grid) return;
+        const cards = char.tcgCards || [];
+        grid.innerHTML =
+          cards
+            .map(
+              (url, idx) => `
+            <div class="misc-item">
+                <img src="${url}" class="tcg-card-img" onclick="window.open('${url}','_blank')">
+                <div class="costume-thumb-actions">
+                    <div class="ct-action-btn" title="Edit" onclick="event.stopPropagation(); openTcgModal('${char.id}', ${idx})"><span class="material-symbols-outlined">edit</span></div>
+                    <div class="ct-action-btn danger" title="Delete" onclick="event.stopPropagation(); deleteTcgCard('${char.id}', ${idx})"><span class="material-symbols-outlined">delete</span></div>
+                </div>
+            </div>`,
+            )
+            .join("") +
+          `<div class="costume-thumb-add misc-add-tile" onclick="openTcgModal('${char.id}')">
+                <span class="material-symbols-outlined">add</span>
+                <span>Add Card</span>
+            </div>`;
+      }
+
+      function openTcgModal(charId, index = null) {
+        document.getElementById("tcg-edit-char-id").value = charId;
+        document.getElementById("tcg-edit-index").value =
+          index === null ? "" : index;
+        const char = characters.find((c) => c.id === charId);
+        const url =
+          index !== null && char && char.tcgCards
+            ? char.tcgCards[index] || ""
+            : "";
+        document.getElementById("tcg-url-input").value = url;
+        document.getElementById("tcg-modal-title").textContent =
+          index === null ? "Add TCG Card" : "Edit TCG Card";
+        document.getElementById("tcg-modal-overlay").classList.add("open");
+      }
+
+      function closeTcgModal() {
+        document.getElementById("tcg-modal-overlay").classList.remove("open");
+      }
+
+      function saveTcgCard() {
+        const charId = document.getElementById("tcg-edit-char-id").value;
+        const idxRaw = document.getElementById("tcg-edit-index").value;
+        const url = cleanImageUrl(
+          document.getElementById("tcg-url-input").value,
+        );
+        if (!url) return showToast("Please enter a card image URL", "info");
+
+        const char = characters.find((c) => c.id === charId);
+        if (!char) return;
+        if (!char.tcgCards) char.tcgCards = [];
+
+        if (idxRaw !== "") char.tcgCards[parseInt(idxRaw)] = url;
+        else char.tcgCards.push(url);
+
+        saveChars();
+        closeTcgModal();
+        showToast("TCG card saved", "success");
+        refreshModalTcgCards(char);
+      }
+
+      function deleteTcgCard(charId, index) {
+        showConfirm("Delete this TCG card?", () => {
+          const char = characters.find((c) => c.id === charId);
+          if (!char || !char.tcgCards) return;
+          char.tcgCards.splice(index, 1);
+          saveChars();
+          refreshModalTcgCards(char);
+          showToast("TCG card deleted", "success");
+        });
+      }
+
+      // ─── Sticker Logic (managed from the character modal) ───────────────────
+
+      function refreshModalStickers(char) {
+        const grid = document.getElementById("modal-sticker-grid");
+        if (!grid) return;
+        const stickers = (char.emojis || []).map((e) =>
+          typeof e === "string" ? { name: "", url: e } : e,
+        );
+        grid.innerHTML =
+          stickers
+            .map(
+              (s, idx) => `
+            <div class="misc-item" style="text-align:center;">
+                <img src="${s.url}" class="misc-img" style="width:80px; height:80px; object-fit:contain; border:none;" data-tip="${s.name || ""}">
+                <div class="costume-thumb-actions">
+                    <div class="ct-action-btn" title="Edit" onclick="event.stopPropagation(); openStickerModal('${char.id}', ${idx})"><span class="material-symbols-outlined">edit</span></div>
+                    <div class="ct-action-btn danger" title="Delete" onclick="event.stopPropagation(); deleteStickerItem('${char.id}', ${idx})"><span class="material-symbols-outlined">delete</span></div>
+                </div>
+            </div>`,
+            )
+            .join("") +
+          `<div class="costume-thumb-add misc-add-tile" style="width:80px; height:80px;" onclick="openStickerModal('${char.id}')">
+                <span class="material-symbols-outlined">add</span>
+                <span>Add</span>
+            </div>`;
+      }
+
+      function openStickerModal(charId, index = null) {
+        document.getElementById("sticker-edit-char-id").value = charId;
+        document.getElementById("sticker-edit-index").value =
+          index === null ? "" : index;
+        const char = characters.find((c) => c.id === charId);
+        let data = { name: "", url: "" };
+        if (index !== null && char && char.emojis) {
+          const e = char.emojis[index];
+          data = typeof e === "string" ? { name: "", url: e } : e;
+        }
+        document.getElementById("sticker-name-input").value = data.name || "";
+        document.getElementById("sticker-url-input").value = data.url || "";
+        document.getElementById("sticker-modal-title").textContent =
+          index === null ? "Add Sticker" : "Edit Sticker";
+        document.getElementById("sticker-modal-overlay").classList.add("open");
+      }
+
+      function closeStickerModal() {
+        document
+          .getElementById("sticker-modal-overlay")
+          .classList.remove("open");
+      }
+
+      function saveStickerItem() {
+        const charId = document.getElementById("sticker-edit-char-id").value;
+        const idxRaw = document.getElementById("sticker-edit-index").value;
+        const name = document.getElementById("sticker-name-input").value;
+        const url = cleanImageUrl(
+          document.getElementById("sticker-url-input").value,
+        );
+        if (!url) return showToast("Please enter an image URL", "info");
+
+        const char = characters.find((c) => c.id === charId);
+        if (!char) return;
+        if (!char.emojis) char.emojis = [];
+
+        const item = { name, url };
+        if (idxRaw !== "") char.emojis[parseInt(idxRaw)] = item;
+        else char.emojis.push(item);
+
+        saveChars();
+        closeStickerModal();
+        showToast("Sticker saved", "success");
+        refreshModalStickers(char);
+      }
+
+      function deleteStickerItem(charId, index) {
+        showConfirm("Delete this sticker?", () => {
+          const char = characters.find((c) => c.id === charId);
+          if (!char || !char.emojis) return;
+          char.emojis.splice(index, 1);
+          saveChars();
+          refreshModalStickers(char);
+          showToast("Sticker deleted", "success");
+        });
+      }
+
+      // ─── End TCG/Sticker Logic ────────────────────────────────────────────────
+
       function closeModal() {
         document.getElementById("char-modal").classList.remove("open");
-        hideAbilityPreview();
         clearInterval(window._enemyIconCycleInterval);
       }
 
@@ -6583,6 +7123,7 @@
         if (loadingEl) loadingEl.remove();
 
         initDefaults();
+        ensureNoneAttributeOptions();
         repairCharacterAttributeLinks();
         setupSidebar();
         renderCharacters();
@@ -6643,265 +7184,6 @@
           document.getElementById("tooltip").style.display = "none";
         }
       });
-
-      // --- GIF Duration Helpers ---
-      // Parse GIF binary to sum all frame delays (GIF89a spec: delay in centiseconds at offset 1 of Graphic Control Extension)
-      async function getGifDuration(url) {
-        try {
-          const resp = await fetch(url);
-          const buf = await resp.arrayBuffer();
-          const data = new Uint8Array(buf);
-          let totalDelay = 0;
-          let i = 6; // Skip header (6 bytes) + logical screen descriptor (7 bytes) = start at 13
-          // Skip logical screen descriptor
-          const hasGCT = (data[10] & 0x80) !== 0;
-          const gctSize = hasGCT ? 3 * (1 << ((data[10] & 0x07) + 1)) : 0;
-          i = 13 + gctSize;
-          while (i < data.length) {
-            if (data[i] === 0x3b) break; // Trailer
-            if (data[i] === 0x21) {
-              // Extension
-              if (data[i + 1] === 0xf9) {
-                // Graphic Control Extension
-                // delay is at bytes i+4 (low) and i+5 (high), in centiseconds
-                const delay = data[i + 4] + (data[i + 5] << 8);
-                totalDelay += delay > 0 ? delay : 10; // default 10cs if 0
-              }
-              i += 2;
-              // Skip sub-blocks
-              while (i < data.length && data[i] !== 0x00) {
-                i += data[i] + 1;
-              }
-              i++; // skip block terminator
-            } else if (data[i] === 0x2c) {
-              // Image descriptor
-              const hasLCT = (data[i + 9] & 0x80) !== 0;
-              const lctSize = hasLCT
-                ? 3 * (1 << ((data[i + 9] & 0x07) + 1))
-                : 0;
-              i += 10 + lctSize + 1; // skip descriptor + LCT + LZW min code size
-              // Skip sub-blocks
-              while (i < data.length && data[i] !== 0x00) {
-                i += data[i] + 1;
-              }
-              i++;
-            } else {
-              i++;
-            }
-          }
-          return totalDelay * 10; // centiseconds to milliseconds
-        } catch (e) {
-          return null;
-        }
-      }
-
-      // Freeze a GIF on its current frame by drawing to canvas
-      function freezeGif(img) {
-        try {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.naturalWidth || img.width || 320;
-          canvas.height = img.naturalHeight || img.height || 180;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0);
-          img.src = canvas.toDataURL("image/png");
-        } catch (e) {
-          // Cross-origin: just hide it
-          img.style.opacity = "0";
-        }
-      }
-
-      // --- Ability Preview Logic ---
-      let currentPreviewVideos = [];
-      let currentVideoIndex = 0;
-      let imageCycleTimeout = null;
-
-      function showAbilityPreview(e, element) {
-        // Handle both new array format and legacy direct string if needed
-        let urls = [];
-        if (typeof element === "string") {
-          urls = [element];
-        } else if (element.dataset && element.dataset.previews) {
-          try {
-            urls = JSON.parse(element.dataset.previews);
-          } catch (e) {
-            urls = [];
-          }
-        }
-
-        if (!urls || urls.length === 0) return;
-
-        currentPreviewVideos = urls;
-        currentVideoIndex = 0;
-
-        const preview = document.getElementById("ability-preview");
-        const video = document.getElementById("ability-preview-video");
-        const img = document.getElementById("ability-preview-img");
-        const placeholder = document.getElementById(
-          "ability-preview-placeholder",
-        );
-
-        // Reset state
-        video.onended = null;
-        if (imageCycleTimeout) clearTimeout(imageCycleTimeout);
-
-        playNextPreviewItem();
-
-        preview.style.display = "block";
-        placeholder.style.display = "none";
-        moveAbilityPreview(e);
-      }
-
-      function playNextPreviewItem() {
-        const video = document.getElementById("ability-preview-video");
-        const img = document.getElementById("ability-preview-img");
-        const spinner = document.getElementById("preview-spinner");
-
-        if (!currentPreviewVideos || currentPreviewVideos.length === 0) return;
-
-        const url = currentPreviewVideos[currentVideoIndex];
-        const isVideo = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
-
-        spinner.style.display = "block";
-
-        if (isVideo) {
-          img.style.display = "none";
-          video.style.display = "block";
-          video.src = url;
-          video.play().catch((err) => {
-            console.log("Autoplay blocked", err);
-            spinner.style.display = "none";
-          });
-
-          // If multiple items, cycle them. If single, loop it.
-          if (currentPreviewVideos.length > 1) {
-            video.loop = false;
-            video.onended = () => {
-              currentVideoIndex =
-                (currentVideoIndex + 1) % currentPreviewVideos.length;
-              playNextPreviewItem();
-            };
-          } else {
-            video.loop = true;
-            video.onended = null;
-          }
-        } else {
-          // It is an Image or GIF
-          video.pause();
-          video.style.display = "none";
-          img.style.display = "block";
-
-          const isGif = /\.gif(\?|$)/i.test(url);
-
-          if (isGif) {
-            // For GIFs: fetch and parse total duration, show for that duration then stop/advance
-            img.src = url;
-            img.style.display = "block";
-            spinner.style.display = "block";
-
-            getGifDuration(url)
-              .then((durationMs) => {
-                spinner.style.display = "none";
-                const showDuration = Math.max(durationMs || 3000, 500);
-
-                if (currentPreviewVideos.length > 1) {
-                  // Multi-item: advance after one play
-                  imageCycleTimeout = setTimeout(() => {
-                    // Freeze the GIF by replacing src with a static snapshot via canvas
-                    freezeGif(img);
-                    setTimeout(() => {
-                      currentVideoIndex =
-                        (currentVideoIndex + 1) % currentPreviewVideos.length;
-                      playNextPreviewItem();
-                    }, 300);
-                  }, showDuration);
-                } else {
-                  // Single GIF: play once then freeze on last frame
-                  imageCycleTimeout = setTimeout(() => {
-                    freezeGif(img);
-                  }, showDuration);
-                }
-              })
-              .catch(() => {
-                spinner.style.display = "none";
-                // Fallback: show for 3s
-                imageCycleTimeout = setTimeout(() => {
-                  if (currentPreviewVideos.length > 1) {
-                    currentVideoIndex =
-                      (currentVideoIndex + 1) % currentPreviewVideos.length;
-                    playNextPreviewItem();
-                  } else {
-                    freezeGif(img);
-                  }
-                }, 3000);
-              });
-          } else {
-            img.src = url;
-            img.onload = () => {
-              spinner.style.display = "none";
-              if (currentPreviewVideos.length > 1) {
-                imageCycleTimeout = setTimeout(() => {
-                  currentVideoIndex =
-                    (currentVideoIndex + 1) % currentPreviewVideos.length;
-                  playNextPreviewItem();
-                }, 4500);
-              }
-            };
-            img.onerror = () => {
-              spinner.style.display = "none";
-              if (currentPreviewVideos.length > 1) {
-                currentVideoIndex =
-                  (currentVideoIndex + 1) % currentPreviewVideos.length;
-                playNextPreviewItem();
-              }
-            };
-          }
-        }
-      }
-
-      function moveAbilityPreview(e) {
-        const preview = document.getElementById("ability-preview");
-        if (preview.style.display === "none") return;
-
-        const offset = 20;
-        let left = e.clientX + offset;
-        let top = e.clientY + offset;
-
-        // Boundary checks
-        if (left + 320 > window.innerWidth) left = e.clientX - 320 - offset;
-        if (top + 180 > window.innerHeight) top = e.clientY - 180 - offset;
-
-        preview.style.left = left + "px";
-        preview.style.top = top + "px";
-      }
-
-      function hideAbilityPreview() {
-        const preview = document.getElementById("ability-preview");
-        const video = document.getElementById("ability-preview-video");
-        const img = document.getElementById("ability-preview-img");
-
-        preview.style.display = "none";
-        video.pause();
-        video.src = "";
-        video.onended = null;
-        img.src = "";
-        img.style.opacity = "1"; // reset in case freezeGif faded it
-
-        if (imageCycleTimeout) clearTimeout(imageCycleTimeout);
-        currentPreviewVideos = [];
-      }
-
-      // Video Loading State
-      const vidEl = document.getElementById("ability-preview-video");
-      const spinEl = document.getElementById("preview-spinner");
-
-      vidEl.addEventListener(
-        "loadstart",
-        () => (spinEl.style.display = "block"),
-      );
-      vidEl.addEventListener("waiting", () => (spinEl.style.display = "block"));
-      vidEl.addEventListener("canplay", () => (spinEl.style.display = "none"));
-      vidEl.addEventListener("playing", () => (spinEl.style.display = "none"));
-      vidEl.addEventListener("error", () => (spinEl.style.display = "none"));
     </script>
   </body>
 </html>

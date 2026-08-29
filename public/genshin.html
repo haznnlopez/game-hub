@@ -1021,18 +1021,23 @@
         background: rgba(0, 0, 0, 0.3);
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 8px;
-        overflow: hidden;
+        overflow: visible;
+        position: relative;
       }
       .tier-label {
         width: 100px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 2rem;
+        font-size: 1.4rem;
         font-weight: 800;
         color: #000;
+        text-align: center;
+        line-height: 1.15;
+        padding: 0.5rem;
         text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
         flex-shrink: 0;
+        border-radius: 8px 0 0 8px;
       }
       .tier-content {
         flex-grow: 1;
@@ -1041,6 +1046,10 @@
         flex-wrap: wrap;
         gap: 10px;
         min-height: 100px;
+        transition: background 0.15s;
+      }
+      .tier-content.drag-over {
+        background: rgba(251, 191, 36, 0.08);
       }
       .tier-item {
         width: 70px;
@@ -1064,17 +1073,125 @@
         transition: opacity 0.3s;
       }
 
+      /* Tier editing controls — float to the left of the tier row, shown on hover */
+      .tier-label-editable {
+        cursor: default;
+      }
+      .tier-controls {
+        position: absolute;
+        left: -46px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s;
+        z-index: 30;
+      }
+      .tier-controls::after {
+        content: "";
+        position: absolute;
+        top: -20px;
+        right: -16px;
+        bottom: -20px;
+        left: -10px;
+        z-index: -1;
+      }
+      .tier-row:hover .tier-controls {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .tier-ctrl-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(6px);
+        color: var(--text-med, #aaa);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+        transition: all 0.18s;
+      }
+      .tier-ctrl-btn:hover {
+        background: var(--accent);
+        color: #1a1a1a;
+        transform: scale(1.12);
+      }
+      .tier-ctrl-btn.danger:hover {
+        background: var(--danger, #f87171);
+        color: white;
+      }
+
+      /* Unranked pool sidebar — collapsible */
       .tier-sidebar-pool {
         width: 300px;
         background: var(--bg-med);
         border-left: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
         display: flex;
         flex-direction: column;
-        padding: 1rem;
         height: calc(100vh - 100px);
         position: sticky;
         top: 0;
+        overflow: hidden;
+        transition:
+          width 0.3s ease,
+          opacity 0.3s ease;
+        flex-shrink: 0;
+      }
+      .tier-sidebar-pool.collapsed {
+        width: 60px;
+      }
+      .tier-sidebar-pool-header {
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        white-space: nowrap;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        min-height: 60px;
+      }
+      .tier-sidebar-pool.collapsed .tier-sidebar-pool-header {
+        justify-content: center;
+        padding: 1rem 0;
+      }
+      .tier-sidebar-pool.collapsed .tier-sidebar-pool-header h3 {
+        display: none;
+      }
+      .tier-collapse-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: var(--text-med, #aaa);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        flex-shrink: 0;
+      }
+      .tier-collapse-btn:hover {
+        background: var(--accent);
+        color: #1a1a1a;
+      }
+      .tier-sidebar-pool.collapsed .tier-collapse-btn {
+        transform: rotate(180deg);
+      }
+      .tier-sidebar-pool-body {
+        flex: 1;
         overflow-y: auto;
+        padding: 1rem;
+      }
+      .tier-sidebar-pool.collapsed .tier-sidebar-pool-body {
+        display: none;
       }
       .tier-pool-grid {
         display: flex;
@@ -1091,7 +1208,9 @@
       .tier-main-area {
         flex: 1;
         overflow-y: auto;
+        overflow-x: visible;
         padding-right: 1rem;
+        padding-left: 50px; /* room for the floating tier controls */
       }
 
       /* --- Matrix Styles --- */
@@ -2165,7 +2284,10 @@
       body:not(.is-admin) [onclick*="addExtraEnemyIconInput("],
       body:not(.is-admin) [onclick*="addVideoInput("],
       body:not(.is-admin) [onclick*="saveCostume("],
-      body:not(.is-admin) [onclick*="import-file-input"] {
+      body:not(.is-admin) [onclick*="addTier("],
+      body:not(.is-admin) [onclick*="renameTier("],
+      body:not(.is-admin) [onclick*="deleteTier("],
+      body:not(.is-admin) #backup-import-btn {
         display: none !important;
         pointer-events: none !important;
       }
@@ -2299,31 +2421,15 @@
             <span class="material-symbols-outlined">lock</span>
             <span class="admin-auth-label">Admin Sign In</span>
           </button>
-          <div class="sidebar-backup-row">
-            <button
-              class="sidebar-button"
-              onclick="exportBackup()"
-              data-tip="Download a backup of all your data"
-            >
-              <span class="material-symbols-outlined">download</span>
-              <span>Export</span>
-            </button>
-            <button
-              class="sidebar-button"
-              onclick="document.getElementById('import-file-input').click()"
-              data-tip="Restore data from a backup file"
-            >
-              <span class="material-symbols-outlined">upload</span>
-              <span>Import</span>
-            </button>
-            <input
-              type="file"
-              id="import-file-input"
-              accept="application/json,.json"
-              style="display: none"
-              onchange="importBackup(event)"
-            />
-          </div>
+          <button
+            id="backup-restore-btn"
+            class="sidebar-button"
+            onclick="openBackupManager()"
+            data-tip="Backup or restore all your data"
+          >
+            <span class="material-symbols-outlined">cloud_sync</span>
+            <span>Backup and Restore</span>
+          </button>
           <button
             class="sidebar-button"
             onclick="window.location.href = 'index.html'"
@@ -2403,34 +2509,61 @@
           <div id="page-tier-list" class="page">
             <div class="page-header">
               <h1>Tier List</h1>
-              <button class="btn btn-secondary" onclick="toggleVisualMode()">
-                <span class="material-symbols-outlined" id="tl-mode-icon"
-                  >face</span
-                >
-                <span id="tl-mode-text">Show: Avatar</span>
-              </button>
+              <div style="display: flex; gap: 0.5rem; align-items: center">
+                <button class="btn btn-secondary" onclick="addTier()">
+                  <span
+                    class="material-symbols-outlined"
+                    style="font-size: 16px"
+                    >add</span
+                  >
+                  Add Tier
+                </button>
+                <button class="btn btn-danger" onclick="resetTierList()">
+                  <span
+                    class="material-symbols-outlined"
+                    style="font-size: 16px"
+                    >restart_alt</span
+                  >
+                  Reset
+                </button>
+                <button class="btn btn-secondary" onclick="toggleVisualMode()">
+                  <span class="material-symbols-outlined" id="tl-mode-icon"
+                    >face</span
+                  >
+                  <span id="tl-mode-text">Show: Avatar</span>
+                </button>
+              </div>
             </div>
             <div class="tier-layout">
               <div class="tier-main-area" id="tier-list-container"></div>
-              <div class="tier-sidebar-pool">
-                <h3 style="color: var(--accent); margin-top: 0">
-                  Unranked Pool
-                </h3>
-                <input
-                  type="text"
-                  id="tier-search"
-                  class="form-input"
-                  placeholder="Search..."
-                  oninput="renderTierListPage()"
-                  style="margin-bottom: 1rem"
-                  autocomplete="off"
-                />
-                <div
-                  id="unranked-pool"
-                  class="tier-pool-grid"
-                  ondrop="drop(event)"
-                  ondragover="allowDrop(event)"
-                ></div>
+              <div id="tier-sidebar-pool" class="tier-sidebar-pool">
+                <div class="tier-sidebar-pool-header">
+                  <h3 style="color: var(--accent); margin: 0">Unranked Pool</h3>
+                  <button
+                    class="tier-collapse-btn"
+                    onclick="toggleUnrankedSidebar()"
+                    data-tip="Collapse"
+                  >
+                    <span class="material-symbols-outlined">chevron_right</span>
+                  </button>
+                </div>
+                <div class="tier-sidebar-pool-body">
+                  <input
+                    type="text"
+                    id="tier-search"
+                    class="form-input"
+                    placeholder="Search..."
+                    oninput="renderTierListPage()"
+                    style="margin-bottom: 1rem"
+                    autocomplete="off"
+                  />
+                  <div
+                    id="unranked-pool"
+                    class="tier-pool-grid"
+                    ondrop="drop(event)"
+                    ondragover="allowDrop(event)"
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
@@ -3247,6 +3380,7 @@
       const KEY_COSTUMES = "genshin_costumes";
       const KEY_ATTRS = "genshin_attrs";
       const KEY_TIER = "genshin_tier";
+      const KEY_TIER_CONFIG = "genshin_tier_config";
       const KEY_SIDEBAR = "genshin_sidebar_state";
 
       const ElementColors = {
@@ -3283,7 +3417,8 @@
         _loaded: false,
         _token: null,
         async init() {
-          this._token = window.localStorage.getItem("genshin_admin_token") || null;
+          this._token =
+            window.localStorage.getItem("genshin_admin_token") || null;
           try {
             const res = await fetch("/api/data");
             if (res.ok) this._cache = await res.json();
@@ -3490,6 +3625,30 @@
       let attributes = {};
       let tierList = { S: [], A: [], B: [], C: [], D: [] };
       let costumes = [];
+      const DEFAULT_TIERS = [
+        { id: "S", label: "S", color: "#ff7f7f" },
+        { id: "A", label: "A", color: "#ffbf7f" },
+        { id: "B", label: "B", color: "#ffff7f" },
+        { id: "C", label: "C", color: "#7fff7f" },
+        { id: "D", label: "D", color: "#7fbfff" },
+        { id: "spiral-abyss", label: "Spiral Abyss", color: "#c084fc" },
+        {
+          id: "stygian-boss-1",
+          label: "Stygian Onslaught Boss 1",
+          color: "#f472b6",
+        },
+        {
+          id: "stygian-boss-2",
+          label: "Stygian Onslaught Boss 2",
+          color: "#fb923c",
+        },
+        {
+          id: "stygian-boss-3",
+          label: "Stygian Onslaught Boss 3",
+          color: "#38bdf8",
+        },
+      ];
+      let tierConfig = JSON.parse(JSON.stringify(DEFAULT_TIERS));
       let displayMode = "avatar";
       let editingAttrIndex = -1;
       let emojiInterval = null;
@@ -3646,6 +3805,21 @@
         };
         overlay.onclick = (e) => {
           if (e.target === overlay) overlay.remove();
+        };
+      }
+      function promptEdit(title, val, onSave) {
+        const existing = document.querySelector(".confirm-modal-overlay");
+        if (existing) existing.remove();
+        const overlay = document.createElement("div");
+        overlay.className = "confirm-modal-overlay";
+        overlay.innerHTML = `<div class="confirm-modal"><h3 style="margin-top:0;">${title}</h3><input type="text" id="prompt-input" class="form-input" value="${String(val).replace(/"/g, "&quot;")}" style="margin-bottom:1rem;"><div class="confirm-actions"><button class="btn btn-secondary" id="prompt-cancel">Cancel</button><button class="btn btn-primary" id="prompt-ok">Save</button></div></div>`;
+        document.body.appendChild(overlay);
+        document.getElementById("prompt-cancel").onclick = () =>
+          overlay.remove();
+        document.getElementById("prompt-ok").onclick = () => {
+          const v = document.getElementById("prompt-input").value.trim();
+          if (v) onSave(v);
+          overlay.remove();
         };
       }
       function isVideo(url) {
@@ -3833,11 +4007,36 @@
       function saveTier() {
         DB.setItem(KEY_TIER, JSON.stringify(tierList));
       }
+      function saveTierConfig() {
+        DB.setItem(KEY_TIER_CONFIG, JSON.stringify(tierConfig));
+      }
       function saveCostumes() {
         DB.setItem(KEY_COSTUMES, JSON.stringify(costumes));
       }
 
-      // --- Backup Import / Export ---
+      // --- Backup & Restore (single combined manager) ---
+      const BACKUP_REPORT_KEYS = [
+        { key: KEY_CHARS, label: "Characters" },
+        { key: KEY_ATTRS, label: "Attributes" },
+        { key: KEY_TIER, label: "Tier List" },
+        { key: KEY_TIER_CONFIG, label: "Tier Config" },
+        { key: KEY_COSTUMES, label: "Costumes" },
+      ];
+      function formatBytes(n) {
+        if (n < 1024) return n + " B";
+        if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+        return (n / (1024 * 1024)).toFixed(2) + " MB";
+      }
+      function getBackupReport() {
+        let total = 0;
+        const rows = BACKUP_REPORT_KEYS.map((r) => {
+          const v = DB.getItem(r.key) || "";
+          const bytes = new Blob([v]).size;
+          total += bytes;
+          return { ...r, bytes };
+        });
+        return { rows, total };
+      }
       function exportBackup() {
         try {
           const backup = {
@@ -3848,6 +4047,7 @@
               [KEY_CHARS]: characters,
               [KEY_ATTRS]: attributes,
               [KEY_TIER]: tierList,
+              [KEY_TIER_CONFIG]: tierConfig,
               [KEY_COSTUMES]: costumes,
             },
           };
@@ -3887,9 +4087,18 @@
           // Accept either the wrapped backup format ({ data: {...} }) or a
           // raw object keyed directly by the storage keys.
           const payload = parsed && parsed.data ? parsed.data : parsed;
-          const knownKeys = [KEY_CHARS, KEY_ATTRS, KEY_TIER, KEY_COSTUMES];
+          const knownKeys = [
+            KEY_CHARS,
+            KEY_ATTRS,
+            KEY_TIER,
+            KEY_TIER_CONFIG,
+            KEY_COSTUMES,
+          ];
           const hasKnownKey =
-            payload && knownKeys.some((k) => Object.prototype.hasOwnProperty.call(payload, k));
+            payload &&
+            knownKeys.some((k) =>
+              Object.prototype.hasOwnProperty.call(payload, k),
+            );
 
           if (!payload || !hasKnownKey) {
             showToast("This doesn't look like a valid backup file.", "error");
@@ -3915,6 +4124,10 @@
                 toRestore[KEY_ATTRS] = JSON.stringify(payload[KEY_ATTRS]);
               if (payload[KEY_TIER] !== undefined)
                 toRestore[KEY_TIER] = JSON.stringify(payload[KEY_TIER]);
+              if (payload[KEY_TIER_CONFIG] !== undefined)
+                toRestore[KEY_TIER_CONFIG] = JSON.stringify(
+                  payload[KEY_TIER_CONFIG],
+                );
               if (payload[KEY_COSTUMES] !== undefined)
                 toRestore[KEY_COSTUMES] = JSON.stringify(payload[KEY_COSTUMES]);
 
@@ -3950,6 +4163,45 @@
           event.target.value = "";
         };
         reader.readAsText(file);
+      }
+
+      function openBackupManager() {
+        const existing = document.querySelector(".confirm-modal-overlay");
+        if (existing) existing.remove();
+        const { rows, total } = getBackupReport();
+        const rowsHtml = rows
+          .map(
+            (r) =>
+              `<div style="display:flex;justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.85rem;"><span>${r.label}</span><span style="color:var(--text-med);">${formatBytes(r.bytes)}</span></div>`,
+          )
+          .join("");
+        const overlay = document.createElement("div");
+        overlay.className = "confirm-modal-overlay";
+        overlay.innerHTML = `<div class="confirm-modal" style="min-width:380px;text-align:left;">
+          <h3 style="margin-top:0;text-align:center;">Backup and Restore</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+            <span class="form-label" style="margin:0;">Total stored</span>
+            <span style="font-weight:700;">${formatBytes(total)}</span>
+          </div>
+          <div style="max-height:220px;overflow-y:auto;margin-bottom:0.5rem;">${rowsHtml}</div>
+          <p style="color:var(--text-med);font-size:0.8rem;margin:1rem 0 0.5rem;">Data lives in the server's database and is shared by everyone who visits this site. Exporting a backup is a good idea before big changes. Importing will overwrite the live database for everyone and requires an admin sign-in.</p>
+          <input type="file" id="import-file-input" accept="application/json,.json" style="display:none;">
+          <div class="confirm-actions" style="flex-wrap:wrap;">
+            <button class="btn btn-secondary" id="backup-close-btn">Close</button>
+            <button class="btn btn-secondary" id="backup-import-btn">Import Backup</button>
+            <button class="btn btn-primary" id="backup-export-btn">Export Backup</button>
+          </div>
+        </div>`;
+        document.body.appendChild(overlay);
+        document.getElementById("backup-close-btn").onclick = () =>
+          overlay.remove();
+        document.getElementById("backup-export-btn").onclick = () =>
+          exportBackup();
+        document.getElementById("backup-import-btn").onclick = () =>
+          document.getElementById("import-file-input").click();
+        document.getElementById("import-file-input").onchange = (e) => {
+          importBackup(e);
+        };
       }
 
       // --- Smart Birthday Logic ---
@@ -4400,9 +4652,11 @@
       // --- Attr Manager ---
       function selectAttrCategory(cat) {
         document.getElementById("attr-category-select").value = cat;
-        document.querySelectorAll("#attr-category-tabs .attr-tab").forEach((btn) => {
-          btn.classList.toggle("active", btn.dataset.cat === cat);
-        });
+        document
+          .querySelectorAll("#attr-category-tabs .attr-tab")
+          .forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.cat === cat);
+          });
         resetAttrForm();
         updateAttrFormUI();
       }
@@ -5272,19 +5526,12 @@
         }
 
         // Find tier for this character
-        const charTier = (() => {
-          for (const tier of ["S", "A", "B", "C", "D"]) {
-            if ((tierList[tier] || []).includes(c.id)) return tier;
+        const charTierObj = (() => {
+          for (const tier of tierConfig) {
+            if ((tierList[tier.id] || []).includes(c.id)) return tier;
           }
           return null;
         })();
-        const tierColors = {
-          S: "var(--tier-s)",
-          A: "var(--tier-a)",
-          B: "var(--tier-b)",
-          C: "var(--tier-c)",
-          D: "var(--tier-d)",
-        };
 
         // UPDATED: Modal now supports legacy 'preview' string OR new 'previews' array
         details.innerHTML = `
@@ -5302,7 +5549,7 @@
                 </div>
                 <div class="info-item"><label>Roles</label><span style="flex-wrap:wrap;">${roleBadges}</span></div>
                 <div class="info-item"><label>Birthday</label><span>${c.birthdayDate || "Unknown"}</span></div>
-                <div class="info-item"><label>Tier Rank</label><span>${charTier ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;background:${tierColors[charTier]};color:#1a1a1a;font-weight:900;font-size:1.1rem;box-shadow:0 2px 8px rgba(0,0,0,0.4);">${charTier}</span>` : '<span style="color:#666">Unranked</span>'}</span></div>
+                <div class="info-item"><label>Tier Rank</label><span>${charTierObj ? `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 8px;border-radius:6px;background:${charTierObj.color};color:#1a1a1a;font-weight:900;font-size:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.4);">${charTierObj.label}</span>` : '<span style="color:#666">Unranked</span>'}</span></div>
                 <div class="info-item"><label>Dish</label><span>${c.signatureDish && typeof c.signatureDish === "object" ? (c.signatureDish.url ? `<img src="${c.signatureDish.url}" style="width:30px;height:30px;object-fit:cover;border-radius:4px;margin-right:5px;">` : "") + c.signatureDish.name : c.signatureDish || "Unknown"}</span></div>
             </div>
             
@@ -5752,20 +5999,36 @@
           .value.toLowerCase();
         c.innerHTML = "";
         pool.innerHTML = "";
-        const tiers = ["S", "A", "B", "C", "D"];
-        const cols = {
-          S: "var(--tier-s)",
-          A: "var(--tier-a)",
-          B: "var(--tier-b)",
-          C: "var(--tier-c)",
-          D: "var(--tier-d)",
-        };
         const rankedIds = new Set();
-        tiers.forEach((t) => {
+        tierConfig.forEach((tier) => {
+          const t = tier.id;
           const row = document.createElement("div");
           row.className = "tier-row";
-          row.innerHTML = `<div class="tier-label" style="background-color: ${cols[t]}">${t}</div><div class="tier-content" data-tier="${t}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>`;
-          const contentDiv = row.querySelector(".tier-content");
+
+          const ctrlDiv = document.createElement("div");
+          ctrlDiv.className = "tier-controls";
+          ctrlDiv.innerHTML = `
+            <button class="tier-ctrl-btn" title="Rename" onclick="event.stopPropagation();renameTier('${t}')"><span class="material-symbols-outlined" style="font-size:14px;">edit</span></button>
+            <label class="tier-ctrl-btn" title="Change color" style="cursor:pointer;position:relative;"><input type="color" value="${tier.color}" onchange="recolorTier('${t}',this.value)" style="position:absolute;width:0;height:0;opacity:0;"><span class="material-symbols-outlined" style="font-size:14px;">palette</span></label>
+            <button class="tier-ctrl-btn danger" title="Delete tier" onclick="event.stopPropagation();deleteTier('${t}')"><span class="material-symbols-outlined" style="font-size:14px;">delete</span></button>`;
+
+          const labelDiv = document.createElement("div");
+          labelDiv.className = "tier-label tier-label-editable";
+          labelDiv.style.backgroundColor = tier.color;
+          labelDiv.innerHTML = `<span class="tier-label-text">${tier.label}</span>`;
+          labelDiv.ondrop = drop;
+          labelDiv.ondragover = allowDrop;
+
+          const contentDiv = document.createElement("div");
+          contentDiv.className = "tier-content";
+          contentDiv.dataset.tier = t;
+          contentDiv.ondrop = drop;
+          contentDiv.ondragover = allowDrop;
+
+          row.appendChild(ctrlDiv);
+          row.appendChild(labelDiv);
+          row.appendChild(contentDiv);
+
           (tierList[t] || []).forEach((id) => {
             const char = characters.find((x) => x.id === id);
             if (char) {
@@ -5782,6 +6045,76 @@
             }
           }
         });
+      }
+
+      function addTier() {
+        const id = `tier-${Date.now()}`;
+        tierConfig.push({
+          id,
+          label: `Tier ${tierConfig.length + 1}`,
+          color: "#94a3b8",
+        });
+        saveTierConfig();
+        renderTierListPage();
+      }
+
+      function renameTier(id) {
+        const tier = tierConfig.find((t) => t.id === id);
+        if (!tier) return;
+        promptEdit("Rename Tier", tier.label, (newLabel) => {
+          tier.label = newLabel.trim() || tier.label;
+          saveTierConfig();
+          renderTierListPage();
+        });
+      }
+
+      function recolorTier(id, color) {
+        const tier = tierConfig.find((t) => t.id === id);
+        if (!tier) return;
+        tier.color = color;
+        saveTierConfig();
+        const labelEl = document
+          .querySelector(`.tier-content[data-tier="${id}"]`)
+          ?.closest(".tier-row")
+          ?.querySelector(".tier-label");
+        if (labelEl) labelEl.style.backgroundColor = color;
+      }
+
+      function deleteTier(id) {
+        const tier = tierConfig.find((t) => t.id === id);
+        showConfirm(
+          `Delete tier "${tier ? tier.label : id}"? Characters return to the unranked pool.`,
+          () => {
+            tierConfig = tierConfig.filter((t) => t.id !== id);
+            saveTierConfig();
+            delete tierList[id];
+            saveTier();
+            renderTierListPage();
+            showToast("Tier deleted", "success");
+          },
+        );
+      }
+
+      function resetTierList() {
+        showConfirm(
+          "Reset entire Tier List? All characters will return to the unranked pool.",
+          () => {
+            const emptyTiers = {};
+            tierConfig.forEach((t) => {
+              emptyTiers[t.id] = [];
+            });
+            tierList = emptyTiers;
+            saveTier();
+            renderTierListPage();
+            showToast("Tier List reset!", "success");
+          },
+        );
+      }
+
+      function toggleUnrankedSidebar() {
+        document
+          .getElementById("tier-sidebar-pool")
+          .classList.toggle("collapsed");
       }
 
       function createTierItem(c) {
@@ -6064,11 +6397,24 @@
           attributes = {};
         }
         try {
-          tierList =
-            JSON.parse(DB.getItem(KEY_TIER)) ||
-            { S: [], A: [], B: [], C: [], D: [] };
+          tierList = JSON.parse(DB.getItem(KEY_TIER)) || {
+            S: [],
+            A: [],
+            B: [],
+            C: [],
+            D: [],
+          };
         } catch (e) {
           tierList = { S: [], A: [], B: [], C: [], D: [] };
+        }
+        try {
+          const storedCfg = JSON.parse(DB.getItem(KEY_TIER_CONFIG));
+          tierConfig =
+            storedCfg && storedCfg.length
+              ? storedCfg
+              : JSON.parse(JSON.stringify(DEFAULT_TIERS));
+        } catch (e) {
+          tierConfig = JSON.parse(JSON.stringify(DEFAULT_TIERS));
         }
         try {
           costumes = JSON.parse(DB.getItem(KEY_COSTUMES)) || [];
@@ -6087,12 +6433,20 @@
       });
       function allowDrop(ev) {
         ev.preventDefault();
+        const tc = ev.target.closest(".tier-content");
+        document
+          .querySelectorAll(".tier-content")
+          .forEach((el) => el.classList.remove("drag-over"));
+        if (tc) tc.classList.add("drag-over");
       }
       function drag(ev) {
         draggedId = ev.target.dataset.id;
       }
       function drop(ev) {
         ev.preventDefault();
+        document
+          .querySelectorAll(".tier-content")
+          .forEach((el) => el.classList.remove("drag-over"));
         const tier = ev.target.closest(".tier-content")?.dataset.tier;
         for (let k in tierList)
           tierList[k] = tierList[k].filter((id) => id !== draggedId);

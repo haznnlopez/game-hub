@@ -1342,7 +1342,7 @@
         background: var(--bg-med);
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 8px;
-        min-height: 100px;
+        min-height: 130px;
         padding: 8px;
         display: flex;
         flex-direction: column;
@@ -1371,8 +1371,8 @@
         gap: 4px;
       }
       .calendar-char-img {
-        width: 30px;
-        height: 30px;
+        width: 48px;
+        height: 48px;
         border-radius: 50%;
         object-fit: cover;
         cursor: pointer;
@@ -2959,9 +2959,10 @@
                   Traveler Element
                 </h3>
                 <p style="font-size: 0.8rem; color: #888; margin: 4px 0 0">
-                  Materials, talents & constellation below are edited
-                  per-element. Switching tabs saves your edits for the
-                  current tab automatically.
+                  Materials, talents, constellation & the Avatar URL above are
+                  edited per-element. Switching tabs saves your edits for the
+                  current tab automatically. Each element's avatar is used on
+                  the Matrix, Birthday Calendar, and Tier List.
                 </p>
                 <div class="element-tabs" id="traveler-form-tabs"></div>
               </div>
@@ -3256,9 +3257,7 @@
           "
           >×</span
         >
-        <div class="costume-modal-title" id="tcg-modal-title">
-          Add TCG Card
-        </div>
+        <div class="costume-modal-title" id="tcg-modal-title">Add TCG Card</div>
         <input type="hidden" id="tcg-edit-char-id" />
         <input type="hidden" id="tcg-edit-index" />
 
@@ -3442,6 +3441,7 @@
                   constellationImage: variant.constellationImage,
                   constellations: variant.constellations,
                   constellationLines: variant.constellationLines,
+                  avatarIcon: variant.avatarIcon || c.avatarIcon,
                 }),
               );
             });
@@ -3713,11 +3713,22 @@
       // Tier List is split into separate boards (tabs) — each board has its
       // own set of editable tiers and its own character placements.
       const TIER_BOARDS = [
-        { id: "overall", label: "Overall" },
-        { id: "spiral-abyss", label: "Spiral Abyss" },
-        { id: "stygian-boss-1", label: "Stygian Onslaught Boss 1" },
-        { id: "stygian-boss-2", label: "Stygian Onslaught Boss 2" },
-        { id: "stygian-boss-3", label: "Stygian Onslaught Boss 3" },
+        { id: "overall", label: "Overall", pill: "O" },
+        {
+          id: "stygian-boss-1",
+          label: "Stygian Onslaught Boss 1",
+          pill: "SO1",
+        },
+        {
+          id: "stygian-boss-2",
+          label: "Stygian Onslaught Boss 2",
+          pill: "SO2",
+        },
+        {
+          id: "stygian-boss-3",
+          label: "Stygian Onslaught Boss 3",
+          pill: "SO3",
+        },
       ];
       const DEFAULT_TIERS = [
         { id: "S", label: "S", color: "#ff7f7f" },
@@ -4811,10 +4822,17 @@
           bannerContainer.innerHTML = "";
         }
 
-        const filtered = getDisplayCharacters()
+        // The character list shows one card per character — the Traveler
+        // is not split by element here (that split only applies to the
+        // Matrix, Birthday Calendar, and Tier List, via getDisplayCharacters).
+        const filtered = characters
+          .map((c) => Object.assign({}, c, { baseId: c.id }))
           .filter((c) => {
             if (search && !c.name.toLowerCase().includes(search)) return false;
-            if (fElem && c.element !== fElem) return false;
+            // The Traveler has variants for every element, so an element
+            // filter shouldn't hide their single roster card.
+            if (fElem && !isTravelerChar(c) && c.element !== fElem)
+              return false;
             if (fWep && c.weaponType !== fWep) return false;
             if (fNat && c.nation !== fNat) return false;
             return true;
@@ -4847,9 +4865,7 @@
             rolesHtml = c.roles.map((r) => getRoleBadge(r, true)).join("");
           }
 
-          const cardTitle = c.isTravelerVariant
-            ? `${c.name} (${c.element})`
-            : c.name;
+          const cardTitle = c.name;
 
           card.innerHTML = `
                 <div class="card-bg-layer"><img src="${c.namecard || "https://placehold.co/600x400/222/333?text=Card"}" class="card-namecard-img" onerror="this.src='https://placehold.co/600x400/222/333?text=Card'"></div>
@@ -5429,6 +5445,7 @@
           materials: snapshotFormMaterials(),
           talents: snapshotFormTalents(),
           roles: snapshotFormRoles(),
+          avatarIcon: document.getElementById("inp-avatar-icon").value,
           ...snapshotFormConstellation(),
         };
       }
@@ -5442,7 +5459,10 @@
           constellationImage: "",
           constellations: [],
           constellationLines: null,
+          avatarIcon: "",
         };
+        document.getElementById("inp-avatar-icon").value =
+          data.avatarIcon || "";
 
         setupCustomSelect(
           "wrapper-inp-gem",
@@ -5750,6 +5770,7 @@
                     constellationImage: c.constellationImage || "",
                     constellations: c.constellations || [],
                     constellationLines: c.constellationLines || null,
+                    avatarIcon: c.avatarIcon || "",
                   };
                 } else if (c.travelerVariants && c.travelerVariants[el]) {
                   travelerFormData[el] = c.travelerVariants[el];
@@ -5858,6 +5879,7 @@
                 icon: cleanImageUrl(con.icon || ""),
               })),
               constellationLines: d.constellationLines || [],
+              avatarIcon: cleanImageUrl(d.avatarIcon || ""),
             };
           });
         } else {
@@ -6052,6 +6074,7 @@
             constellationImage: c.constellationImage || "",
             constellations: c.constellations || [],
             constellationLines: c.constellationLines || [],
+            avatarIcon: c.avatarIcon || "",
           };
         }
         const v = (c.travelerVariants && c.travelerVariants[element]) || {};
@@ -6063,6 +6086,7 @@
           constellationImage: v.constellationImage || "",
           constellations: v.constellations || [],
           constellationLines: v.constellationLines || [],
+          avatarIcon: v.avatarIcon || c.avatarIcon || "",
         };
       }
 
@@ -6086,12 +6110,8 @@
                 [5, 6],
               ];
         linesToDraw.forEach((pair) => {
-          const n1 = variant.constellations.find(
-            (con) => con.level == pair[0],
-          );
-          const n2 = variant.constellations.find(
-            (con) => con.level == pair[1],
-          );
+          const n1 = variant.constellations.find((con) => con.level == pair[0]);
+          const n2 = variant.constellations.find((con) => con.level == pair[1]);
           if (n1 && n2) {
             linesSvg += `<line x1="${n1.x || 50}%" y1="${n1.y || 50}%" x2="${n2.x || 50}%" y2="${n2.y || 50}%"></line>`;
           }
@@ -6121,9 +6141,7 @@
                 <div class="talent-card" style="padding:0.8rem;">
                     ${(() => {
                       const bossItem =
-                        attributes.boss_drops.find(
-                          (x) => x.uid === mat.boss,
-                        ) ||
+                        attributes.boss_drops.find((x) => x.uid === mat.boss) ||
                         attributes.boss_drops.find((x) => x.name === mat.boss);
                       return bossItem && bossItem.bossIcon
                         ? `<img src="${bossItem.bossIcon}" class="talent-icon" style="border-radius:0; border:none; background:transparent;" title="${bossItem.name}">`
@@ -6164,12 +6182,8 @@
                 <div class="talent-card" style="border:1px solid var(--accent); background:rgba(212,192,134,0.1); width:100%;"><img src="${findImg(attributes.talent_books, mat.book, "icon") || ""}" class="talent-icon" style="border-color:var(--accent);"><div><div style="font-weight:bold; color:var(--accent);">Talent Book</div><div style="font-size:0.8rem; color:var(--text-light);">${resolveAttrName(attributes.talent_books, mat.book) || "None"}</div></div></div>
                 ${(() => {
                   const wItem =
-                    attributes.weekly_boss.find(
-                      (x) => x.uid === mat.weekly,
-                    ) ||
-                    attributes.weekly_boss.find(
-                      (x) => x.name === mat.weekly,
-                    );
+                    attributes.weekly_boss.find((x) => x.uid === mat.weekly) ||
+                    attributes.weekly_boss.find((x) => x.name === mat.weekly);
                   return `<div class="talent-card" style="border:1px solid var(--text-med);">${wItem && wItem.bossIcon ? `<img src="${wItem.bossIcon}" class="talent-icon" style="border-radius:0;border:none;background:transparent;" title="${wItem.name}">` : ""}<img src="${findImg(attributes.weekly_boss, mat.weekly, "matIcon") || ""}" class="talent-icon"><div><div style="font-weight:bold;">Weekly Boss</div><div style="font-size:0.8rem; color:var(--text-light); opacity:0.8">${resolveAttrName(attributes.weekly_boss, mat.weekly) || "None"}</div></div></div>`;
                 })()}
                 ${
@@ -6233,17 +6247,29 @@
 
       // Every tier board this exact character id (real id, or a virtual
       // "<realId>::<Element>" id for a Traveler variant) is ranked on.
+      // charId may be a plain character id or a Traveler virtual id
+      // ("<realId>::<Element>"). When it's the Traveler's real (unified)
+      // id, this also checks every per-element virtual id so the modal
+      // shows tier ranks earned under any element.
       function buildTierPillsHtml(charId) {
+        const candidateIds = charId.includes("::")
+          ? [charId]
+          : [charId, ...TRAVELER_ELEMENTS.map((el) => `${charId}::${el}`)];
         const pills = [];
         TIER_BOARDS.forEach((board) => {
           const cfg = tierConfigs[board.id] || [];
           const list = tierLists[board.id] || {};
           for (const tier of cfg) {
-            if ((list[tier.id] || []).includes(charId)) {
-              pills.push(
-                `<span class="tier-pill" style="background:${tier.color};" title="${board.label}"><span class="tier-pill-board">${board.label}</span><span class="tier-pill-rank">${tier.label}</span></span>`,
-              );
-              break;
+            const placed = list[tier.id] || [];
+            for (const cid of candidateIds) {
+              if (placed.includes(cid)) {
+                const elSuffix = cid.includes("::")
+                  ? ` (${cid.split("::")[1]})`
+                  : "";
+                pills.push(
+                  `<span class="tier-pill" style="background:${tier.color};" title="${board.label}${elSuffix}"><span class="tier-pill-board">${(board.pill || board.label) + elSuffix}</span><span class="tier-pill-rank">${tier.label}</span></span>`,
+                );
+              }
             }
           }
         });
@@ -6766,7 +6792,7 @@
         if (!wrap) return;
         wrap.innerHTML = TIER_BOARDS.map(
           (b) =>
-            `<button type="button" class="tier-board-tab${b.id === activeTierBoard ? " active" : ""}" data-board="${b.id}" onclick="switchTierBoard('${b.id}')">${b.label}</button>`,
+            `<button type="button" class="tier-board-tab${b.id === activeTierBoard ? " active" : ""}" data-board="${b.id}" title="${b.label}" onclick="switchTierBoard('${b.id}')">${b.pill || b.label}</button>`,
         ).join("");
       }
 
@@ -7276,7 +7302,6 @@
           document.getElementById("tooltip").style.display = "none";
         }
       });
-
     </script>
   </body>
 </html>

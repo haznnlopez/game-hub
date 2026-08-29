@@ -1205,6 +1205,33 @@
         gap: 1rem;
         height: 100%;
       }
+      .tier-board-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 0.5rem 0 1.5rem;
+      }
+      .tier-board-tab {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-med, #aaa);
+        padding: 0.5rem 1rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+      .tier-board-tab:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+      .tier-board-tab.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #1a1a1a;
+      }
       .tier-main-area {
         flex: 1;
         overflow-y: auto;
@@ -2287,6 +2314,7 @@
       body:not(.is-admin) [onclick*="addTier("],
       body:not(.is-admin) [onclick*="renameTier("],
       body:not(.is-admin) [onclick*="deleteTier("],
+      body:not(.is-admin) [onclick*="importSingleKey("],
       body:not(.is-admin) #backup-import-btn {
         display: none !important;
         pointer-events: none !important;
@@ -2534,6 +2562,7 @@
                 </button>
               </div>
             </div>
+            <div id="tier-board-tabs" class="tier-board-tabs"></div>
             <div class="tier-layout">
               <div class="tier-main-area" id="tier-list-container"></div>
               <div id="tier-sidebar-pool" class="tier-sidebar-pool">
@@ -3623,32 +3652,88 @@
 
       let characters = [];
       let attributes = {};
-      let tierList = { S: [], A: [], B: [], C: [], D: [] };
       let costumes = [];
+
+      // Tier List is split into separate boards (tabs) — each board has its
+      // own set of editable tiers and its own character placements.
+      const TIER_BOARDS = [
+        { id: "overall", label: "Overall" },
+        { id: "spiral-abyss", label: "Spiral Abyss" },
+        { id: "stygian-boss-1", label: "Stygian Onslaught Boss 1" },
+        { id: "stygian-boss-2", label: "Stygian Onslaught Boss 2" },
+        { id: "stygian-boss-3", label: "Stygian Onslaught Boss 3" },
+      ];
       const DEFAULT_TIERS = [
         { id: "S", label: "S", color: "#ff7f7f" },
         { id: "A", label: "A", color: "#ffbf7f" },
         { id: "B", label: "B", color: "#ffff7f" },
         { id: "C", label: "C", color: "#7fff7f" },
         { id: "D", label: "D", color: "#7fbfff" },
-        { id: "spiral-abyss", label: "Spiral Abyss", color: "#c084fc" },
-        {
-          id: "stygian-boss-1",
-          label: "Stygian Onslaught Boss 1",
-          color: "#f472b6",
-        },
-        {
-          id: "stygian-boss-2",
-          label: "Stygian Onslaught Boss 2",
-          color: "#fb923c",
-        },
-        {
-          id: "stygian-boss-3",
-          label: "Stygian Onslaught Boss 3",
-          color: "#38bdf8",
-        },
       ];
-      let tierConfig = JSON.parse(JSON.stringify(DEFAULT_TIERS));
+      // Keyed by board id: { [boardId]: [{id,label,color}, ...] }
+      let tierConfigs = {};
+      // Keyed by board id: { [boardId]: { [tierId]: [charId, ...] } }
+      let tierLists = {};
+      let activeTierBoard = TIER_BOARDS[0].id;
+
+      function defaultTierConfigsAllBoards() {
+        const cfg = {};
+        TIER_BOARDS.forEach((b) => {
+          cfg[b.id] = JSON.parse(JSON.stringify(DEFAULT_TIERS));
+        });
+        return cfg;
+      }
+      function isBoardShaped(obj) {
+        return (
+          obj &&
+          typeof obj === "object" &&
+          !Array.isArray(obj) &&
+          TIER_BOARDS.some((b) =>
+            Object.prototype.hasOwnProperty.call(obj, b.id),
+          )
+        );
+      }
+      // Accepts the raw parsed value from storage/backup and normalizes it
+      // into the { [boardId]: [...] } shape, migrating older single-board
+      // data (a flat tier array, e.g. from before boards existed) into the
+      // "overall" board so nothing is lost.
+      function normalizeTierConfigs(raw) {
+        const cfg = defaultTierConfigsAllBoards();
+        if (Array.isArray(raw) && raw.length) {
+          cfg.overall = raw;
+        } else if (isBoardShaped(raw)) {
+          TIER_BOARDS.forEach((b) => {
+            if (raw[b.id] && raw[b.id].length) cfg[b.id] = raw[b.id];
+          });
+        }
+        return cfg;
+      }
+      function normalizeTierLists(raw) {
+        const lists = {};
+        TIER_BOARDS.forEach((b) => (lists[b.id] = {}));
+        if (isBoardShaped(raw)) {
+          TIER_BOARDS.forEach((b) => {
+            if (raw[b.id]) lists[b.id] = raw[b.id];
+          });
+        } else if (raw && typeof raw === "object") {
+          // Old flat format ({ S: [...], A: [...] }) — treat as "overall".
+          lists.overall = raw;
+        }
+        return lists;
+      }
+      function loadTierDataFromDB() {
+        let rawTier = null;
+        let rawCfg = null;
+        try {
+          rawTier = JSON.parse(DB.getItem(KEY_TIER));
+        } catch (e) {}
+        try {
+          rawCfg = JSON.parse(DB.getItem(KEY_TIER_CONFIG));
+        } catch (e) {}
+        tierConfigs = normalizeTierConfigs(rawCfg);
+        tierLists = normalizeTierLists(rawTier);
+      }
+
       let displayMode = "avatar";
       let editingAttrIndex = -1;
       let emojiInterval = null;
@@ -4005,10 +4090,10 @@
         DB.setItem(KEY_CHARS, JSON.stringify(characters));
       }
       function saveTier() {
-        DB.setItem(KEY_TIER, JSON.stringify(tierList));
+        DB.setItem(KEY_TIER, JSON.stringify(tierLists));
       }
       function saveTierConfig() {
-        DB.setItem(KEY_TIER_CONFIG, JSON.stringify(tierConfig));
+        DB.setItem(KEY_TIER_CONFIG, JSON.stringify(tierConfigs));
       }
       function saveCostumes() {
         DB.setItem(KEY_COSTUMES, JSON.stringify(costumes));
@@ -4046,8 +4131,8 @@
             data: {
               [KEY_CHARS]: characters,
               [KEY_ATTRS]: attributes,
-              [KEY_TIER]: tierList,
-              [KEY_TIER_CONFIG]: tierConfig,
+              [KEY_TIER]: tierLists,
+              [KEY_TIER_CONFIG]: tierConfigs,
               [KEY_COSTUMES]: costumes,
             },
           };
@@ -4069,6 +4154,11 @@
           showToast("Failed to export backup.", "error");
         }
       }
+
+      // Holds the parsed backup file while the user restores keys one at a
+      // time from the Backup and Restore modal, so they don't have to
+      // reselect the file between each restore.
+      let _pendingImport = null; // { payload, foundKeys: [] }
 
       function importBackup(event) {
         const file = event.target.files && event.target.files[0];
@@ -4094,68 +4184,23 @@
             KEY_TIER_CONFIG,
             KEY_COSTUMES,
           ];
-          const hasKnownKey =
-            payload &&
-            knownKeys.some((k) =>
-              Object.prototype.hasOwnProperty.call(payload, k),
-            );
+          const foundKeys =
+            payload && typeof payload === "object"
+              ? knownKeys.filter((k) =>
+                  Object.prototype.hasOwnProperty.call(payload, k),
+                )
+              : [];
 
-          if (!payload || !hasKnownKey) {
+          if (!payload || !foundKeys.length) {
             showToast("This doesn't look like a valid backup file.", "error");
             event.target.value = "";
+            _pendingImport = null;
+            renderImportKeyList();
             return;
           }
 
-          if (!ADMIN.isAdmin) {
-            showToast("Sign in as admin to restore a backup", "info");
-            openAdminLoginModal();
-            event.target.value = "";
-            return;
-          }
-
-          showConfirm(
-            "Importing this backup will overwrite the live database (for everyone) — characters, attributes, tier list, and costumes. This cannot be undone. Continue?",
-            async () => {
-              showToast("Restoring backup...", "info");
-              const toRestore = {};
-              if (payload[KEY_CHARS] !== undefined)
-                toRestore[KEY_CHARS] = JSON.stringify(payload[KEY_CHARS]);
-              if (payload[KEY_ATTRS] !== undefined)
-                toRestore[KEY_ATTRS] = JSON.stringify(payload[KEY_ATTRS]);
-              if (payload[KEY_TIER] !== undefined)
-                toRestore[KEY_TIER] = JSON.stringify(payload[KEY_TIER]);
-              if (payload[KEY_TIER_CONFIG] !== undefined)
-                toRestore[KEY_TIER_CONFIG] = JSON.stringify(
-                  payload[KEY_TIER_CONFIG],
-                );
-              if (payload[KEY_COSTUMES] !== undefined)
-                toRestore[KEY_COSTUMES] = JSON.stringify(payload[KEY_COSTUMES]);
-
-              const keys = Object.keys(toRestore);
-              const failed = [];
-              // Sequential + awaited on purpose: large keys can be several
-              // hundred KB, and firing every PUT at once in parallel with
-              // no wait risks the page reloading before slow/rejected
-              // saves ever finish (e.g. a body-size-limit 413 silently lost).
-              for (const k of keys) {
-                const ok = await DB.setItemAwaited(k, toRestore[k]);
-                if (!ok) failed.push(k);
-              }
-              if (failed.length) {
-                showToast(
-                  "Import partially failed for: " +
-                    failed.join(", ") +
-                    " — see console for details. NOT reloading so you can check.",
-                  "info",
-                );
-                console.error("Backup restore failed for keys:", failed);
-              } else {
-                showToast("Backup restored. Reloading...", "success");
-                setTimeout(() => window.location.reload(), 800);
-              }
-            },
-            "Import",
-          );
+          _pendingImport = { payload, foundKeys };
+          renderImportKeyList();
           event.target.value = "";
         };
         reader.onerror = () => {
@@ -4165,9 +4210,105 @@
         reader.readAsText(file);
       }
 
-      function openBackupManager() {
+      // Applies a single freshly-restored key from DB back into the app's
+      // in-memory state and re-renders whatever's currently visible, so a
+      // one-at-a-time restore doesn't require a full page reload.
+      function applyRestoredKeyToApp(key) {
+        try {
+          if (key === KEY_CHARS) {
+            characters = JSON.parse(DB.getItem(KEY_CHARS)) || [];
+            renderCharacters();
+          } else if (key === KEY_ATTRS) {
+            attributes = JSON.parse(DB.getItem(KEY_ATTRS)) || {};
+            renderAttributesList();
+          } else if (key === KEY_TIER || key === KEY_TIER_CONFIG) {
+            loadTierDataFromDB();
+            if (
+              document
+                .getElementById("page-tier-list")
+                ?.classList.contains("active")
+            ) {
+              renderTierListPage();
+            }
+          } else if (key === KEY_COSTUMES) {
+            costumes = JSON.parse(DB.getItem(KEY_COSTUMES)) || [];
+            renderCostumesPage();
+          }
+        } catch (e) {
+          console.error("Failed to refresh app state after restore:", key, e);
+        }
+      }
+
+      // Restores exactly one key from the pending backup file. Restoring
+      // one at a time (rather than the whole file in a single shot) means
+      // a large key hitting the server's body-size limit only blocks that
+      // one key — everything else can still be restored individually.
+      function importSingleKey(key) {
+        if (!_pendingImport || !_pendingImport.payload) return;
+        if (!ADMIN.isAdmin) {
+          showToast("Sign in as admin to restore a backup", "info");
+          openAdminLoginModal();
+          return;
+        }
+        const label =
+          BACKUP_REPORT_KEYS.find((r) => r.key === key)?.label || key;
+        showConfirm(
+          `Restore "${label}" from the backup file? This overwrites the live "${label}" data for everyone. This cannot be undone.`,
+          async () => {
+            showToast(`Restoring ${label}...`, "info");
+            const ok = await DB.setItemAwaited(
+              key,
+              JSON.stringify(_pendingImport.payload[key]),
+            );
+            if (ok) {
+              showToast(`${label} restored!`, "success");
+              applyRestoredKeyToApp(key);
+              _pendingImport.foundKeys = _pendingImport.foundKeys.filter(
+                (k) => k !== key,
+              );
+              renderImportKeyList();
+              openBackupManager(true);
+            } else {
+              showToast(
+                `Failed to restore ${label} — see console for details. If it's a large key, the server may be rejecting it as too big (413).`,
+                "error",
+              );
+            }
+          },
+          "Restore",
+        );
+      }
+
+      function renderImportKeyList() {
+        const container = document.getElementById("import-key-list");
+        if (!container) return;
+        if (!_pendingImport || !_pendingImport.foundKeys.length) {
+          container.innerHTML = _pendingImport
+            ? `<div style="color:var(--text-med);font-size:0.85rem;padding:0.5rem 0;">All keys from this file have been restored.</div>`
+            : "";
+          return;
+        }
+        container.innerHTML = _pendingImport.foundKeys
+          .map((k) => {
+            const label =
+              BACKUP_REPORT_KEYS.find((r) => r.key === k)?.label || k;
+            const bytes = new Blob([JSON.stringify(_pendingImport.payload[k])])
+              .size;
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div>
+                <div style="font-size:0.9rem;font-weight:600;">${label}</div>
+                <div style="font-size:0.75rem;color:var(--text-med);">${formatBytes(bytes)} in file</div>
+              </div>
+              <button class="btn btn-sm btn-primary" id="restore-key-${k}" onclick="importSingleKey('${k}')">Restore</button>
+            </div>`;
+          })
+          .join("");
+      }
+
+      function openBackupManager(keepPendingImport) {
         const existing = document.querySelector(".confirm-modal-overlay");
         if (existing) existing.remove();
+        if (!keepPendingImport) _pendingImport = null;
         const { rows, total } = getBackupReport();
         const rowsHtml = rows
           .map(
@@ -4177,20 +4318,24 @@
           .join("");
         const overlay = document.createElement("div");
         overlay.className = "confirm-modal-overlay";
-        overlay.innerHTML = `<div class="confirm-modal" style="min-width:380px;text-align:left;">
+        overlay.innerHTML = `<div class="confirm-modal" style="min-width:400px;text-align:left;">
           <h3 style="margin-top:0;text-align:center;">Backup and Restore</h3>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
             <span class="form-label" style="margin:0;">Total stored</span>
             <span style="font-weight:700;">${formatBytes(total)}</span>
           </div>
-          <div style="max-height:220px;overflow-y:auto;margin-bottom:0.5rem;">${rowsHtml}</div>
-          <p style="color:var(--text-med);font-size:0.8rem;margin:1rem 0 0.5rem;">Data lives in the server's database and is shared by everyone who visits this site. Exporting a backup is a good idea before big changes. Importing will overwrite the live database for everyone and requires an admin sign-in.</p>
-          <input type="file" id="import-file-input" accept="application/json,.json" style="display:none;">
+          <div style="max-height:180px;overflow-y:auto;margin-bottom:0.5rem;">${rowsHtml}</div>
+          <p style="color:var(--text-med);font-size:0.8rem;margin:1rem 0 0.5rem;">Data lives in the server's database and is shared by everyone who visits this site. Exporting a backup is a good idea before big changes.</p>
           <div class="confirm-actions" style="flex-wrap:wrap;">
             <button class="btn btn-secondary" id="backup-close-btn">Close</button>
-            <button class="btn btn-secondary" id="backup-import-btn">Import Backup</button>
             <button class="btn btn-primary" id="backup-export-btn">Export Backup</button>
           </div>
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:1.25rem 0 1rem;">
+          <div class="form-label">Restore from a file</div>
+          <p style="color:var(--text-med);font-size:0.8rem;margin:0.25rem 0 0.75rem;">Choose a backup file, then restore each piece of data one at a time — that way, if one is too large for the server, the rest can still go through. Restoring requires an admin sign-in.</p>
+          <input type="file" id="import-file-input" accept="application/json,.json" style="display:none;">
+          <button id="backup-import-btn" class="btn btn-secondary" style="width:100%;margin-bottom:0.75rem;">Choose Backup File...</button>
+          <div id="import-key-list"></div>
         </div>`;
         document.body.appendChild(overlay);
         document.getElementById("backup-close-btn").onclick = () =>
@@ -4202,6 +4347,7 @@
         document.getElementById("import-file-input").onchange = (e) => {
           importBackup(e);
         };
+        renderImportKeyList();
       }
 
       // --- Smart Birthday Logic ---
@@ -5527,8 +5673,9 @@
 
         // Find tier for this character
         const charTierObj = (() => {
-          for (const tier of tierConfig) {
-            if ((tierList[tier.id] || []).includes(c.id)) return tier;
+          for (const tier of tierConfigs.overall || []) {
+            if ((tierLists.overall?.[tier.id] || []).includes(c.id))
+              return tier;
           }
           return null;
         })();
@@ -5991,7 +6138,25 @@
         clearInterval(window._enemyIconCycleInterval);
       }
 
+      function switchTierBoard(boardId) {
+        activeTierBoard = boardId;
+        document.querySelectorAll(".tier-board-tab").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.board === boardId);
+        });
+        renderTierListPage();
+      }
+
+      function renderTierBoardTabs() {
+        const wrap = document.getElementById("tier-board-tabs");
+        if (!wrap) return;
+        wrap.innerHTML = TIER_BOARDS.map(
+          (b) =>
+            `<button type="button" class="tier-board-tab${b.id === activeTierBoard ? " active" : ""}" data-board="${b.id}" onclick="switchTierBoard('${b.id}')">${b.label}</button>`,
+        ).join("");
+      }
+
       function renderTierListPage() {
+        renderTierBoardTabs();
         const c = document.getElementById("tier-list-container");
         const pool = document.getElementById("unranked-pool");
         const search = document
@@ -5999,8 +6164,10 @@
           .value.toLowerCase();
         c.innerHTML = "";
         pool.innerHTML = "";
+        const cfg = tierConfigs[activeTierBoard] || [];
+        const list = tierLists[activeTierBoard] || {};
         const rankedIds = new Set();
-        tierConfig.forEach((tier) => {
+        cfg.forEach((tier) => {
           const t = tier.id;
           const row = document.createElement("div");
           row.className = "tier-row";
@@ -6029,7 +6196,7 @@
           row.appendChild(labelDiv);
           row.appendChild(contentDiv);
 
-          (tierList[t] || []).forEach((id) => {
+          (list[t] || []).forEach((id) => {
             const char = characters.find((x) => x.id === id);
             if (char) {
               contentDiv.appendChild(createTierItem(char));
@@ -6048,10 +6215,12 @@
       }
 
       function addTier() {
+        const cfg =
+          tierConfigs[activeTierBoard] || (tierConfigs[activeTierBoard] = []);
         const id = `tier-${Date.now()}`;
-        tierConfig.push({
+        cfg.push({
           id,
-          label: `Tier ${tierConfig.length + 1}`,
+          label: `Tier ${cfg.length + 1}`,
           color: "#94a3b8",
         });
         saveTierConfig();
@@ -6059,7 +6228,8 @@
       }
 
       function renameTier(id) {
-        const tier = tierConfig.find((t) => t.id === id);
+        const cfg = tierConfigs[activeTierBoard] || [];
+        const tier = cfg.find((t) => t.id === id);
         if (!tier) return;
         promptEdit("Rename Tier", tier.label, (newLabel) => {
           tier.label = newLabel.trim() || tier.label;
@@ -6069,7 +6239,8 @@
       }
 
       function recolorTier(id, color) {
-        const tier = tierConfig.find((t) => t.id === id);
+        const cfg = tierConfigs[activeTierBoard] || [];
+        const tier = cfg.find((t) => t.id === id);
         if (!tier) return;
         tier.color = color;
         saveTierConfig();
@@ -6081,13 +6252,15 @@
       }
 
       function deleteTier(id) {
-        const tier = tierConfig.find((t) => t.id === id);
+        const cfg = tierConfigs[activeTierBoard] || [];
+        const tier = cfg.find((t) => t.id === id);
         showConfirm(
           `Delete tier "${tier ? tier.label : id}"? Characters return to the unranked pool.`,
           () => {
-            tierConfig = tierConfig.filter((t) => t.id !== id);
+            tierConfigs[activeTierBoard] = cfg.filter((t) => t.id !== id);
             saveTierConfig();
-            delete tierList[id];
+            const list = tierLists[activeTierBoard] || {};
+            delete list[id];
             saveTier();
             renderTierListPage();
             showToast("Tier deleted", "success");
@@ -6096,14 +6269,17 @@
       }
 
       function resetTierList() {
+        const boardLabel =
+          TIER_BOARDS.find((b) => b.id === activeTierBoard)?.label ||
+          activeTierBoard;
         showConfirm(
-          "Reset entire Tier List? All characters will return to the unranked pool.",
+          `Reset the "${boardLabel}" tier list? All characters on this tab will return to the unranked pool.`,
           () => {
             const emptyTiers = {};
-            tierConfig.forEach((t) => {
+            (tierConfigs[activeTierBoard] || []).forEach((t) => {
               emptyTiers[t.id] = [];
             });
-            tierList = emptyTiers;
+            tierLists[activeTierBoard] = emptyTiers;
             saveTier();
             renderTierListPage();
             showToast("Tier List reset!", "success");
@@ -6396,26 +6572,7 @@
         } catch (e) {
           attributes = {};
         }
-        try {
-          tierList = JSON.parse(DB.getItem(KEY_TIER)) || {
-            S: [],
-            A: [],
-            B: [],
-            C: [],
-            D: [],
-          };
-        } catch (e) {
-          tierList = { S: [], A: [], B: [], C: [], D: [] };
-        }
-        try {
-          const storedCfg = JSON.parse(DB.getItem(KEY_TIER_CONFIG));
-          tierConfig =
-            storedCfg && storedCfg.length
-              ? storedCfg
-              : JSON.parse(JSON.stringify(DEFAULT_TIERS));
-        } catch (e) {
-          tierConfig = JSON.parse(JSON.stringify(DEFAULT_TIERS));
-        }
+        loadTierDataFromDB();
         try {
           costumes = JSON.parse(DB.getItem(KEY_COSTUMES)) || [];
         } catch (e) {
@@ -6448,11 +6605,12 @@
           .querySelectorAll(".tier-content")
           .forEach((el) => el.classList.remove("drag-over"));
         const tier = ev.target.closest(".tier-content")?.dataset.tier;
-        for (let k in tierList)
-          tierList[k] = tierList[k].filter((id) => id !== draggedId);
+        const list =
+          tierLists[activeTierBoard] || (tierLists[activeTierBoard] = {});
+        for (let k in list) list[k] = list[k].filter((id) => id !== draggedId);
         if (tier) {
-          if (!tierList[tier]) tierList[tier] = [];
-          tierList[tier].push(draggedId);
+          if (!list[tier]) list[tier] = [];
+          list[tier].push(draggedId);
         }
         saveTier();
         renderTierListPage();

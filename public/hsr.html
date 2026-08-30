@@ -972,19 +972,24 @@
         background: rgba(0, 0, 0, 0.3);
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 8px;
-        overflow: hidden;
+        overflow: visible;
+        position: relative;
       }
       .tier-label {
-        width: 80px;
+        width: 100px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 1.3rem;
         font-weight: 900;
         color: #000;
+        text-align: center;
+        line-height: 1.15;
+        padding: 0.5rem;
         text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
         flex-shrink: 0;
         letter-spacing: -0.5px;
+        border-radius: 8px 0 0 8px;
       }
       .tier-content {
         flex-grow: 1;
@@ -993,6 +998,10 @@
         flex-wrap: wrap;
         gap: 10px;
         min-height: 100px;
+        transition: background 0.15s;
+      }
+      .tier-content.drag-over {
+        background: rgba(251, 191, 36, 0.08);
       }
       .tier-item {
         width: 70px;
@@ -1016,17 +1025,125 @@
         transition: opacity 0.3s;
       }
 
+      /* Tier editing controls — float to the left of the tier row, shown on hover */
+      .tier-label-editable {
+        cursor: default;
+      }
+      .tier-controls {
+        position: absolute;
+        left: -46px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s;
+        z-index: 30;
+      }
+      .tier-controls::after {
+        content: "";
+        position: absolute;
+        top: -20px;
+        right: -16px;
+        bottom: -20px;
+        left: -10px;
+        z-index: -1;
+      }
+      .tier-row:hover .tier-controls {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .tier-ctrl-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(6px);
+        color: var(--text-med, #aaa);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+        transition: all 0.18s;
+      }
+      .tier-ctrl-btn:hover {
+        background: var(--accent);
+        color: #1a1a1a;
+        transform: scale(1.12);
+      }
+      .tier-ctrl-btn.danger:hover {
+        background: var(--danger, #f87171);
+        color: white;
+      }
+
+      /* Unranked pool sidebar — collapsible */
       .tier-sidebar-pool {
         width: 300px;
         background: var(--bg-med);
         border-left: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
         display: flex;
         flex-direction: column;
-        padding: 1rem;
         height: calc(100vh - 100px);
         position: sticky;
         top: 0;
+        overflow: hidden;
+        transition:
+          width 0.3s ease,
+          opacity 0.3s ease;
+        flex-shrink: 0;
+      }
+      .tier-sidebar-pool.collapsed {
+        width: 60px;
+      }
+      .tier-sidebar-pool-header {
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        white-space: nowrap;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        min-height: 60px;
+      }
+      .tier-sidebar-pool.collapsed .tier-sidebar-pool-header {
+        justify-content: center;
+        padding: 1rem 0;
+      }
+      .tier-sidebar-pool.collapsed .tier-sidebar-pool-header h3 {
+        display: none;
+      }
+      .tier-collapse-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: var(--text-med, #aaa);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        flex-shrink: 0;
+      }
+      .tier-collapse-btn:hover {
+        background: var(--accent);
+        color: #1a1a1a;
+      }
+      .tier-sidebar-pool.collapsed .tier-collapse-btn {
+        transform: rotate(180deg);
+      }
+      .tier-sidebar-pool-body {
+        flex: 1;
         overflow-y: auto;
+        padding: 1rem;
+      }
+      .tier-sidebar-pool.collapsed .tier-sidebar-pool-body {
+        display: none;
       }
       .tier-pool-grid {
         display: flex;
@@ -1043,7 +1160,9 @@
       .tier-main-area {
         flex: 1;
         overflow-y: auto;
+        overflow-x: visible;
         padding-right: 1rem;
+        padding-left: 50px; /* room for the floating tier controls */
       }
 
       /* --- Matrix Styles --- */
@@ -2286,6 +2405,10 @@
       body:not(.is-admin) [onclick*="addExtraEnemyIconInput"],
       body:not(.is-admin) [onclick*="addStickerToChar"],
       body:not(.is-admin) [onclick*="deleteStickerFromChar"],
+      body:not(.is-admin) [onclick*="addTier("],
+      body:not(.is-admin) [onclick*="renameTier("],
+      body:not(.is-admin) [onclick*="deleteTier("],
+      body:not(.is-admin) [onclick*="resetTierList("],
       body:not(.is-admin) [onclick*="importSingleKey("],
       body:not(.is-admin) #backup-import-btn {
         display: none !important;
@@ -2500,12 +2623,30 @@
           <div id="page-tier-list" class="page">
             <div class="page-header">
               <h1>Tier List</h1>
-              <button class="btn btn-secondary" onclick="toggleVisualMode()">
-                <span class="material-symbols-outlined" id="tl-mode-icon"
-                  >face</span
-                >
-                <span id="tl-mode-text">Show: Avatar</span>
-              </button>
+              <div style="display: flex; gap: 0.5rem; align-items: center">
+                <button class="btn btn-secondary" onclick="addTier()">
+                  <span
+                    class="material-symbols-outlined"
+                    style="font-size: 16px"
+                    >add</span
+                  >
+                  Add Tier
+                </button>
+                <button class="btn btn-danger" onclick="resetTierList()">
+                  <span
+                    class="material-symbols-outlined"
+                    style="font-size: 16px"
+                    >restart_alt</span
+                  >
+                  Reset
+                </button>
+                <button class="btn btn-secondary" onclick="toggleVisualMode()">
+                  <span class="material-symbols-outlined" id="tl-mode-icon"
+                    >face</span
+                  >
+                  <span id="tl-mode-text">Show: Avatar</span>
+                </button>
+              </div>
             </div>
             <!-- Tier mode tabs -->
             <div class="tier-tabs" id="tier-tabs">
@@ -2533,25 +2674,34 @@
             </div>
             <div class="tier-layout">
               <div class="tier-main-area" id="tier-list-container"></div>
-              <div class="tier-sidebar-pool">
-                <h3 style="color: var(--accent); margin-top: 0">
-                  Unranked Pool
-                </h3>
-                <input
-                  type="text"
-                  id="tier-search"
-                  class="form-input"
-                  placeholder="Search..."
-                  oninput="renderTierListPage()"
-                  style="margin-bottom: 1rem"
-                  autocomplete="off"
-                />
-                <div
-                  id="unranked-pool"
-                  class="tier-pool-grid"
-                  ondrop="drop(event)"
-                  ondragover="allowDrop(event)"
-                ></div>
+              <div id="tier-sidebar-pool" class="tier-sidebar-pool">
+                <div class="tier-sidebar-pool-header">
+                  <h3 style="color: var(--accent); margin: 0">Unranked Pool</h3>
+                  <button
+                    class="tier-collapse-btn"
+                    onclick="toggleUnrankedSidebar()"
+                    data-tip="Collapse"
+                  >
+                    <span class="material-symbols-outlined">chevron_right</span>
+                  </button>
+                </div>
+                <div class="tier-sidebar-pool-body">
+                  <input
+                    type="text"
+                    id="tier-search"
+                    class="form-input"
+                    placeholder="Search..."
+                    oninput="renderTierListPage()"
+                    style="margin-bottom: 1rem"
+                    autocomplete="off"
+                  />
+                  <div
+                    id="unranked-pool"
+                    class="tier-pool-grid"
+                    ondrop="drop(event)"
+                    ondragover="allowDrop(event)"
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
@@ -3192,6 +3342,7 @@
         TIER_MOC: "game_hub_hsr_tier_moc",
         TIER_PF: "game_hub_hsr_tier_pf",
         TIER_AS: "game_hub_hsr_tier_as",
+        TIER_CONFIG: "game_hub_hsr_tier_config",
         SIDEBAR: "game_hub_hsr_sidebar_collapsed",
       };
 
@@ -3463,6 +3614,23 @@
         T4: [],
         T5: [],
       };
+      // Default editable tier config (id/label/color) — matches the
+      // original fixed T0..T5 rows so existing tier-list data (keyed by
+      // these ids) keeps working once tiers become add/rename/recolor/
+      // delete-able per mode tab.
+      const DEFAULT_TIERS = [
+        { id: "T0", label: "T0", color: "#e040fb" },
+        { id: "T0.5", label: "T0.5", color: "#7c4dff" },
+        { id: "T1", label: "T1", color: "#448aff" },
+        { id: "T1.5", label: "T1.5", color: "#00bcd4" },
+        { id: "T2", label: "T2", color: "#69f0ae" },
+        { id: "T3", label: "T3", color: "#ffeb3b" },
+        { id: "T4", label: "T4", color: "#ff9800" },
+        { id: "T5", label: "T5", color: "#bdbdbd" },
+      ];
+      const TIER_MODES = ["moc", "pf", "as"];
+      // Keyed by mode: { moc: [{id,label,color}, ...], pf: [...], as: [...] }
+      let tierConfigs = {};
       let characters = [];
       let attributes = {};
       let tierList = { ...TIER_DEFAULT };
@@ -3612,6 +3780,21 @@
           if (e.target === overlay) overlay.remove();
         };
       }
+      function promptEdit(title, val, onSave) {
+        const existing = document.querySelector(".confirm-modal-overlay");
+        if (existing) existing.remove();
+        const overlay = document.createElement("div");
+        overlay.className = "confirm-modal-overlay";
+        overlay.innerHTML = `<div class="confirm-modal"><h3 style="margin-top:0;">${title}</h3><input type="text" id="prompt-input" class="form-input" value="${String(val).replace(/"/g, "&quot;")}" style="margin-bottom:1rem;"><div class="confirm-actions"><button class="btn btn-secondary" id="prompt-cancel">Cancel</button><button class="btn btn-primary" id="prompt-ok">Save</button></div></div>`;
+        document.body.appendChild(overlay);
+        document.getElementById("prompt-cancel").onclick = () =>
+          overlay.remove();
+        document.getElementById("prompt-ok").onclick = () => {
+          const v = document.getElementById("prompt-input").value.trim();
+          if (v) onSave(v);
+          overlay.remove();
+        };
+      }
       function isVideo(url) {
         return url && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
       }
@@ -3753,6 +3936,34 @@
         if (activeTierMode === "pf") return tierListPF;
         return tierListAS;
       }
+      // Normalizes whatever was in storage into { moc: [...], pf: [...], as: [...] },
+      // falling back to DEFAULT_TIERS for any mode that's missing/malformed
+      // (e.g. first run, or a backup file from before tiers were editable).
+      function loadTierConfig() {
+        let raw = null;
+        try {
+          raw = JSON.parse(DB.getItem(KEYS.TIER_CONFIG));
+        } catch (e) {}
+        const cfg = {};
+        TIER_MODES.forEach((m) => {
+          cfg[m] =
+            raw && Array.isArray(raw[m]) && raw[m].length
+              ? raw[m]
+              : JSON.parse(JSON.stringify(DEFAULT_TIERS));
+        });
+        tierConfigs = cfg;
+      }
+      function saveTierConfig() {
+        saveData(KEYS.TIER_CONFIG, tierConfigs);
+      }
+      function getActiveTierConfig() {
+        return (
+          tierConfigs[activeTierMode] ||
+          (tierConfigs[activeTierMode] = JSON.parse(
+            JSON.stringify(DEFAULT_TIERS),
+          ))
+        );
+      }
       function saveCostumes() {
         saveData(KEYS.COSTUMES, costumes);
       }
@@ -3771,6 +3982,7 @@
         { key: KEYS.TIER_MOC, label: "Tier List (Memory of Chaos)" },
         { key: KEYS.TIER_PF, label: "Tier List (Pure Fiction)" },
         { key: KEYS.TIER_AS, label: "Tier List (Apocalyptic Shadow)" },
+        { key: KEYS.TIER_CONFIG, label: "Tier List Layout (Names/Colors)" },
       ];
       function getStorageReport() {
         let total = 0;
@@ -3863,6 +4075,19 @@
       // reselect the file between each restore.
       let _pendingImport = null; // { payload, foundKeys: [] }
 
+      // Older backups (from before data moved to the server DB) stored data
+      // under plain variable names instead of the prefixed storage keys.
+      // Map those aliases to the real KEYS.* so old backup files still work.
+      const LEGACY_KEY_ALIASES = {
+        characters: KEYS.CHARS,
+        attributes: KEYS.ATTRS,
+        costumes: KEYS.COSTUMES,
+        tierList: KEYS.TIER,
+        tierListMoC: KEYS.TIER_MOC,
+        tierListPF: KEYS.TIER_PF,
+        tierListAS: KEYS.TIER_AS,
+      };
+
       function importBackup(event) {
         const file = event.target.files && event.target.files[0];
         if (!file) return;
@@ -3879,9 +4104,16 @@
 
           // Accept either the wrapped backup format ({ data: {...} }) or a
           // raw object keyed directly by the storage keys.
-          const payload = parsed && parsed.data ? parsed.data : parsed;
-          const foundKeys =
-            payload && typeof payload === "object" ? Object.keys(payload) : [];
+          const rawPayload = parsed && parsed.data ? parsed.data : parsed;
+          // Normalize any legacy key names to the current DB storage keys.
+          const payload = {};
+          if (rawPayload && typeof rawPayload === "object") {
+            Object.keys(rawPayload).forEach((k) => {
+              const targetKey = LEGACY_KEY_ALIASES[k] || k;
+              payload[targetKey] = rawPayload[k];
+            });
+          }
+          const foundKeys = Object.keys(payload);
 
           if (!payload || !foundKeys.length) {
             showToast("This doesn't look like a valid backup file.", "info");
@@ -3942,6 +4174,14 @@
               renderTierListPage();
           } else if (key === KEYS.TIER_AS) {
             tierListAS = getData(KEYS.TIER_AS, { ...TIER_DEFAULT });
+            if (
+              document
+                .getElementById("page-tier-list")
+                ?.classList.contains("active")
+            )
+              renderTierListPage();
+          } else if (key === KEYS.TIER_CONFIG) {
+            loadTierConfig();
             if (
               document
                 .getElementById("page-tier-list")
@@ -5736,25 +5976,39 @@
           .getElementById("tier-search")
           .value.toLowerCase();
         const activeTL = getActiveTierList();
+        const cfg = getActiveTierConfig();
         container.innerHTML = "";
         pool.innerHTML = "";
-        const tiers = ["T0", "T0.5", "T1", "T1.5", "T2", "T3", "T4", "T5"];
-        const cols = {
-          T0: "var(--tier-t0)",
-          "T0.5": "var(--tier-t0_5)",
-          T1: "var(--tier-t1)",
-          "T1.5": "var(--tier-t1_5)",
-          T2: "var(--tier-t2)",
-          T3: "var(--tier-t3)",
-          T4: "var(--tier-t4)",
-          T5: "var(--tier-t5)",
-        };
         const rankedIds = new Set();
-        tiers.forEach((t) => {
+        cfg.forEach((tier) => {
+          const t = tier.id;
           const row = document.createElement("div");
           row.className = "tier-row";
-          row.innerHTML = `<div class="tier-label" style="background-color: ${cols[t]}">${t}</div><div class="tier-content" data-tier="${t}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>`;
-          const contentDiv = row.querySelector(".tier-content");
+
+          const ctrlDiv = document.createElement("div");
+          ctrlDiv.className = "tier-controls";
+          ctrlDiv.innerHTML = `
+            <button class="tier-ctrl-btn" title="Rename" onclick="event.stopPropagation();renameTier('${t}')"><span class="material-symbols-outlined" style="font-size:14px;">edit</span></button>
+            <label class="tier-ctrl-btn" title="Change color" style="cursor:pointer;position:relative;"><input type="color" value="${tier.color}" onchange="recolorTier('${t}',this.value)" style="position:absolute;width:0;height:0;opacity:0;"><span class="material-symbols-outlined" style="font-size:14px;">palette</span></label>
+            <button class="tier-ctrl-btn danger" title="Delete tier" onclick="event.stopPropagation();deleteTier('${t}')"><span class="material-symbols-outlined" style="font-size:14px;">delete</span></button>`;
+
+          const labelDiv = document.createElement("div");
+          labelDiv.className = "tier-label tier-label-editable";
+          labelDiv.style.backgroundColor = tier.color;
+          labelDiv.innerHTML = `<span class="tier-label-text">${tier.label}</span>`;
+          labelDiv.ondrop = drop;
+          labelDiv.ondragover = allowDrop;
+
+          const contentDiv = document.createElement("div");
+          contentDiv.className = "tier-content";
+          contentDiv.dataset.tier = t;
+          contentDiv.ondrop = drop;
+          contentDiv.ondragover = allowDrop;
+
+          row.appendChild(ctrlDiv);
+          row.appendChild(labelDiv);
+          row.appendChild(contentDiv);
+
           (activeTL[t] || []).forEach((id) => {
             const char = characters.find((x) => x.id === id);
             if (char) {
@@ -5771,6 +6025,86 @@
             }
           }
         });
+      }
+
+      function addTier() {
+        const cfg = getActiveTierConfig();
+        const id = `tier-${Date.now()}`;
+        cfg.push({
+          id,
+          label: `Tier ${cfg.length + 1}`,
+          color: "#94a3b8",
+        });
+        saveTierConfig();
+        renderTierListPage();
+      }
+
+      function renameTier(id) {
+        const cfg = getActiveTierConfig();
+        const tier = cfg.find((t) => t.id === id);
+        if (!tier) return;
+        promptEdit("Rename Tier", tier.label, (newLabel) => {
+          tier.label = newLabel.trim() || tier.label;
+          saveTierConfig();
+          renderTierListPage();
+        });
+      }
+
+      function recolorTier(id, color) {
+        const cfg = getActiveTierConfig();
+        const tier = cfg.find((t) => t.id === id);
+        if (!tier) return;
+        tier.color = color;
+        saveTierConfig();
+        const labelEl = document
+          .querySelector(`.tier-content[data-tier="${id}"]`)
+          ?.closest(".tier-row")
+          ?.querySelector(".tier-label");
+        if (labelEl) labelEl.style.backgroundColor = color;
+      }
+
+      function deleteTier(id) {
+        const cfg = getActiveTierConfig();
+        const tier = cfg.find((t) => t.id === id);
+        showConfirm(
+          `Delete tier "${tier ? tier.label : id}"? Characters return to the unranked pool.`,
+          () => {
+            tierConfigs[activeTierMode] = cfg.filter((t) => t.id !== id);
+            saveTierConfig();
+            const activeTL = getActiveTierList();
+            delete activeTL[id];
+            saveTier();
+            renderTierListPage();
+            showToast("Tier deleted", "success");
+          },
+        );
+      }
+
+      function resetTierList() {
+        const modeLabel =
+          document.getElementById(`tier-tab-${activeTierMode}`)?.textContent ||
+          activeTierMode;
+        showConfirm(
+          `Reset the "${modeLabel}" tier list? All characters on this tab will return to the unranked pool.`,
+          () => {
+            const emptyTiers = {};
+            getActiveTierConfig().forEach((t) => {
+              emptyTiers[t.id] = [];
+            });
+            if (activeTierMode === "moc") tierListMoC = emptyTiers;
+            else if (activeTierMode === "pf") tierListPF = emptyTiers;
+            else tierListAS = emptyTiers;
+            saveTier();
+            renderTierListPage();
+            showToast("Tier List reset!", "success");
+          },
+        );
+      }
+
+      function toggleUnrankedSidebar() {
+        document
+          .getElementById("tier-sidebar-pool")
+          .classList.toggle("collapsed");
       }
 
       function createTierItem(c) {
@@ -5991,6 +6325,7 @@
         tierListMoC = getData(KEYS.TIER_MOC, { ...TIER_DEFAULT });
         tierListPF = getData(KEYS.TIER_PF, { ...TIER_DEFAULT });
         tierListAS = getData(KEYS.TIER_AS, { ...TIER_DEFAULT });
+        loadTierConfig();
         costumes = getData(KEYS.COSTUMES, []);
 
         initDefaults();

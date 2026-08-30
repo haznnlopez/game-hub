@@ -2286,7 +2286,8 @@
       body:not(.is-admin) [onclick*="addExtraEnemyIconInput"],
       body:not(.is-admin) [onclick*="addStickerToChar"],
       body:not(.is-admin) [onclick*="deleteStickerFromChar"],
-      body:not(.is-admin) #storage-import {
+      body:not(.is-admin) [onclick*="importSingleKey("],
+      body:not(.is-admin) #backup-import-btn {
         display: none !important;
         pointer-events: none !important;
       }
@@ -3594,12 +3595,12 @@
           });
         }, 3000);
       }
-      function showConfirm(message, onConfirm) {
+      function showConfirm(message, onConfirm, confirmLabel = "Delete") {
         const existing = document.querySelector(".confirm-modal-overlay");
         if (existing) existing.remove();
         const overlay = document.createElement("div");
         overlay.className = "confirm-modal-overlay";
-        overlay.innerHTML = `<div class="confirm-modal"><span class="material-symbols-outlined" style="font-size:48px; color:var(--danger); margin-bottom:10px;">warning</span><h3>Confirm Action</h3><p>${message}</p><div class="confirm-actions"><button class="btn btn-secondary" id="confirm-cancel">Cancel</button><button class="btn btn-danger" id="confirm-ok">Delete</button></div></div>`;
+        overlay.innerHTML = `<div class="confirm-modal"><span class="material-symbols-outlined" style="font-size:48px; color:var(--danger); margin-bottom:10px;">warning</span><h3>Confirm Action</h3><p>${message}</p><div class="confirm-actions"><button class="btn btn-secondary" id="confirm-cancel">Cancel</button><button class="btn btn-danger" id="confirm-ok">${confirmLabel}</button></div></div>`;
         document.body.appendChild(overlay);
         document.getElementById("confirm-cancel").onclick = () =>
           overlay.remove();
@@ -3857,63 +3858,175 @@
         URL.revokeObjectURL(url);
         showToast("Backup downloaded", "success");
       }
-      function importAllDataFromFile(file) {
+      // Holds the parsed backup file while the user restores keys one at a
+      // time from the Backup & Database modal, so they don't have to
+      // reselect the file between each restore.
+      let _pendingImport = null; // { payload, foundKeys: [] }
+
+      function importBackup(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
         const reader = new FileReader();
-        reader.onload = () => {
-          let payload;
+        reader.onload = (e) => {
+          let parsed;
           try {
-            payload = JSON.parse(reader.result);
-          } catch (e) {
-            showToast("Invalid backup file", "info");
+            parsed = JSON.parse(e.target.result);
+          } catch (err) {
+            showToast("That file isn't valid JSON.", "info");
+            event.target.value = "";
             return;
           }
-          const data = payload && payload.data ? payload.data : payload;
-          if (!data || typeof data !== "object") {
-            showToast("Invalid backup file", "info");
+
+          // Accept either the wrapped backup format ({ data: {...} }) or a
+          // raw object keyed directly by the storage keys.
+          const payload = parsed && parsed.data ? parsed.data : parsed;
+          const foundKeys =
+            payload && typeof payload === "object" ? Object.keys(payload) : [];
+
+          if (!payload || !foundKeys.length) {
+            showToast("This doesn't look like a valid backup file.", "info");
+            event.target.value = "";
+            _pendingImport = null;
+            renderImportKeyList();
             return;
           }
-          if (!ADMIN.isAdmin) {
-            showToast("Sign in as admin to restore a backup", "info");
-            openAdminLoginModal();
-            return;
-          }
-          showConfirm(
-            "This will overwrite the live database (for everyone) with this backup file. Continue?",
-            async () => {
-              showToast("Restoring backup...", "info");
-              const keys = Object.keys(data);
-              const failed = [];
-              // Sequential + awaited on purpose: large keys can be several
-              // hundred KB, and firing every PUT at once in parallel with
-              // no wait risks the page reloading before slow/rejected
-              // saves ever finish, silently losing failures (like a
-              // body-size-limit 413).
-              for (const k of keys) {
-                const ok = await DB.setItemAwaited(k, data[k]);
-                if (!ok) failed.push(k);
-              }
-              if (failed.length) {
-                showToast(
-                  "Import partially failed for: " +
-                    failed.join(", ") +
-                    " — see console for details. NOT reloading so you can check.",
-                  "info",
-                );
-                console.error("Backup restore failed for keys:", failed);
-              } else {
-                showToast("Backup restored. Reloading...", "success");
-                setTimeout(() => location.reload(), 800);
-              }
-            },
-          );
+
+          _pendingImport = { payload, foundKeys };
+          renderImportKeyList();
+          event.target.value = "";
+        };
+        reader.onerror = () => {
+          showToast("Couldn't read that file.", "info");
+          event.target.value = "";
         };
         reader.readAsText(file);
       }
-      function openStorageManager() {
+
+      // Applies a single freshly-restored key from DB back into the app's
+      // in-memory state and re-renders whatever's currently visible, so a
+      // one-at-a-time restore doesn't require a full page reload.
+      function applyRestoredKeyToApp(key) {
+        try {
+          if (key === KEYS.CHARS) {
+            characters = getData(KEYS.CHARS, []);
+            renderCharacters();
+          } else if (key === KEYS.ATTRS) {
+            attributes = getData(KEYS.ATTRS, {});
+            renderAttributesList();
+          } else if (key === KEYS.COSTUMES) {
+            costumes = getData(KEYS.COSTUMES, []);
+            renderCostumesPage();
+          } else if (key === KEYS.TIER) {
+            tierList = getData(KEYS.TIER, { ...TIER_DEFAULT });
+            if (
+              document
+                .getElementById("page-tier-list")
+                ?.classList.contains("active")
+            )
+              renderTierListPage();
+          } else if (key === KEYS.TIER_MOC) {
+            tierListMoC = getData(KEYS.TIER_MOC, { ...TIER_DEFAULT });
+            if (
+              document
+                .getElementById("page-tier-list")
+                ?.classList.contains("active")
+            )
+              renderTierListPage();
+          } else if (key === KEYS.TIER_PF) {
+            tierListPF = getData(KEYS.TIER_PF, { ...TIER_DEFAULT });
+            if (
+              document
+                .getElementById("page-tier-list")
+                ?.classList.contains("active")
+            )
+              renderTierListPage();
+          } else if (key === KEYS.TIER_AS) {
+            tierListAS = getData(KEYS.TIER_AS, { ...TIER_DEFAULT });
+            if (
+              document
+                .getElementById("page-tier-list")
+                ?.classList.contains("active")
+            )
+              renderTierListPage();
+          }
+          // Unknown/custom keys have no in-memory state to refresh — the
+          // write to the DB has still succeeded, a page reload would show it.
+        } catch (e) {
+          console.error("Failed to refresh app state after restore:", key, e);
+        }
+      }
+
+      // Restores exactly one key from the pending backup file. Restoring
+      // one at a time (rather than the whole file in a single shot) means
+      // a large key hitting the server's body-size limit only blocks that
+      // one key — everything else can still be restored individually.
+      function importSingleKey(key) {
+        if (!_pendingImport || !_pendingImport.payload) return;
+        if (!ADMIN.isAdmin) {
+          showToast("Sign in as admin to restore a backup", "info");
+          openAdminLoginModal();
+          return;
+        }
+        const label =
+          STORAGE_REPORT_KEYS.find((r) => r.key === key)?.label || key;
+        showConfirm(
+          `Restore "${label}" from the backup file? This overwrites the live "${label}" data for everyone. This cannot be undone.`,
+          async () => {
+            showToast(`Restoring ${label}...`, "info");
+            const ok = await DB.setItemAwaited(
+              key,
+              JSON.stringify(_pendingImport.payload[key]),
+            );
+            if (ok) {
+              showToast(`${label} restored!`, "success");
+              applyRestoredKeyToApp(key);
+              _pendingImport.foundKeys = _pendingImport.foundKeys.filter(
+                (k) => k !== key,
+              );
+              renderImportKeyList();
+              openStorageManager(true);
+            } else {
+              showToast(
+                `Failed to restore ${label} — see console for details. If it's a large key, the server may be rejecting it as too big (413).`,
+                "info",
+              );
+            }
+          },
+          "Restore",
+        );
+      }
+
+      function renderImportKeyList() {
+        const container = document.getElementById("import-key-list");
+        if (!container) return;
+        if (!_pendingImport || !_pendingImport.foundKeys.length) {
+          container.innerHTML = _pendingImport
+            ? `<div style="color:var(--text-med);font-size:0.85rem;padding:0.5rem 0;">All keys from this file have been restored.</div>`
+            : "";
+          return;
+        }
+        container.innerHTML = _pendingImport.foundKeys
+          .map((k) => {
+            const label =
+              STORAGE_REPORT_KEYS.find((r) => r.key === k)?.label || k;
+            const bytes = new Blob([JSON.stringify(_pendingImport.payload[k])])
+              .size;
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div>
+                <div style="font-size:0.9rem;font-weight:600;">${label}</div>
+                <div style="font-size:0.75rem;color:var(--text-med);">${formatBytes(bytes)} in file</div>
+              </div>
+              <button class="btn btn-sm btn-primary" id="restore-key-${k}" onclick="importSingleKey('${k}')">Restore</button>
+            </div>`;
+          })
+          .join("");
+      }
+      function openStorageManager(keepPendingImport) {
         const existingOverlay = document.querySelector(
           ".confirm-modal-overlay",
         );
         if (existingOverlay) existingOverlay.remove();
+        if (!keepPendingImport) _pendingImport = null;
         const { rows, total } = getStorageReport();
         const oversized = findOversizedFields();
         const rowsHtml =
@@ -3936,18 +4049,18 @@
           : "";
         const overlay = document.createElement("div");
         overlay.className = "confirm-modal-overlay";
-        overlay.innerHTML = `<div class="confirm-modal" style="min-width:380px;text-align:left;"><h3 style="margin-top:0;text-align:center;">Backup &amp; Database</h3><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;"><span class="form-label" style="margin:0;">Total stored</span><span style="font-weight:700;">${formatBytes(total)}</span></div><div style="max-height:220px;overflow-y:auto;margin-bottom:0.5rem;">${rowsHtml}</div>${oversizedHtml}<p style="color:var(--text-med);font-size:0.8rem;margin:1rem 0 0.5rem;">Data now lives in the server's database and is shared by everyone who visits this site. Exporting a backup is still a good idea before big changes; importing will overwrite the live database for everyone (admin only).</p><input type="file" id="import-file-input" accept="application/json" style="display:none;"><div class="confirm-actions" style="flex-wrap:wrap;"><button class="btn btn-secondary" id="storage-close">Close</button><button class="btn btn-secondary" id="storage-import">Import Backup</button><button class="btn btn-primary" id="storage-export">Export Backup</button></div></div>`;
+        overlay.innerHTML = `<div class="confirm-modal" style="min-width:400px;text-align:left;"><h3 style="margin-top:0;text-align:center;">Backup &amp; Database</h3><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;"><span class="form-label" style="margin:0;">Total stored</span><span style="font-weight:700;">${formatBytes(total)}</span></div><div style="max-height:180px;overflow-y:auto;margin-bottom:0.5rem;">${rowsHtml}</div>${oversizedHtml}<p style="color:var(--text-med);font-size:0.8rem;margin:1rem 0 0.5rem;">Data lives in the server's database and is shared by everyone who visits this site. Exporting a backup is a good idea before big changes.</p><div class="confirm-actions" style="flex-wrap:wrap;"><button class="btn btn-secondary" id="storage-close">Close</button><button class="btn btn-primary" id="storage-export">Export Backup</button></div><hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:1.25rem 0 1rem;"><div class="form-label">Restore from a file</div><p style="color:var(--text-med);font-size:0.8rem;margin:0.25rem 0 0.75rem;">Choose a backup file, then restore each piece of data one at a time — that way, if one is too large for the server, the rest can still go through. Restoring requires an admin sign-in.</p><input type="file" id="import-file-input" accept="application/json,.json" style="display:none;"><button id="backup-import-btn" class="btn btn-secondary" style="width:100%;margin-bottom:0.75rem;">Choose Backup File...</button><div id="import-key-list"></div></div>`;
         document.body.appendChild(overlay);
         document.getElementById("storage-close").onclick = () =>
           overlay.remove();
         document.getElementById("storage-export").onclick = () =>
           exportAllData();
-        document.getElementById("storage-import").onclick = () =>
+        document.getElementById("backup-import-btn").onclick = () =>
           document.getElementById("import-file-input").click();
         document.getElementById("import-file-input").onchange = (e) => {
-          const file = e.target.files[0];
-          if (file) importAllDataFromFile(file);
+          importBackup(e);
         };
+        renderImportKeyList();
       }
       function showStorageFullModal() {
         const existingOverlay = document.querySelector(

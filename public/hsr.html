@@ -964,58 +964,156 @@
         color: var(--text-light);
       }
 
-      /* --- Tier List Styles --- */
+      /* --- Tier List Styles (ported from mlbb.html) --- */
+      .tier-page-layout {
+        display: flex;
+        gap: 2rem;
+        height: calc(100vh - 260px);
+        min-height: 500px;
+        align-items: flex-start;
+      }
+      .tier-main {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: visible;
+        height: 100%;
+        padding-right: 10px;
+        padding-left: 50px; /* room for tier controls on the left */
+      }
+      .tier-sidebar {
+        width: 300px;
+        flex-shrink: 0;
+        background: var(--bg-med);
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition:
+          width 0.3s ease,
+          opacity 0.3s ease;
+        height: 100%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      }
+      .tier-sidebar.collapsed {
+        width: 64px;
+      }
+      .tier-sidebar-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        white-space: nowrap;
+        min-height: 70px;
+      }
+      .tier-sidebar-header h3 {
+        margin: 0;
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 1.05rem;
+      }
+      .tier-collapse-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: var(--text-med);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        flex-shrink: 0;
+      }
+      .tier-collapse-btn:hover {
+        background: var(--accent);
+        color: var(--bg-dark);
+      }
+      .tier-sidebar.collapsed .tier-collapse-btn {
+        transform: rotate(180deg);
+      }
+      .tier-sidebar.collapsed .tier-sidebar-header h3 {
+        display: none;
+      }
+      .tier-sidebar.collapsed .tier-sidebar-header {
+        justify-content: center;
+        padding: 1.25rem 0;
+      }
+      .tier-sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+      }
+      .tier-sidebar.collapsed .tier-sidebar-content,
+      .tier-sidebar.collapsed .tier-sidebar-search-container {
+        display: none;
+      }
+
       .tier-row {
         display: flex;
-        margin-bottom: 1rem;
-        min-height: 100px;
+        margin-bottom: 1.25rem;
         background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
+        border-radius: 16px;
+        min-height: 110px;
         overflow: visible;
         position: relative;
       }
       .tier-label {
-        width: 100px;
+        width: 80px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.3rem;
+        font-size: 1.6rem;
         font-weight: 900;
-        color: #000;
-        text-align: center;
-        line-height: 1.15;
-        padding: 0.5rem;
-        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
+        color: rgba(0, 0, 0, 0.7);
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
         flex-shrink: 0;
         letter-spacing: -0.5px;
-        border-radius: 8px 0 0 8px;
+        border-radius: 16px 0 0 16px;
+        position: relative;
       }
       .tier-content {
         flex-grow: 1;
-        padding: 10px;
+        padding: 1rem;
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
-        min-height: 100px;
+        gap: 0.6rem;
+        align-content: center;
+        background: rgba(0, 0, 0, 0.1);
         transition: background 0.15s;
+        min-height: 90px;
       }
       .tier-content.drag-over {
-        background: rgba(251, 191, 36, 0.08);
+        background: rgba(212, 192, 134, 0.08);
+      }
+      .tier-pool-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+        border-radius: 12px;
+        transition: background 0.15s;
+        padding: 0.5rem;
+      }
+      .tier-pool-grid.drag-over-pool {
+        background: rgba(212, 192, 134, 0.08);
+        outline: 2px dashed rgba(212, 192, 134, 0.4);
       }
       .tier-item {
-        width: 70px;
-        height: 70px;
+        width: 64px;
+        height: 64px;
+        border-radius: 12px;
         cursor: grab;
         transition: transform 0.2s;
-        position: relative;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        flex-shrink: 0;
         overflow: hidden;
-        border-radius: 8px;
+        position: relative;
       }
       .tier-item:hover {
-        transform: scale(1.1);
-        border-color: var(--accent);
-        z-index: 5;
+        transform: scale(1.15);
+        z-index: 10;
       }
       .tier-item img {
         width: 100%;
@@ -1025,10 +1123,7 @@
         transition: opacity 0.3s;
       }
 
-      /* Tier editing controls — float to the left of the tier row, shown on hover */
-      .tier-label-editable {
-        cursor: default;
-      }
+      /* Controls float to the left of the tier row */
       .tier-controls {
         position: absolute;
         left: -46px;
@@ -1056,13 +1151,13 @@
         pointer-events: all;
       }
       .tier-ctrl-btn {
-        width: 32px;
-        height: 32px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
         border: none;
-        background: rgba(15, 23, 42, 0.95);
+        background: rgba(15, 16, 24, 0.95);
         backdrop-filter: blur(6px);
-        color: var(--text-med, #aaa);
+        color: var(--text-med);
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -1071,156 +1166,63 @@
         transition: all 0.18s;
       }
       .tier-ctrl-btn:hover {
-        background: var(--accent);
-        color: #1a1a1a;
+        background: var(--bg-light, #2a2b3a);
+        color: var(--text-light);
         transform: scale(1.12);
       }
       .tier-ctrl-btn.danger:hover {
-        background: var(--danger, #f87171);
+        background: var(--danger);
         color: white;
       }
 
-      /* Unranked pool sidebar — collapsible */
-      .tier-sidebar-pool {
-        width: 300px;
-        background: var(--bg-med);
-        border-left: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
+      /* --- Matrix (Attribute List) Styles --- */
+      .matrix-container {
         display: flex;
         flex-direction: column;
-        height: calc(100vh - 100px);
-        position: sticky;
-        top: 0;
-        overflow: hidden;
-        transition:
-          width 0.3s ease,
-          opacity 0.3s ease;
-        flex-shrink: 0;
-      }
-      .tier-sidebar-pool.collapsed {
-        width: 60px;
-      }
-      .tier-sidebar-pool-header {
-        padding: 1rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        white-space: nowrap;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        min-height: 60px;
-      }
-      .tier-sidebar-pool.collapsed .tier-sidebar-pool-header {
-        justify-content: center;
-        padding: 1rem 0;
-      }
-      .tier-sidebar-pool.collapsed .tier-sidebar-pool-header h3 {
-        display: none;
-      }
-      .tier-collapse-btn {
-        background: rgba(255, 255, 255, 0.1);
-        border: none;
-        color: var(--text-med, #aaa);
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s;
-        flex-shrink: 0;
-      }
-      .tier-collapse-btn:hover {
-        background: var(--accent);
-        color: #1a1a1a;
-      }
-      .tier-sidebar-pool.collapsed .tier-collapse-btn {
-        transform: rotate(180deg);
-      }
-      .tier-sidebar-pool-body {
-        flex: 1;
-        overflow-y: auto;
-        padding: 1rem;
-      }
-      .tier-sidebar-pool.collapsed .tier-sidebar-pool-body {
-        display: none;
-      }
-      .tier-pool-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        justify-content: center;
-        margin-top: 1rem;
-      }
-      .tier-layout {
-        display: flex;
-        gap: 1rem;
-        height: 100%;
-      }
-      .tier-main-area {
-        flex: 1;
-        overflow-y: auto;
-        overflow-x: visible;
-        padding-right: 1rem;
-        padding-left: 50px; /* room for the floating tier controls */
-      }
-
-      /* --- Matrix Styles --- */
-      .matrix-container {
-        overflow-x: auto;
+        gap: 10px;
         padding-bottom: 2rem;
       }
-      .matrix-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 6px;
-        min-width: 800px;
-      }
-      .matrix-table th,
-      .matrix-table td {
-        padding: 10px;
-        text-align: center;
-        border-radius: 8px;
-        position: relative;
-      }
-      .matrix-table th {
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(5px);
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-      }
-      .matrix-table th.row-header {
-        left: 0;
-        z-index: 1;
-        width: 80px;
-        background: rgba(13, 14, 20, 0.95);
-      }
-      .matrix-table td {
-        min-width: 200px;
-        text-align: center;
-        vertical-align: middle;
+      .matrix-list-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
         background: rgba(255, 255, 255, 0.02);
-        height: 100px;
-        transition: background 0.2s;
-        border: 1px solid transparent;
-        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
       }
-      .matrix-table td:hover {
-        z-index: 12;
-        transform: scale(1.1);
-        transition:
-          ease-in 0.2s,
-          ease-out 0.2s;
-        background: rgba(255, 255, 255, 0.08);
-        border-color: var(--accent);
+      .matrix-list-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 140px;
+        flex-shrink: 0;
+        font-weight: 700;
+        color: var(--text-light);
       }
       .matrix-icon {
-        width: 40px;
-        height: 40px;
+        width: 32px;
+        height: 32px;
         object-fit: contain;
         filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.5));
+      }
+      .matrix-list-count {
+        color: var(--text-med);
+        font-weight: 400;
+        font-size: 0.8rem;
+      }
+      .matrix-list-chars {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 8px;
+        padding: 4px 0;
+        flex: 1;
+      }
+      .matrix-list-empty {
+        color: #555;
+        font-size: 0.8rem;
+        font-style: italic;
       }
       .matrix-char-img {
         width: 50px;
@@ -1231,18 +1233,11 @@
         transition: transform 0.2s;
         cursor: pointer;
         background: #000;
+        flex-shrink: 0;
       }
       .matrix-char-img:hover {
-        transform: scale(1.2);
+        transform: scale(1.15);
         border-color: var(--accent);
-      }
-      .matrix-cell-content {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        justify-content: center;
-        pointer-events: none;
-        align-items: center;
       }
 
       /* --- Calendar Styles --- */
@@ -1636,52 +1631,6 @@
         color: var(--danger);
       }
 
-      /* Summary Modal */
-      #matrix-summary-modal .modal-content {
-        height: auto;
-        max-height: 80vh;
-        max-width: 800px;
-        display: flex;
-        flex-direction: column;
-      }
-      #matrix-summary-modal .modal-header {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 1.5rem;
-        background: #181926;
-        position: relative;
-      }
-      #matrix-summary-modal .modal-body {
-        padding: 2rem;
-        overflow-y: auto;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1.5rem;
-        justify-content: center;
-      }
-      .summary-char-card {
-        width: 100px;
-        text-align: center;
-        cursor: pointer;
-        transition: transform 0.2s;
-      }
-      .summary-char-card:hover {
-        transform: scale(1.1);
-      }
-      .summary-avatar {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        border: 3px solid #333;
-        object-fit: cover;
-        margin-bottom: 0.5rem;
-        background: #000;
-      }
-      .summary-name {
-        font-weight: 700;
-        color: var(--text-light);
-        font-size: 0.9rem;
-      }
-
       /* Toast Notifications */
       #toast-container {
         position: fixed;
@@ -1829,38 +1778,6 @@
         border-radius: 4px;
       }
 
-      /* NEW: Ability Preview (image/GIF) */
-      #ability-preview {
-        position: fixed;
-        z-index: 9999;
-        width: 320px;
-        height: 180px;
-        background: #000;
-        border: 2px solid var(--accent);
-        border-radius: 8px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
-        display: none;
-        pointer-events: none;
-        overflow: hidden;
-      }
-      #ability-preview img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: none; /* Hidden by default, toggled by JS */
-      }
-      #ability-preview-placeholder {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #666;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        font-weight: 700;
-      }
-
       /* Talent Form Styles */
       .talent-row-wrapper {
         background: rgba(0, 0, 0, 0.2);
@@ -1875,42 +1792,6 @@
         gap: 8px;
         margin-bottom: 5px;
         align-items: center;
-      }
-      .preview-section {
-        padding-top: 10px;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-        margin-top: 5px;
-      }
-      .preview-section h5 {
-        margin: 0 0 5px 0;
-        font-size: 0.75rem;
-        color: var(--accent);
-        text-transform: uppercase;
-      }
-      .preview-input-row {
-        margin-bottom: 5px;
-      }
-
-      /* Spinner */
-      .preview-spinner {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 40px;
-        height: 40px;
-        border: 4px solid rgba(255, 255, 255, 0.1);
-        border-left-color: var(--accent);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        display: none;
-        z-index: 10;
-        pointer-events: none;
-      }
-      @keyframes spin {
-        100% {
-          transform: translate(-50%, -50%) rotate(360deg);
-        }
       }
 
       /* --- Costumes Page --- */
@@ -2391,6 +2272,8 @@
          rejects any write from a non-admin, so this is a UX nicety,
          not the security boundary.
          ============================================================ */
+      body:not(.is-admin) [onclick*="addStickerToChar"],
+      body:not(.is-admin) [onclick*="deleteStickerFromChar"],
       body:not(.is-admin) [onclick*="openCharForm"],
       body:not(.is-admin) [onclick*="resetAttrForm"],
       body:not(.is-admin) [onclick*="openCostumeModal"],
@@ -2403,14 +2286,14 @@
       body:not(.is-admin) [onclick*="deleteCostume"],
       body:not(.is-admin) [onclick*="addTalentRow"],
       body:not(.is-admin) [onclick*="addExtraEnemyIconInput"],
-      body:not(.is-admin) [onclick*="addStickerToChar"],
-      body:not(.is-admin) [onclick*="deleteStickerFromChar"],
-      body:not(.is-admin) [onclick*="addTier("],
-      body:not(.is-admin) [onclick*="renameTier("],
-      body:not(.is-admin) [onclick*="deleteTier("],
-      body:not(.is-admin) [onclick*="resetTierList("],
-      body:not(.is-admin) [onclick*="importSingleKey("],
-      body:not(.is-admin) #backup-import-btn {
+      body:not(.is-admin) [onclick*="addTier"],
+      body:not(.is-admin) [onclick*="renameTier"],
+      body:not(.is-admin) [onclick*="recolorTier"],
+      body:not(.is-admin) [onchange*="recolorTier"],
+      body:not(.is-admin) .tier-ctrl-recolor,
+      body:not(.is-admin) [onclick*="deleteTier"],
+      body:not(.is-admin) .tier-controls,
+      body:not(.is-admin) #storage-import {
         display: none !important;
         pointer-events: none !important;
       }
@@ -2462,7 +2345,9 @@
           animation: db-spin 0.8s linear infinite;
         "
       ></div>
-      <div style="color: var(--text-med); font-size: 0.9rem">Loading data…</div>
+      <div style="color: var(--text-med); font-size: 0.9rem">
+        Loading data…
+      </div>
     </div>
     <style>
       @keyframes db-spin {
@@ -2482,15 +2367,6 @@
     >
       <span class="material-symbols-outlined">arrow_upward</span>
     </button>
-
-    <!-- Ability Preview Container -->
-    <div id="ability-preview">
-      <div id="preview-spinner" class="preview-spinner"></div>
-      <img id="ability-preview-img" alt="Preview" />
-      <div id="ability-preview-placeholder" style="display: none">
-        No Preview Available
-      </div>
-    </div>
 
     <div class="app-layout">
       <aside class="sidebar" id="sidebar">
@@ -2623,28 +2499,38 @@
           <div id="page-tier-list" class="page">
             <div class="page-header">
               <h1>Tier List</h1>
-              <div style="display: flex; gap: 0.5rem; align-items: center">
-                <button class="btn btn-secondary" onclick="addTier()">
+              <div
+                style="
+                  display: flex;
+                  gap: 0.5rem;
+                  align-items: center;
+                  margin-left: auto;
+                "
+              >
+                <button class="btn btn-secondary" onclick="toggleVisualMode()">
+                  <span class="material-symbols-outlined" id="tl-mode-icon"
+                    >face</span
+                  >
+                  <span id="tl-mode-text">Show: Avatar</span>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="addTier()">
                   <span
                     class="material-symbols-outlined"
-                    style="font-size: 16px"
+                    style="font-size: 15px"
                     >add</span
                   >
                   Add Tier
                 </button>
-                <button class="btn btn-danger" onclick="resetTierList()">
+                <button
+                  class="btn btn-danger btn-sm"
+                  onclick="resetTierList()"
+                >
                   <span
                     class="material-symbols-outlined"
                     style="font-size: 16px"
                     >restart_alt</span
                   >
                   Reset
-                </button>
-                <button class="btn btn-secondary" onclick="toggleVisualMode()">
-                  <span class="material-symbols-outlined" id="tl-mode-icon"
-                    >face</span
-                  >
-                  <span id="tl-mode-text">Show: Avatar</span>
                 </button>
               </div>
             </div>
@@ -2672,34 +2558,47 @@
                 Apocalyptic Shadow
               </button>
             </div>
-            <div class="tier-layout">
-              <div class="tier-main-area" id="tier-list-container"></div>
-              <div id="tier-sidebar-pool" class="tier-sidebar-pool">
-                <div class="tier-sidebar-pool-header">
-                  <h3 style="color: var(--accent); margin: 0">Unranked Pool</h3>
+            <div class="tier-page-layout">
+              <div class="tier-main">
+                <div id="tier-list-container"></div>
+              </div>
+              <div id="unranked-sidebar" class="tier-sidebar">
+                <div class="tier-sidebar-header">
+                  <h3>Unranked Pool</h3>
                   <button
                     class="tier-collapse-btn"
                     onclick="toggleUnrankedSidebar()"
-                    data-tip="Collapse"
                   >
-                    <span class="material-symbols-outlined">chevron_right</span>
+                    <span class="material-symbols-outlined"
+                      >chevron_right</span
+                    >
                   </button>
                 </div>
-                <div class="tier-sidebar-pool-body">
+                <div
+                  class="tier-sidebar-search-container"
+                  style="padding: 0 1.5rem 1rem 1.5rem"
+                >
                   <input
                     type="text"
                     id="tier-search"
                     class="form-input"
                     placeholder="Search..."
                     oninput="renderTierListPage()"
-                    style="margin-bottom: 1rem"
                     autocomplete="off"
                   />
+                </div>
+                <div
+                  class="tier-sidebar-content"
+                  ondrop="drop(event)"
+                  ondragover="allowDrop(event)"
+                >
                   <div
                     id="unranked-pool"
                     class="tier-pool-grid"
                     ondrop="drop(event)"
-                    ondragover="allowDrop(event)"
+                    ondragover="allowDropPool(event)"
+                    ondragleave="this.classList.remove('drag-over-pool')"
+                    style="min-height: 80px"
                   ></div>
                 </div>
               </div>
@@ -2717,48 +2616,35 @@
                 <span id="mx-mode-text">Show: Avatar</span>
               </button>
             </div>
-            <div class="filters-bar">
-              <div style="flex: 1">
-                <label class="form-label">Rows (Y-Axis)</label>
-                <select
-                  id="matrix-row-attr"
-                  class="form-select"
-                  onchange="renderMatrixPage()"
-                >
-                  <option value="elements" selected>Types</option>
-                  <option value="weapons">Paths</option>
-                  <option value="nations">Nations</option>
-                  <option value="rarity">Rarity</option>
-                </select>
-              </div>
-              <div
-                style="
-                  display: flex;
-                  align-items: flex-end;
-                  padding-bottom: 5px;
-                "
+            <div class="attr-tabs" id="matrix-row-tabs">
+              <button
+                class="attr-tab active"
+                data-cat="elements"
+                onclick="switchMatrixGroupBy('elements')"
               >
-                <button
-                  class="btn btn-secondary"
-                  onclick="swapMatrixAxes()"
-                  title="Swap Axes"
-                >
-                  <span class="material-symbols-outlined">swap_horiz</span>
-                </button>
-              </div>
-              <div style="flex: 1">
-                <label class="form-label">Columns (X-Axis)</label>
-                <select
-                  id="matrix-col-attr"
-                  class="form-select"
-                  onchange="renderMatrixPage()"
-                >
-                  <option value="elements">Types</option>
-                  <option value="weapons" selected>Paths</option>
-                  <option value="nations">Nations</option>
-                  <option value="rarity">Rarity</option>
-                </select>
-              </div>
+                Types
+              </button>
+              <button
+                class="attr-tab"
+                data-cat="weapons"
+                onclick="switchMatrixGroupBy('weapons')"
+              >
+                Paths
+              </button>
+              <button
+                class="attr-tab"
+                data-cat="nations"
+                onclick="switchMatrixGroupBy('nations')"
+              >
+                Nations
+              </button>
+              <button
+                class="attr-tab"
+                data-cat="rarity"
+                onclick="switchMatrixGroupBy('rarity')"
+              >
+                Rarity
+              </button>
             </div>
             <div class="matrix-container" id="matrix-wrapper"></div>
           </div>
@@ -3174,8 +3060,8 @@
 
               <p style="color: var(--text-med); font-size: 0.8rem">
                 Stickers (Pompom's Gallery) are managed from the character's
-                detail view after saving — open the character, then use the
-                Gallery section there.
+                detail view after saving — open the character, then use
+                the Gallery section there.
               </p>
 
               <div
@@ -3311,22 +3197,6 @@
       </div>
     </div>
 
-    <!-- Matrix Summary Modal -->
-    <div class="modal-overlay" id="matrix-summary-modal">
-      <div class="modal-content">
-        <span class="close-modal" onclick="closeSummaryModal()">×</span>
-        <div class="modal-header">
-          <h3
-            class="modal-title"
-            id="summary-title"
-            style="margin: 0; color: var(--text-light)"
-          >
-            Summary
-          </h3>
-        </div>
-        <div class="modal-body" id="summary-body"></div>
-      </div>
-    </div>
 
     <div id="toast-container"></div>
     <div id="tooltip"></div>
@@ -3342,7 +3212,9 @@
         TIER_MOC: "game_hub_hsr_tier_moc",
         TIER_PF: "game_hub_hsr_tier_pf",
         TIER_AS: "game_hub_hsr_tier_as",
-        TIER_CONFIG: "game_hub_hsr_tier_config",
+        TIER_CONFIG_MOC: "game_hub_hsr_tier_config_moc",
+        TIER_CONFIG_PF: "game_hub_hsr_tier_config_pf",
+        TIER_CONFIG_AS: "game_hub_hsr_tier_config_as",
         SIDEBAR: "game_hub_hsr_sidebar_collapsed",
       };
 
@@ -3614,11 +3486,9 @@
         T4: [],
         T5: [],
       };
-      // Default editable tier config (id/label/color) — matches the
-      // original fixed T0..T5 rows so existing tier-list data (keyed by
-      // these ids) keeps working once tiers become add/rename/recolor/
-      // delete-able per mode tab.
-      const DEFAULT_TIERS = [
+      // Default tier row definitions (id/label/color) — editable per mode via
+      // Add/Rename/Recolor/Delete Tier, ported from mlbb.html.
+      const DEFAULT_TIER_CONFIG = [
         { id: "T0", label: "T0", color: "#e040fb" },
         { id: "T0.5", label: "T0.5", color: "#7c4dff" },
         { id: "T1", label: "T1", color: "#448aff" },
@@ -3628,21 +3498,22 @@
         { id: "T4", label: "T4", color: "#ff9800" },
         { id: "T5", label: "T5", color: "#bdbdbd" },
       ];
-      const TIER_MODES = ["moc", "pf", "as"];
-      // Keyed by mode: { moc: [{id,label,color}, ...], pf: [...], as: [...] }
-      let tierConfigs = {};
       let characters = [];
       let attributes = {};
       let tierList = { ...TIER_DEFAULT };
       let tierListMoC = { ...TIER_DEFAULT };
       let tierListPF = { ...TIER_DEFAULT };
       let tierListAS = { ...TIER_DEFAULT };
+      let tierConfigMoC = JSON.parse(JSON.stringify(DEFAULT_TIER_CONFIG));
+      let tierConfigPF = JSON.parse(JSON.stringify(DEFAULT_TIER_CONFIG));
+      let tierConfigAS = JSON.parse(JSON.stringify(DEFAULT_TIER_CONFIG));
       let activeTierMode = "moc"; // "moc" | "pf" | "as"
       let costumes = [];
       let displayMode = "avatar";
       let editingAttrIndex = -1;
       let emojiInterval = null;
       let draggedId = null;
+      let dragOverItem = null;
       let lastScrollY = 0;
 
       let mapperNodes = {
@@ -3763,12 +3634,12 @@
           });
         }, 3000);
       }
-      function showConfirm(message, onConfirm, confirmLabel = "Delete") {
+      function showConfirm(message, onConfirm) {
         const existing = document.querySelector(".confirm-modal-overlay");
         if (existing) existing.remove();
         const overlay = document.createElement("div");
         overlay.className = "confirm-modal-overlay";
-        overlay.innerHTML = `<div class="confirm-modal"><span class="material-symbols-outlined" style="font-size:48px; color:var(--danger); margin-bottom:10px;">warning</span><h3>Confirm Action</h3><p>${message}</p><div class="confirm-actions"><button class="btn btn-secondary" id="confirm-cancel">Cancel</button><button class="btn btn-danger" id="confirm-ok">${confirmLabel}</button></div></div>`;
+        overlay.innerHTML = `<div class="confirm-modal"><span class="material-symbols-outlined" style="font-size:48px; color:var(--danger); margin-bottom:10px;">warning</span><h3>Confirm Action</h3><p>${message}</p><div class="confirm-actions"><button class="btn btn-secondary" id="confirm-cancel">Cancel</button><button class="btn btn-danger" id="confirm-ok">Delete</button></div></div>`;
         document.body.appendChild(overlay);
         document.getElementById("confirm-cancel").onclick = () =>
           overlay.remove();
@@ -3778,21 +3649,6 @@
         };
         overlay.onclick = (e) => {
           if (e.target === overlay) overlay.remove();
-        };
-      }
-      function promptEdit(title, val, onSave) {
-        const existing = document.querySelector(".confirm-modal-overlay");
-        if (existing) existing.remove();
-        const overlay = document.createElement("div");
-        overlay.className = "confirm-modal-overlay";
-        overlay.innerHTML = `<div class="confirm-modal"><h3 style="margin-top:0;">${title}</h3><input type="text" id="prompt-input" class="form-input" value="${String(val).replace(/"/g, "&quot;")}" style="margin-bottom:1rem;"><div class="confirm-actions"><button class="btn btn-secondary" id="prompt-cancel">Cancel</button><button class="btn btn-primary" id="prompt-ok">Save</button></div></div>`;
-        document.body.appendChild(overlay);
-        document.getElementById("prompt-cancel").onclick = () =>
-          overlay.remove();
-        document.getElementById("prompt-ok").onclick = () => {
-          const v = document.getElementById("prompt-input").value.trim();
-          if (v) onSave(v);
-          overlay.remove();
         };
       }
       function isVideo(url) {
@@ -3936,33 +3792,22 @@
         if (activeTierMode === "pf") return tierListPF;
         return tierListAS;
       }
-      // Normalizes whatever was in storage into { moc: [...], pf: [...], as: [...] },
-      // falling back to DEFAULT_TIERS for any mode that's missing/malformed
-      // (e.g. first run, or a backup file from before tiers were editable).
-      function loadTierConfig() {
-        let raw = null;
-        try {
-          raw = JSON.parse(DB.getItem(KEYS.TIER_CONFIG));
-        } catch (e) {}
-        const cfg = {};
-        TIER_MODES.forEach((m) => {
-          cfg[m] =
-            raw && Array.isArray(raw[m]) && raw[m].length
-              ? raw[m]
-              : JSON.parse(JSON.stringify(DEFAULT_TIERS));
-        });
-        tierConfigs = cfg;
-      }
-      function saveTierConfig() {
-        saveData(KEYS.TIER_CONFIG, tierConfigs);
-      }
       function getActiveTierConfig() {
-        return (
-          tierConfigs[activeTierMode] ||
-          (tierConfigs[activeTierMode] = JSON.parse(
-            JSON.stringify(DEFAULT_TIERS),
-          ))
-        );
+        if (activeTierMode === "moc") return tierConfigMoC;
+        if (activeTierMode === "pf") return tierConfigPF;
+        return tierConfigAS;
+      }
+      function saveActiveTierConfig(cfg) {
+        if (activeTierMode === "moc") {
+          tierConfigMoC = cfg;
+          saveData(KEYS.TIER_CONFIG_MOC, cfg);
+        } else if (activeTierMode === "pf") {
+          tierConfigPF = cfg;
+          saveData(KEYS.TIER_CONFIG_PF, cfg);
+        } else {
+          tierConfigAS = cfg;
+          saveData(KEYS.TIER_CONFIG_AS, cfg);
+        }
       }
       function saveCostumes() {
         saveData(KEYS.COSTUMES, costumes);
@@ -3982,7 +3827,9 @@
         { key: KEYS.TIER_MOC, label: "Tier List (Memory of Chaos)" },
         { key: KEYS.TIER_PF, label: "Tier List (Pure Fiction)" },
         { key: KEYS.TIER_AS, label: "Tier List (Apocalyptic Shadow)" },
-        { key: KEYS.TIER_CONFIG, label: "Tier List Layout (Names/Colors)" },
+        { key: KEYS.TIER_CONFIG_MOC, label: "Tier Config (Memory of Chaos)" },
+        { key: KEYS.TIER_CONFIG_PF, label: "Tier Config (Pure Fiction)" },
+        { key: KEYS.TIER_CONFIG_AS, label: "Tier Config (Apocalyptic Shadow)" },
       ];
       function getStorageReport() {
         let total = 0;
@@ -4070,203 +3917,63 @@
         URL.revokeObjectURL(url);
         showToast("Backup downloaded", "success");
       }
-      // Holds the parsed backup file while the user restores keys one at a
-      // time from the Backup & Database modal, so they don't have to
-      // reselect the file between each restore.
-      let _pendingImport = null; // { payload, foundKeys: [] }
-
-      // Older backups (from before data moved to the server DB) stored data
-      // under plain variable names instead of the prefixed storage keys.
-      // Map those aliases to the real KEYS.* so old backup files still work.
-      const LEGACY_KEY_ALIASES = {
-        characters: KEYS.CHARS,
-        attributes: KEYS.ATTRS,
-        costumes: KEYS.COSTUMES,
-        tierList: KEYS.TIER,
-        tierListMoC: KEYS.TIER_MOC,
-        tierListPF: KEYS.TIER_PF,
-        tierListAS: KEYS.TIER_AS,
-      };
-
-      function importBackup(event) {
-        const file = event.target.files && event.target.files[0];
-        if (!file) return;
+      function importAllDataFromFile(file) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-          let parsed;
+        reader.onload = () => {
+          let payload;
           try {
-            parsed = JSON.parse(e.target.result);
-          } catch (err) {
-            showToast("That file isn't valid JSON.", "info");
-            event.target.value = "";
+            payload = JSON.parse(reader.result);
+          } catch (e) {
+            showToast("Invalid backup file", "info");
             return;
           }
-
-          // Accept either the wrapped backup format ({ data: {...} }) or a
-          // raw object keyed directly by the storage keys.
-          const rawPayload = parsed && parsed.data ? parsed.data : parsed;
-          // Normalize any legacy key names to the current DB storage keys.
-          const payload = {};
-          if (rawPayload && typeof rawPayload === "object") {
-            Object.keys(rawPayload).forEach((k) => {
-              const targetKey = LEGACY_KEY_ALIASES[k] || k;
-              payload[targetKey] = rawPayload[k];
-            });
-          }
-          const foundKeys = Object.keys(payload);
-
-          if (!payload || !foundKeys.length) {
-            showToast("This doesn't look like a valid backup file.", "info");
-            event.target.value = "";
-            _pendingImport = null;
-            renderImportKeyList();
+          const data = payload && payload.data ? payload.data : payload;
+          if (!data || typeof data !== "object") {
+            showToast("Invalid backup file", "info");
             return;
           }
-
-          _pendingImport = { payload, foundKeys };
-          renderImportKeyList();
-          event.target.value = "";
-        };
-        reader.onerror = () => {
-          showToast("Couldn't read that file.", "info");
-          event.target.value = "";
+          if (!ADMIN.isAdmin) {
+            showToast("Sign in as admin to restore a backup", "info");
+            openAdminLoginModal();
+            return;
+          }
+          showConfirm(
+            "This will overwrite the live database (for everyone) with this backup file. Continue?",
+            async () => {
+              showToast("Restoring backup...", "info");
+              const keys = Object.keys(data);
+              const failed = [];
+              // Sequential + awaited on purpose: large keys can be several
+              // hundred KB, and firing every PUT at once in parallel with
+              // no wait risks the page reloading before slow/rejected
+              // saves ever finish, silently losing failures (like a
+              // body-size-limit 413).
+              for (const k of keys) {
+                const ok = await DB.setItemAwaited(k, data[k]);
+                if (!ok) failed.push(k);
+              }
+              if (failed.length) {
+                showToast(
+                  "Import partially failed for: " +
+                    failed.join(", ") +
+                    " — see console for details. NOT reloading so you can check.",
+                  "info",
+                );
+                console.error("Backup restore failed for keys:", failed);
+              } else {
+                showToast("Backup restored. Reloading...", "success");
+                setTimeout(() => location.reload(), 800);
+              }
+            },
+          );
         };
         reader.readAsText(file);
       }
-
-      // Applies a single freshly-restored key from DB back into the app's
-      // in-memory state and re-renders whatever's currently visible, so a
-      // one-at-a-time restore doesn't require a full page reload.
-      function applyRestoredKeyToApp(key) {
-        try {
-          if (key === KEYS.CHARS) {
-            characters = getData(KEYS.CHARS, []);
-            renderCharacters();
-          } else if (key === KEYS.ATTRS) {
-            attributes = getData(KEYS.ATTRS, {});
-            renderAttributesList();
-          } else if (key === KEYS.COSTUMES) {
-            costumes = getData(KEYS.COSTUMES, []);
-            renderCostumesPage();
-          } else if (key === KEYS.TIER) {
-            tierList = getData(KEYS.TIER, { ...TIER_DEFAULT });
-            if (
-              document
-                .getElementById("page-tier-list")
-                ?.classList.contains("active")
-            )
-              renderTierListPage();
-          } else if (key === KEYS.TIER_MOC) {
-            tierListMoC = getData(KEYS.TIER_MOC, { ...TIER_DEFAULT });
-            if (
-              document
-                .getElementById("page-tier-list")
-                ?.classList.contains("active")
-            )
-              renderTierListPage();
-          } else if (key === KEYS.TIER_PF) {
-            tierListPF = getData(KEYS.TIER_PF, { ...TIER_DEFAULT });
-            if (
-              document
-                .getElementById("page-tier-list")
-                ?.classList.contains("active")
-            )
-              renderTierListPage();
-          } else if (key === KEYS.TIER_AS) {
-            tierListAS = getData(KEYS.TIER_AS, { ...TIER_DEFAULT });
-            if (
-              document
-                .getElementById("page-tier-list")
-                ?.classList.contains("active")
-            )
-              renderTierListPage();
-          } else if (key === KEYS.TIER_CONFIG) {
-            loadTierConfig();
-            if (
-              document
-                .getElementById("page-tier-list")
-                ?.classList.contains("active")
-            )
-              renderTierListPage();
-          }
-          // Unknown/custom keys have no in-memory state to refresh — the
-          // write to the DB has still succeeded, a page reload would show it.
-        } catch (e) {
-          console.error("Failed to refresh app state after restore:", key, e);
-        }
-      }
-
-      // Restores exactly one key from the pending backup file. Restoring
-      // one at a time (rather than the whole file in a single shot) means
-      // a large key hitting the server's body-size limit only blocks that
-      // one key — everything else can still be restored individually.
-      function importSingleKey(key) {
-        if (!_pendingImport || !_pendingImport.payload) return;
-        if (!ADMIN.isAdmin) {
-          showToast("Sign in as admin to restore a backup", "info");
-          openAdminLoginModal();
-          return;
-        }
-        const label =
-          STORAGE_REPORT_KEYS.find((r) => r.key === key)?.label || key;
-        showConfirm(
-          `Restore "${label}" from the backup file? This overwrites the live "${label}" data for everyone. This cannot be undone.`,
-          async () => {
-            showToast(`Restoring ${label}...`, "info");
-            const ok = await DB.setItemAwaited(
-              key,
-              JSON.stringify(_pendingImport.payload[key]),
-            );
-            if (ok) {
-              showToast(`${label} restored!`, "success");
-              applyRestoredKeyToApp(key);
-              _pendingImport.foundKeys = _pendingImport.foundKeys.filter(
-                (k) => k !== key,
-              );
-              renderImportKeyList();
-              openStorageManager(true);
-            } else {
-              showToast(
-                `Failed to restore ${label} — see console for details. If it's a large key, the server may be rejecting it as too big (413).`,
-                "info",
-              );
-            }
-          },
-          "Restore",
-        );
-      }
-
-      function renderImportKeyList() {
-        const container = document.getElementById("import-key-list");
-        if (!container) return;
-        if (!_pendingImport || !_pendingImport.foundKeys.length) {
-          container.innerHTML = _pendingImport
-            ? `<div style="color:var(--text-med);font-size:0.85rem;padding:0.5rem 0;">All keys from this file have been restored.</div>`
-            : "";
-          return;
-        }
-        container.innerHTML = _pendingImport.foundKeys
-          .map((k) => {
-            const label =
-              STORAGE_REPORT_KEYS.find((r) => r.key === k)?.label || k;
-            const bytes = new Blob([JSON.stringify(_pendingImport.payload[k])])
-              .size;
-            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-              <div>
-                <div style="font-size:0.9rem;font-weight:600;">${label}</div>
-                <div style="font-size:0.75rem;color:var(--text-med);">${formatBytes(bytes)} in file</div>
-              </div>
-              <button class="btn btn-sm btn-primary" id="restore-key-${k}" onclick="importSingleKey('${k}')">Restore</button>
-            </div>`;
-          })
-          .join("");
-      }
-      function openStorageManager(keepPendingImport) {
+      function openStorageManager() {
         const existingOverlay = document.querySelector(
           ".confirm-modal-overlay",
         );
         if (existingOverlay) existingOverlay.remove();
-        if (!keepPendingImport) _pendingImport = null;
         const { rows, total } = getStorageReport();
         const oversized = findOversizedFields();
         const rowsHtml =
@@ -4289,18 +3996,18 @@
           : "";
         const overlay = document.createElement("div");
         overlay.className = "confirm-modal-overlay";
-        overlay.innerHTML = `<div class="confirm-modal" style="min-width:400px;text-align:left;"><h3 style="margin-top:0;text-align:center;">Backup &amp; Database</h3><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;"><span class="form-label" style="margin:0;">Total stored</span><span style="font-weight:700;">${formatBytes(total)}</span></div><div style="max-height:180px;overflow-y:auto;margin-bottom:0.5rem;">${rowsHtml}</div>${oversizedHtml}<p style="color:var(--text-med);font-size:0.8rem;margin:1rem 0 0.5rem;">Data lives in the server's database and is shared by everyone who visits this site. Exporting a backup is a good idea before big changes.</p><div class="confirm-actions" style="flex-wrap:wrap;"><button class="btn btn-secondary" id="storage-close">Close</button><button class="btn btn-primary" id="storage-export">Export Backup</button></div><hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:1.25rem 0 1rem;"><div class="form-label">Restore from a file</div><p style="color:var(--text-med);font-size:0.8rem;margin:0.25rem 0 0.75rem;">Choose a backup file, then restore each piece of data one at a time — that way, if one is too large for the server, the rest can still go through. Restoring requires an admin sign-in.</p><input type="file" id="import-file-input" accept="application/json,.json" style="display:none;"><button id="backup-import-btn" class="btn btn-secondary" style="width:100%;margin-bottom:0.75rem;">Choose Backup File...</button><div id="import-key-list"></div></div>`;
+        overlay.innerHTML = `<div class="confirm-modal" style="min-width:380px;text-align:left;"><h3 style="margin-top:0;text-align:center;">Backup &amp; Database</h3><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;"><span class="form-label" style="margin:0;">Total stored</span><span style="font-weight:700;">${formatBytes(total)}</span></div><div style="max-height:220px;overflow-y:auto;margin-bottom:0.5rem;">${rowsHtml}</div>${oversizedHtml}<p style="color:var(--text-med);font-size:0.8rem;margin:1rem 0 0.5rem;">Data now lives in the server's database and is shared by everyone who visits this site. Exporting a backup is still a good idea before big changes; importing will overwrite the live database for everyone (admin only).</p><input type="file" id="import-file-input" accept="application/json" style="display:none;"><div class="confirm-actions" style="flex-wrap:wrap;"><button class="btn btn-secondary" id="storage-close">Close</button><button class="btn btn-secondary" id="storage-import">Import Backup</button><button class="btn btn-primary" id="storage-export">Export Backup</button></div></div>`;
         document.body.appendChild(overlay);
         document.getElementById("storage-close").onclick = () =>
           overlay.remove();
         document.getElementById("storage-export").onclick = () =>
           exportAllData();
-        document.getElementById("backup-import-btn").onclick = () =>
+        document.getElementById("storage-import").onclick = () =>
           document.getElementById("import-file-input").click();
         document.getElementById("import-file-input").onchange = (e) => {
-          importBackup(e);
+          const file = e.target.files[0];
+          if (file) importAllDataFromFile(file);
         };
-        renderImportKeyList();
       }
       function showStorageFullModal() {
         const existingOverlay = document.querySelector(
@@ -5109,60 +4816,17 @@
         const div = document.createElement("div");
         div.className = "talent-row-wrapper";
 
-        // Handle migration from single preview to array
-        const previews = data.previews || (data.preview ? [data.preview] : []);
-
-        let previewInputsHtml = "";
-        previews.forEach((url) => {
-          previewInputsHtml += `<div class="dynamic-list-row preview-input-row">
-                <input type="url" class="form-input t-preview" placeholder="Preview Image URL (image/gif)" value="${url}" autocomplete="off">
-                <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()" style="padding:0 0.5rem;">×</button>
-            </div>`;
-        });
-
-        // Auto-hide preview section if type contains "Passive"
-        const isPassive =
-          data.type && data.type.toLowerCase().includes("bonus trace");
-
         div.innerHTML = `
             <div class="talent-top-row">
-                <input type="text" class="form-input t-type" placeholder="Type" value="${data.type || ""}" autocomplete="off" oninput="togglePreviewSection(this)">
+                <input type="text" class="form-input t-type" placeholder="Type" value="${data.type || ""}" autocomplete="off">
                 <input type="text" class="form-input t-name" placeholder="Name" value="${data.name || ""}" autocomplete="off">
                 <input type="url" class="form-input t-icon" placeholder="Icon URL" value="${data.icon || ""}" autocomplete="off">
                 <button type="button" class="btn btn-secondary" onclick="moveTalentRow(this, -1)" style="padding:0 0.4rem;" title="Move up">↑</button>
                 <button type="button" class="btn btn-secondary" onclick="moveTalentRow(this, 1)" style="padding:0 0.4rem;" title="Move down">↓</button>
                 <button type="button" class="btn btn-danger" onclick="this.closest('.talent-row-wrapper').remove()" style="padding:0 0.5rem;">×</button>
             </div>
-            <div class="preview-section" style="${isPassive ? "display:none;" : "display:block;"}">
-                <h5>Ability Previews</h5>
-                <div class="preview-list" id="previews-${timestamp}">
-                    ${previewInputsHtml}
-                </div>
-                <button type="button" class="btn btn-sm btn-secondary" onclick="addPreviewImageInput('${timestamp}')" style="font-size:0.7rem; margin-top:5px; padding: 4px 10px;">+ Add Preview Image</button>
-            </div>
         `;
         document.getElementById("talents-container").appendChild(div);
-      }
-
-      function addPreviewImageInput(ts) {
-        const list = document.getElementById(`previews-${ts}`);
-        const div = document.createElement("div");
-        div.className = "dynamic-list-row preview-input-row";
-        div.innerHTML = `<input type="url" class="form-input t-preview" placeholder="Preview Image URL (image/gif)" value="" autocomplete="off"><button type="button" class="btn btn-danger" onclick="this.parentElement.remove()" style="padding:0 0.5rem;">×</button>`;
-        list.appendChild(div);
-      }
-
-      function togglePreviewSection(input) {
-        const val = input.value.toLowerCase();
-        const section = input
-          .closest(".talent-row-wrapper")
-          .querySelector(".preview-section");
-        // Bonus Traces and Talent (passive-like) hide previews; everything else (including Technique) shows it
-        if (val.includes("bonus trace")) {
-          section.style.display = "none";
-        } else {
-          section.style.display = "block";
-        }
       }
 
       function moveTalentRow(btn, dir) {
@@ -5247,19 +4911,12 @@
         const id =
           document.getElementById("char-id").value || Date.now().toString();
 
-        // UPDATED: Capture multiple previews
         const talents = [];
         document.querySelectorAll(".talent-row-wrapper").forEach((row) => {
-          const previews = [];
-          row.querySelectorAll(".t-preview").forEach((v) => {
-            if (v.value) previews.push(cleanImageUrl(v.value));
-          });
-
           talents.push({
             type: row.querySelector(".t-type").value,
             name: row.querySelector(".t-name").value,
             icon: cleanImageUrl(row.querySelector(".t-icon").value),
-            previews: previews, // Store array of URLs
           });
         });
 
@@ -5531,14 +5188,8 @@
                   c.talents
                     ? c.talents
                         .map((t) => {
-                          const vidList =
-                            t.previews || (t.preview ? [t.preview] : []);
-                          const vidData =
-                            vidList.length > 0
-                              ? `data-previews='${JSON.stringify(vidList).replace(/'/g, "&#39;")}'`
-                              : "";
                           return `
-                    <div class="talent-card" ${vidData} ${vidData ? `onmouseenter="showAbilityPreview(event, this)" onmousemove="moveAbilityPreview(event)" onmouseleave="hideAbilityPreview()"` : ""}>
+                    <div class="talent-card">
                         <img src="${t.icon || "https://placehold.co/50"}" class="talent-icon">
                         <div>
                             <div style="font-weight:bold; color:var(--text-light);">${t.name}</div>
@@ -5908,7 +5559,6 @@
 
       function closeModal() {
         document.getElementById("char-modal").classList.remove("open");
-        hideAbilityPreview();
         clearInterval(window._enemyIconCycleInterval);
       }
 
@@ -5969,59 +5619,68 @@
         renderTierListPage();
       }
 
+      function toggleUnrankedSidebar() {
+        document
+          .getElementById("unranked-sidebar")
+          .classList.toggle("collapsed");
+      }
+
       function renderTierListPage() {
         const container = document.getElementById("tier-list-container");
         const pool = document.getElementById("unranked-pool");
         const search = document
           .getElementById("tier-search")
           .value.toLowerCase();
-        const activeTL = getActiveTierList();
-        const cfg = getActiveTierConfig();
         container.innerHTML = "";
         pool.innerHTML = "";
+        const activeTL = getActiveTierList();
+        const cfg = getActiveTierConfig();
         const rankedIds = new Set();
+
         cfg.forEach((tier) => {
           const t = tier.id;
-          const row = document.createElement("div");
-          row.className = "tier-row";
-
-          const ctrlDiv = document.createElement("div");
-          ctrlDiv.className = "tier-controls";
-          ctrlDiv.innerHTML = `
-            <button class="tier-ctrl-btn" title="Rename" onclick="event.stopPropagation();renameTier('${t}')"><span class="material-symbols-outlined" style="font-size:14px;">edit</span></button>
-            <label class="tier-ctrl-btn" title="Change color" style="cursor:pointer;position:relative;"><input type="color" value="${tier.color}" onchange="recolorTier('${t}',this.value)" style="position:absolute;width:0;height:0;opacity:0;"><span class="material-symbols-outlined" style="font-size:14px;">palette</span></label>
-            <button class="tier-ctrl-btn danger" title="Delete tier" onclick="event.stopPropagation();deleteTier('${t}')"><span class="material-symbols-outlined" style="font-size:14px;">delete</span></button>`;
+          const r = document.createElement("div");
+          r.className = "tier-row";
+          const contentEl = document.createElement("div");
+          contentEl.className = "tier-content";
+          contentEl.id = `tier-${t}`;
+          contentEl.dataset.tier = t;
+          contentEl.addEventListener("dragover", allowDrop);
+          contentEl.addEventListener("drop", (ev) => dropOnTierContent(ev, t));
 
           const labelDiv = document.createElement("div");
           labelDiv.className = "tier-label tier-label-editable";
           labelDiv.style.backgroundColor = tier.color;
           labelDiv.innerHTML = `<span class="tier-label-text">${tier.label}</span>`;
-          labelDiv.ondrop = drop;
-          labelDiv.ondragover = allowDrop;
+          labelDiv.addEventListener("dragover", allowDrop);
+          labelDiv.addEventListener("drop", (ev) => dropOnTierContent(ev, t));
 
-          const contentDiv = document.createElement("div");
-          contentDiv.className = "tier-content";
-          contentDiv.dataset.tier = t;
-          contentDiv.ondrop = drop;
-          contentDiv.ondragover = allowDrop;
+          // Controls sit on the row itself (position:absolute left of label)
+          const ctrlDiv = document.createElement("div");
+          ctrlDiv.className = "tier-controls";
+          ctrlDiv.innerHTML = `
+            <button class="tier-ctrl-btn" title="Rename" onclick="event.stopPropagation();renameTier('${t}')"><span class="material-symbols-outlined" style="font-size:14px;">edit</span></button>
+            <label class="tier-ctrl-btn tier-ctrl-recolor" title="Change color" style="cursor:pointer;position:relative;"><input type="color" value="${tier.color}" onchange="recolorTier('${t}',this.value)" style="position:absolute;width:0;height:0;opacity:0;"><span class="material-symbols-outlined" style="font-size:14px;">palette</span></label>
+            <button class="tier-ctrl-btn danger" title="Delete tier" onclick="event.stopPropagation();deleteTier('${t}')"><span class="material-symbols-outlined" style="font-size:14px;">delete</span></button>`;
 
-          row.appendChild(ctrlDiv);
-          row.appendChild(labelDiv);
-          row.appendChild(contentDiv);
+          r.appendChild(ctrlDiv);
+          r.appendChild(labelDiv);
+          r.appendChild(contentEl);
+          container.appendChild(r);
 
           (activeTL[t] || []).forEach((id) => {
             const char = characters.find((x) => x.id === id);
             if (char) {
-              contentDiv.appendChild(createTierItem(char));
+              contentEl.appendChild(createTierItem(char, true));
               rankedIds.add(id);
             }
           });
-          container.appendChild(row);
         });
+
         characters.forEach((char) => {
           if (!rankedIds.has(char.id)) {
             if (!search || char.name.toLowerCase().includes(search)) {
-              pool.appendChild(createTierItem(char));
+              pool.appendChild(createTierItem(char, false));
             }
           }
         });
@@ -6029,13 +5688,9 @@
 
       function addTier() {
         const cfg = getActiveTierConfig();
-        const id = `tier-${Date.now()}`;
-        cfg.push({
-          id,
-          label: `Tier ${cfg.length + 1}`,
-          color: "#94a3b8",
-        });
-        saveTierConfig();
+        const id = `t${Date.now()}`;
+        cfg.push({ id, label: `T${cfg.length + 1}`, color: "#94a3b8" });
+        saveActiveTierConfig(cfg);
         renderTierListPage();
       }
 
@@ -6043,9 +5698,9 @@
         const cfg = getActiveTierConfig();
         const tier = cfg.find((t) => t.id === id);
         if (!tier) return;
-        promptEdit("Rename Tier", tier.label, (newLabel) => {
+        promptEditTier("Rename Tier", tier.label, (newLabel) => {
           tier.label = newLabel.trim() || tier.label;
-          saveTierConfig();
+          saveActiveTierConfig(cfg);
           renderTierListPage();
         });
       }
@@ -6055,9 +5710,9 @@
         const tier = cfg.find((t) => t.id === id);
         if (!tier) return;
         tier.color = color;
-        saveTierConfig();
+        saveActiveTierConfig(cfg);
         const labelEl = document
-          .querySelector(`.tier-content[data-tier="${id}"]`)
+          .querySelector(`#tier-${id}`)
           ?.closest(".tier-row")
           ?.querySelector(".tier-label");
         if (labelEl) labelEl.style.backgroundColor = color;
@@ -6069,10 +5724,10 @@
         showConfirm(
           `Delete tier "${tier ? tier.label : id}"? Characters return to the unranked pool.`,
           () => {
-            tierConfigs[activeTierMode] = cfg.filter((t) => t.id !== id);
-            saveTierConfig();
-            const activeTL = getActiveTierList();
-            delete activeTL[id];
+            const newCfg = cfg.filter((t) => t.id !== id);
+            saveActiveTierConfig(newCfg);
+            const td = getActiveTierList();
+            delete td[id];
             saveTier();
             renderTierListPage();
             showToast("Tier deleted", "success");
@@ -6081,11 +5736,8 @@
       }
 
       function resetTierList() {
-        const modeLabel =
-          document.getElementById(`tier-tab-${activeTierMode}`)?.textContent ||
-          activeTierMode;
         showConfirm(
-          `Reset the "${modeLabel}" tier list? All characters on this tab will return to the unranked pool.`,
+          "Reset this Tier List? All characters will return to the unranked pool.",
           () => {
             const emptyTiers = {};
             getActiveTierConfig().forEach((t) => {
@@ -6101,13 +5753,31 @@
         );
       }
 
-      function toggleUnrankedSidebar() {
-        document
-          .getElementById("tier-sidebar-pool")
-          .classList.toggle("collapsed");
+      // Small inline prompt used by renameTier (distinct name so it doesn't
+      // collide with any other prompt helper in the app).
+      function promptEditTier(title, val, onSave) {
+        const existing = document.querySelector(".confirm-modal-overlay");
+        if (existing) existing.remove();
+        const overlay = document.createElement("div");
+        overlay.className = "confirm-modal-overlay";
+        overlay.innerHTML = `<div class="confirm-modal"><h3 style="margin-top:0;">${title}</h3><input type="text" id="tier-prompt-input" class="form-input" value="${val.replace(/"/g, "&quot;")}" style="margin-bottom:1rem;"><div class="confirm-actions"><button class="btn btn-secondary" id="tier-prompt-cancel">Cancel</button><button class="btn btn-primary" id="tier-prompt-ok">Save</button></div></div>`;
+        document.body.appendChild(overlay);
+        const input = document.getElementById("tier-prompt-input");
+        input.focus();
+        document.getElementById("tier-prompt-cancel").onclick = () =>
+          overlay.remove();
+        const submit = () => {
+          const v = input.value.trim();
+          if (v) onSave(v);
+          overlay.remove();
+        };
+        document.getElementById("tier-prompt-ok").onclick = submit;
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") submit();
+        });
       }
 
-      function createTierItem(c) {
+      function createTierItem(c, inTier) {
         const div = document.createElement("div");
         div.className = "tier-item";
         div.draggable = true;
@@ -6123,21 +5793,62 @@
             ? "object-fit:contain; border:none; background:transparent;"
             : "";
         div.innerHTML = `<img src="${url}" class="${imgClass}" data-char-id="${c.id}" data-idx="0" style="width:100%; height:100%; ${style}" onerror="this.src='https://placehold.co/100?text=?'">`;
-        div.onclick = () => openModal(c);
         div.dataset.tip = c.name;
+
+        // dragover on item = show insertion indicator
+        div.addEventListener("dragover", (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          dragOverItem = div;
+          document
+            .querySelectorAll(".tier-drop-indicator")
+            .forEach((el) => el.remove());
+          const rect = div.getBoundingClientRect();
+          const midX = rect.left + rect.width / 2;
+          const insertBefore = ev.clientX < midX;
+          const indicator = document.createElement("div");
+          indicator.className = "tier-drop-indicator";
+          indicator.style.cssText =
+            "width:4px;height:60px;background:var(--accent);border-radius:4px;flex-shrink:0;box-shadow:0 0 8px rgba(212,192,134,0.8);pointer-events:none;";
+          if (insertBefore) div.parentNode.insertBefore(indicator, div);
+          else div.parentNode.insertBefore(indicator, div.nextSibling);
+        });
+        div.addEventListener("drop", (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          document
+            .querySelectorAll(".tier-drop-indicator")
+            .forEach((el) => el.remove());
+          const rect = div.getBoundingClientRect();
+          const insertBefore = ev.clientX < rect.left + rect.width / 2;
+          const tier = div.closest(".tier-content")?.dataset.tier;
+          if (tier) dropAtPosition(tier, div, insertBefore);
+        });
+
+        // Click still opens the character modal (drag handles reordering).
+        div.addEventListener("click", (ev) => {
+          if (draggedId) return;
+          openModal(characters.find((x) => x.id === c.id));
+        });
         return div;
       }
 
+      let currentMatrixGroupBy = "elements";
+      function switchMatrixGroupBy(cat) {
+        currentMatrixGroupBy = cat;
+        document.querySelectorAll("#matrix-row-tabs .attr-tab").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.cat === cat);
+        });
+        renderMatrixPage();
+      }
       function renderMatrixPage() {
         const container = document.getElementById("matrix-wrapper");
-        const rowAttr = document.getElementById("matrix-row-attr").value;
-        const colAttr = document.getElementById("matrix-col-attr").value;
+        const rowAttr = currentMatrixGroupBy;
 
         const getAttrList = (type) => {
           if (type === "elements") return attributes.elements;
           if (type === "weapons") return attributes.weapons;
           if (type === "nations") return attributes.nations;
-          if (type === "roles") return attributes.roles;
           if (type === "rarity")
             return [
               { name: "5", icon: null },
@@ -6147,21 +5858,10 @@
         };
 
         const rows = getAttrList(rowAttr);
-        const cols = getAttrList(colAttr);
-        let html =
-          '<table class="matrix-table"><thead><tr><th class="row-header"></th>';
-        cols.forEach((col) => {
-          const content = col.icon
-            ? `<img src="${col.icon}" class="matrix-icon" title="${col.name}">`
-            : col.name;
-          html += `<th>${content}</th>`;
-        });
-        html += "</tr></thead><tbody>";
 
         // Resolve uid-or-name to display name for matching
         const resolveForMatrix = (attrType, val) => {
           if (attrType === "rarity") return val;
-          if (attrType === "roles") return val;
           const list =
             attrType === "weapons"
               ? attributes.weapons
@@ -6176,91 +5876,44 @@
             ? charVal.includes(targetVal)
             : charVal === targetVal;
 
+        let html = "";
         rows.forEach((row) => {
           const rowLabel = row.icon
             ? `<img src="${row.icon}" class="matrix-icon" title="${row.name}">`
             : row.name;
-          html += `<tr><th class="row-header">${rowLabel}</th>`;
-          cols.forEach((col) => {
-            const matches = characters.filter((c) => {
-              const rVal =
-                rowAttr === "rarity"
-                  ? c.rarity
-                  : rowAttr === "roles"
-                    ? c.roles
-                    : resolveForMatrix(
-                        rowAttr,
-                        rowAttr === "weapons"
-                          ? c.weaponType
-                          : rowAttr === "nations"
-                            ? c.nation
-                            : c.element,
-                      );
-              const cVal =
-                colAttr === "rarity"
-                  ? c.rarity
-                  : colAttr === "roles"
-                    ? c.roles
-                    : resolveForMatrix(
-                        colAttr,
-                        colAttr === "weapons"
-                          ? c.weaponType
-                          : colAttr === "nations"
-                            ? c.nation
-                            : c.element,
-                      );
-              return checkMatch(rVal, row.name) && checkMatch(cVal, col.name);
-            });
-            const cellContent = matches
-              .map((m) => {
-                const url = getVisualUrl(m);
-                const style =
-                  displayMode === "emoji"
-                    ? "object-fit:contain; border:none; background:transparent;"
-                    : "";
-                const imgClass =
-                  displayMode === "emoji" && m.emojis && m.emojis.length > 1
-                    ? "matrix-char-img cycling-emoji"
-                    : "matrix-char-img";
-                return `<img src="${url}" class="${imgClass}" data-char-id="${m.id}" data-idx="0" title="${m.name}" style="${style}">`;
-              })
-              .join("");
-            html += `<td onclick="openMatrixSummary('${row.name} ${col.name}', [${matches.map((m) => `'${m.id}'`).join(",")}])"><div class="matrix-cell-content">${cellContent}</div></td>`;
+          const matches = characters.filter((c) => {
+            const rVal =
+              rowAttr === "rarity"
+                ? c.rarity
+                : resolveForMatrix(
+                    rowAttr,
+                    rowAttr === "weapons"
+                      ? c.weaponType
+                      : rowAttr === "nations"
+                        ? c.nation
+                        : c.element,
+                  );
+            return checkMatch(rVal, row.name);
           });
-          html += "</tr>";
+          const charsHtml = matches.length
+            ? matches
+                .map((m) => {
+                  const url = getVisualUrl(m);
+                  const style =
+                    displayMode === "emoji"
+                      ? "object-fit:contain; border:none; background:transparent;"
+                      : "";
+                  const imgClass =
+                    displayMode === "emoji" && m.emojis && m.emojis.length > 1
+                      ? "matrix-char-img cycling-emoji"
+                      : "matrix-char-img";
+                  return `<img src="${url}" class="${imgClass}" data-char-id="${m.id}" data-idx="0" title="${m.name}" style="${style}" onclick="openModal(characters.find(c => c.id === '${m.id}'))">`;
+                })
+                .join("")
+            : `<span class="matrix-list-empty">No characters</span>`;
+          html += `<div class="matrix-list-row"><div class="matrix-list-header">${rowLabel}<span class="matrix-list-count">${matches.length ? `(${matches.length})` : ""}</span></div><div class="matrix-list-chars">${charsHtml}</div></div>`;
         });
-        html += "</tbody></table>";
         container.innerHTML = html;
-      }
-
-      function swapMatrixAxes() {
-        const r = document.getElementById("matrix-row-attr");
-        const c = document.getElementById("matrix-col-attr");
-        const temp = r.value;
-        r.value = c.value;
-        c.value = temp;
-        renderMatrixPage();
-      }
-      function openMatrixSummary(title, charIds) {
-        if (charIds.length === 0) return;
-        const modal = document.getElementById("matrix-summary-modal");
-        const body = document.getElementById("summary-body");
-        document.getElementById("summary-title").textContent =
-          title + " (" + charIds.length + ")";
-        body.innerHTML = charIds
-          .map((id) => {
-            const char = characters.find((c) => c.id === id);
-            if (!char) return "";
-            const url = getVisualUrl(char);
-            return `<div class="summary-char-card" onclick="closeSummaryModal(); setTimeout(() => openModal(characters.find(c => c.id === '${char.id}')), 200)"><img src="${url}" class="summary-avatar" style="${displayMode === "emoji" ? "object-fit:contain; border:none; background:transparent;" : ""}"><div class="summary-name">${char.name}</div></div>`;
-          })
-          .join("");
-        modal.classList.add("open");
-      }
-      function closeSummaryModal() {
-        document
-          .getElementById("matrix-summary-modal")
-          .classList.remove("open");
       }
 
       function setupUrlPreviews() {
@@ -6325,7 +5978,18 @@
         tierListMoC = getData(KEYS.TIER_MOC, { ...TIER_DEFAULT });
         tierListPF = getData(KEYS.TIER_PF, { ...TIER_DEFAULT });
         tierListAS = getData(KEYS.TIER_AS, { ...TIER_DEFAULT });
-        loadTierConfig();
+        tierConfigMoC = getData(
+          KEYS.TIER_CONFIG_MOC,
+          JSON.parse(JSON.stringify(DEFAULT_TIER_CONFIG)),
+        );
+        tierConfigPF = getData(
+          KEYS.TIER_CONFIG_PF,
+          JSON.parse(JSON.stringify(DEFAULT_TIER_CONFIG)),
+        );
+        tierConfigAS = getData(
+          KEYS.TIER_CONFIG_AS,
+          JSON.parse(JSON.stringify(DEFAULT_TIER_CONFIG)),
+        );
         costumes = getData(KEYS.COSTUMES, []);
 
         initDefaults();
@@ -6335,20 +5999,125 @@
       });
       function allowDrop(ev) {
         ev.preventDefault();
-      }
-      function drag(ev) {
-        draggedId = ev.target.dataset.id;
-      }
-      function drop(ev) {
-        ev.preventDefault();
-        const tier = ev.target.closest(".tier-content")?.dataset.tier;
-        const activeTL = getActiveTierList();
-        for (let k in activeTL)
-          activeTL[k] = activeTL[k].filter((id) => id !== draggedId);
-        if (tier) {
-          if (!activeTL[tier]) activeTL[tier] = [];
-          activeTL[tier].push(draggedId);
+        // Highlight the tier-content being hovered
+        const tc = ev.target.closest(".tier-content");
+        document
+          .querySelectorAll(".tier-content")
+          .forEach((el) => el.classList.remove("drag-over"));
+        if (tc) tc.classList.add("drag-over");
+        // Clear stale indicators if not on an item
+        if (!ev.target.classList.contains("tier-item")) {
+          document
+            .querySelectorAll(".tier-drop-indicator")
+            .forEach((el) => el.remove());
         }
+      }
+
+      function allowDropPool(ev) {
+        ev.preventDefault();
+        document
+          .querySelectorAll(".tier-content")
+          .forEach((el) => el.classList.remove("drag-over"));
+        document
+          .querySelectorAll(".tier-drop-indicator")
+          .forEach((el) => el.remove());
+        ev.currentTarget.classList.add("drag-over-pool");
+      }
+
+      function drag(ev) {
+        if (!ADMIN.isAdmin) {
+          ev.preventDefault();
+          showToast("Sign in as admin to edit the tier list", "info");
+          return;
+        }
+        draggedId = ev.target.dataset.id;
+        ev.target.addEventListener(
+          "dragend",
+          () => {
+            document
+              .querySelectorAll(".tier-drop-indicator")
+              .forEach((el) => el.remove());
+            // Clear after the click listener (added in createTierItem) has
+            // had a chance to see it and bail out.
+            setTimeout(() => {
+              draggedId = null;
+            }, 0);
+          },
+          { once: true },
+        );
+      }
+
+      function dropAtPosition(tier, refItem, insertBefore) {
+        document
+          .querySelectorAll(".tier-content")
+          .forEach((el) => el.classList.remove("drag-over"));
+        document
+          .querySelectorAll(".tier-drop-indicator")
+          .forEach((el) => el.remove());
+        const t = getActiveTierList();
+        for (let k in t) t[k] = t[k].filter((id) => id !== draggedId);
+        if (!t[tier]) t[tier] = [];
+        const refIdx = t[tier].indexOf(refItem.dataset.id);
+        if (refIdx === -1) {
+          t[tier].push(draggedId);
+        } else {
+          const insertIdx = insertBefore ? refIdx : refIdx + 1;
+          t[tier].splice(insertIdx, 0, draggedId);
+        }
+        saveTier();
+        renderTierListPage();
+      }
+
+      function dropOnTierContent(ev, tier) {
+        ev.preventDefault();
+        document
+          .querySelectorAll(".tier-drop-indicator")
+          .forEach((el) => el.remove());
+        document
+          .querySelectorAll(".tier-content")
+          .forEach((el) => el.classList.remove("drag-over"));
+        // If dropped on an item, dropAtPosition handles it; if on empty space, append
+        if (ev.target.classList.contains("tier-item")) return;
+        const t = getActiveTierList();
+        for (let k in t) t[k] = t[k].filter((id) => id !== draggedId);
+        if (!t[tier]) t[tier] = [];
+        const content = document.getElementById(`tier-${tier}`);
+        const items = [...content.querySelectorAll(".tier-item")];
+        if (items.length === 0) {
+          t[tier].push(draggedId);
+        } else {
+          let insertIdx = t[tier].length;
+          for (let i = 0; i < items.length; i++) {
+            const rect = items[i].getBoundingClientRect();
+            const midX = rect.left + rect.width / 2;
+            if (ev.clientX < midX) {
+              insertIdx = i;
+              break;
+            }
+          }
+          t[tier].splice(insertIdx, 0, draggedId);
+        }
+        saveTier();
+        renderTierListPage();
+      }
+
+      function drop(ev) {
+        // Fallback for pool / sidebar drops (unrank)
+        ev.preventDefault();
+        document
+          .querySelectorAll(".tier-drop-indicator")
+          .forEach((el) => el.remove());
+        document
+          .querySelectorAll(".tier-content")
+          .forEach((el) => el.classList.remove("drag-over"));
+        document
+          .querySelectorAll(".drag-over-pool")
+          .forEach((el) => el.classList.remove("drag-over-pool"));
+        const inTier =
+          ev.target.closest(".tier-content") || ev.target.closest(".tier-row");
+        if (inTier) return; // handled above
+        const t = getActiveTierList();
+        for (let k in t) t[k] = t[k].filter((id) => id !== draggedId);
         saveTier();
         renderTierListPage();
       }
@@ -6381,215 +6150,6 @@
         }
       });
 
-      // --- GIF Duration Helpers ---
-      // Parse GIF binary to sum all frame delays (GIF89a spec: delay in centiseconds at offset 1 of Graphic Control Extension)
-      async function getGifDuration(url) {
-        try {
-          const resp = await fetch(url);
-          const buf = await resp.arrayBuffer();
-          const data = new Uint8Array(buf);
-          let totalDelay = 0;
-          let i = 6; // Skip header (6 bytes) + logical screen descriptor (7 bytes) = start at 13
-          // Skip logical screen descriptor
-          const hasGCT = (data[10] & 0x80) !== 0;
-          const gctSize = hasGCT ? 3 * (1 << ((data[10] & 0x07) + 1)) : 0;
-          i = 13 + gctSize;
-          while (i < data.length) {
-            if (data[i] === 0x3b) break; // Trailer
-            if (data[i] === 0x21) {
-              // Extension
-              if (data[i + 1] === 0xf9) {
-                // Graphic Control Extension
-                // delay is at bytes i+4 (low) and i+5 (high), in centiseconds
-                const delay = data[i + 4] + (data[i + 5] << 8);
-                totalDelay += delay > 0 ? delay : 10; // default 10cs if 0
-              }
-              i += 2;
-              // Skip sub-blocks
-              while (i < data.length && data[i] !== 0x00) {
-                i += data[i] + 1;
-              }
-              i++; // skip block terminator
-            } else if (data[i] === 0x2c) {
-              // Image descriptor
-              const hasLCT = (data[i + 9] & 0x80) !== 0;
-              const lctSize = hasLCT
-                ? 3 * (1 << ((data[i + 9] & 0x07) + 1))
-                : 0;
-              i += 10 + lctSize + 1; // skip descriptor + LCT + LZW min code size
-              // Skip sub-blocks
-              while (i < data.length && data[i] !== 0x00) {
-                i += data[i] + 1;
-              }
-              i++;
-            } else {
-              i++;
-            }
-          }
-          return totalDelay * 10; // centiseconds to milliseconds
-        } catch (e) {
-          return null;
-        }
-      }
-
-      // Freeze a GIF on its current frame by drawing to canvas
-      function freezeGif(img) {
-        try {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.naturalWidth || img.width || 320;
-          canvas.height = img.naturalHeight || img.height || 180;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0);
-          img.src = canvas.toDataURL("image/png");
-        } catch (e) {
-          // Cross-origin: just hide it
-          img.style.opacity = "0";
-        }
-      }
-
-      // --- Ability Preview Logic ---
-      let currentPreviewItems = [];
-      let currentPreviewIndex = 0;
-      let imageCycleTimeout = null;
-
-      function showAbilityPreview(e, element) {
-        // Handle both new array format and legacy direct string if needed
-        let urls = [];
-        if (typeof element === "string") {
-          urls = [element];
-        } else if (element.dataset && element.dataset.previews) {
-          try {
-            urls = JSON.parse(element.dataset.previews);
-          } catch (e) {
-            urls = [];
-          }
-        }
-
-        if (!urls || urls.length === 0) return;
-
-        currentPreviewItems = urls;
-        currentPreviewIndex = 0;
-
-        const preview = document.getElementById("ability-preview");
-        const placeholder = document.getElementById(
-          "ability-preview-placeholder",
-        );
-
-        // Reset state
-        if (imageCycleTimeout) clearTimeout(imageCycleTimeout);
-
-        playNextPreviewItem();
-
-        preview.style.display = "block";
-        placeholder.style.display = "none";
-        moveAbilityPreview(e);
-      }
-
-      function playNextPreviewItem() {
-        const img = document.getElementById("ability-preview-img");
-        const spinner = document.getElementById("preview-spinner");
-
-        if (!currentPreviewItems || currentPreviewItems.length === 0) return;
-
-        const url = currentPreviewItems[currentPreviewIndex];
-
-        spinner.style.display = "block";
-        img.style.display = "block";
-
-        const isGif = /\.gif(\?|$)/i.test(url);
-
-        if (isGif) {
-          // For GIFs: fetch and parse total duration, show for that duration then stop/advance
-          img.src = url;
-          img.style.display = "block";
-          spinner.style.display = "block";
-
-          getGifDuration(url)
-            .then((durationMs) => {
-              spinner.style.display = "none";
-              const showDuration = Math.max(durationMs || 3000, 500);
-
-              if (currentPreviewItems.length > 1) {
-                // Multi-item: advance after one play
-                imageCycleTimeout = setTimeout(() => {
-                  // Freeze the GIF by replacing src with a static snapshot via canvas
-                  freezeGif(img);
-                  setTimeout(() => {
-                    currentPreviewIndex =
-                      (currentPreviewIndex + 1) % currentPreviewItems.length;
-                    playNextPreviewItem();
-                  }, 300);
-                }, showDuration);
-              } else {
-                // Single GIF: play once then freeze on last frame
-                imageCycleTimeout = setTimeout(() => {
-                  freezeGif(img);
-                }, showDuration);
-              }
-            })
-            .catch(() => {
-              spinner.style.display = "none";
-              // Fallback: show for 3s
-              imageCycleTimeout = setTimeout(() => {
-                if (currentPreviewItems.length > 1) {
-                  currentPreviewIndex =
-                    (currentPreviewIndex + 1) % currentPreviewItems.length;
-                  playNextPreviewItem();
-                } else {
-                  freezeGif(img);
-                }
-              }, 3000);
-            });
-        } else {
-          img.src = url;
-          img.onload = () => {
-            spinner.style.display = "none";
-            if (currentPreviewItems.length > 1) {
-              imageCycleTimeout = setTimeout(() => {
-                currentPreviewIndex =
-                  (currentPreviewIndex + 1) % currentPreviewItems.length;
-                playNextPreviewItem();
-              }, 4500);
-            }
-          };
-          img.onerror = () => {
-            spinner.style.display = "none";
-            if (currentPreviewItems.length > 1) {
-              currentPreviewIndex =
-                (currentPreviewIndex + 1) % currentPreviewItems.length;
-              playNextPreviewItem();
-            }
-          };
-        }
-      }
-
-      function moveAbilityPreview(e) {
-        const preview = document.getElementById("ability-preview");
-        if (preview.style.display === "none") return;
-
-        const offset = 20;
-        let left = e.clientX + offset;
-        let top = e.clientY + offset;
-
-        // Boundary checks
-        if (left + 320 > window.innerWidth) left = e.clientX - 320 - offset;
-        if (top + 180 > window.innerHeight) top = e.clientY - 180 - offset;
-
-        preview.style.left = left + "px";
-        preview.style.top = top + "px";
-      }
-
-      function hideAbilityPreview() {
-        const preview = document.getElementById("ability-preview");
-        const img = document.getElementById("ability-preview-img");
-
-        preview.style.display = "none";
-        img.src = "";
-        img.style.opacity = "1"; // reset in case freezeGif faded it
-
-        if (imageCycleTimeout) clearTimeout(imageCycleTimeout);
-        currentPreviewItems = [];
-      }
     </script>
   </body>
 </html>

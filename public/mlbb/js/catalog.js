@@ -499,6 +499,9 @@
           null,
           getSkinTagFilterImages(),
         );
+        if (typeof syncFilterPanelSummaries === "function") {
+          syncFilterPanelSummaries();
+        }
       }
 
       function populateFilters() {
@@ -1650,6 +1653,20 @@
         c.innerHTML = html;
       }
 
+      function getHeroBadgeImageSources(hero) {
+        if (!hero) {
+          return { src: IMAGE_PLACEHOLDER, fallback: IMAGE_PLACEHOLDER };
+        }
+        const candidates = [hero.icon, hero.portrait, hero.splashArt]
+          .map((url) => (url ? cleanImageUrl(url) : ""))
+          .filter(Boolean);
+        const unique = [...new Set(candidates)];
+        return {
+          src: unique[0] || IMAGE_PLACEHOLDER,
+          fallback: unique[1] || IMAGE_PLACEHOLDER,
+        };
+      }
+
       function renderSkinsPage() {
         const g = document.getElementById("skin-grid");
         g.innerHTML = "";
@@ -1803,13 +1820,16 @@
             skinMetaHtml += "</div>";
           }
 
-          // Hero icon overlay (top-left for normal, top-right for sacred statue)
+          // Hero icon overlay (top-left for normal, top-right for sacred statue).
+          // Clean the stored icon URL and fall back to other hero artwork before
+          // showing the generic placeholder.
           const hero = getHeroById(x.heroId);
+          const heroBadge = getHeroBadgeImageSources(hero);
           const heroIconHtml = hero
-            ? `<div class="card-hero-icon" title="${hero.name}"><img src="${hero.icon || IMAGE_PLACEHOLDER}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt=""></div>`
+            ? `<div class="card-hero-icon" title="${hero.name}"><img src="${heroBadge.src}" data-fallback-src="${heroBadge.fallback}" alt="${hero.name} icon" loading="lazy"></div>`
             : "";
           const heroIconRightHtml = hero
-            ? `<div class="card-hero-icon card-hero-icon-right" title="${hero.name}"><img src="${hero.icon || IMAGE_PLACEHOLDER}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt=""></div>`
+            ? `<div class="card-hero-icon card-hero-icon-right" title="${hero.name}"><img src="${heroBadge.src}" data-fallback-src="${heroBadge.fallback}" alt="${hero.name} icon" loading="lazy"></div>`
             : "";
 
           // Skin skill strip (if showSkillIcons is enabled)

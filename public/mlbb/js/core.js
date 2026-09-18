@@ -318,6 +318,83 @@
         observer.observe(document.body, { childList: true, subtree: true });
       }
 
+      function updateFilterPanelSummary(panelOrId) {
+        const panel =
+          typeof panelOrId === "string"
+            ? document.getElementById(panelOrId)
+            : panelOrId;
+        if (!panel) return;
+        const ids = (panel.dataset.filterIds || "")
+          .split(",")
+          .map((id) => id.trim())
+          .filter(Boolean);
+        const count = ids.reduce((total, id) => {
+          const input = document.getElementById(id);
+          return total + (input && String(input.value || "").trim() ? 1 : 0);
+        }, 0);
+        const badge = panel.querySelector(".filter-active-count");
+        const button = panel.querySelector(".filter-panel-toggle");
+        if (badge) {
+          badge.textContent = String(count);
+          badge.dataset.count = String(count);
+        }
+        if (button) button.classList.toggle("has-active-filters", count > 0);
+      }
+
+      function toggleFilterPanel(panelId, forceOpen = null) {
+        const panel = document.getElementById(panelId);
+        if (!panel) return;
+        const shouldOpen =
+          forceOpen === null ? panel.classList.contains("collapsed") : !!forceOpen;
+        panel.classList.toggle("collapsed", !shouldOpen);
+        const button = panel.querySelector(".filter-panel-toggle");
+        if (button) button.setAttribute("aria-expanded", String(shouldOpen));
+        try {
+          sessionStorage.setItem(
+            `mlbb_filter_panel_${panelId}`,
+            shouldOpen ? "open" : "closed",
+          );
+        } catch (_) {}
+      }
+
+      function setupCollapsibleFilters() {
+        document.querySelectorAll(".filter-panel").forEach((panel) => {
+          try {
+            const saved = sessionStorage.getItem(
+              `mlbb_filter_panel_${panel.id}`,
+            );
+            if (saved === "open") panel.classList.remove("collapsed");
+            if (saved === "closed") panel.classList.add("collapsed");
+          } catch (_) {}
+
+          const button = panel.querySelector(".filter-panel-toggle");
+          if (button) {
+            button.setAttribute(
+              "aria-expanded",
+              String(!panel.classList.contains("collapsed")),
+            );
+          }
+
+          const ids = (panel.dataset.filterIds || "")
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean);
+          ids.forEach((id) => {
+            const input = document.getElementById(id);
+            if (!input || input.dataset.filterSummaryBound) return;
+            input.dataset.filterSummaryBound = "true";
+            input.addEventListener("change", () => updateFilterPanelSummary(panel));
+          });
+          updateFilterPanelSummary(panel);
+        });
+      }
+
+      function syncFilterPanelSummaries() {
+        document
+          .querySelectorAll(".filter-panel")
+          .forEach((panel) => updateFilterPanelSummary(panel));
+      }
+
       function debounce(func, wait) {
         let timeout;
         return function (...args) {
@@ -706,6 +783,7 @@
         setupNavigation();
         installImageFallbacks();
         populateFilters();
+        setupCollapsibleFilters();
         renderHeroesPage();
         setupTooltips();
         setupSearchDebounce();

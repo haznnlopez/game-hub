@@ -4,10 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f172a" />
-    <meta
-      name="description"
-      content="Mobile Legends: Bang Bang wiki and collection dashboard"
-    />
+    <meta name="description" content="Mobile Legends: Bang Bang wiki and collection dashboard" />
     <title>Mobile Legends - Wiki</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,10 +19,7 @@
     />
 
     <link rel="icon" type="image/jpeg" href="images/mlbb-logo.jpg" />
-    <script
-      defer
-      src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
-    ></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body class="app-layout">
@@ -159,9 +153,7 @@
           >
             <div class="filter-panel-toolbar">
               <div class="filter-quick-search">
-                <span class="material-symbols-outlined filter-search-icon"
-                  >search</span
-                >
+                <span class="material-symbols-outlined filter-search-icon">search</span>
                 <input
                   type="text"
                   id="filter-hero-search"
@@ -169,10 +161,7 @@
                   placeholder="Search heroes..."
                   aria-label="Search heroes"
                 />
-                <div
-                  id="hero-search-suggestions"
-                  class="search-suggestions"
-                ></div>
+                <div id="hero-search-suggestions" class="search-suggestions"></div>
               </div>
               <button
                 type="button"
@@ -184,15 +173,10 @@
                 <span class="material-symbols-outlined">tune</span>
                 <span>Filters</span>
                 <span class="filter-active-count" data-count="0">0</span>
-                <span class="material-symbols-outlined filter-toggle-icon"
-                  >expand_more</span
-                >
+                <span class="material-symbols-outlined filter-toggle-icon">expand_more</span>
               </button>
             </div>
-            <div
-              id="hero-filter-panel-body"
-              class="filters-bar filter-panel-body"
-            >
+            <div id="hero-filter-panel-body" class="filters-bar filter-panel-body">
               <div class="filter-item">
                 <label class="form-label">Role</label
                 ><select
@@ -202,11 +186,7 @@
                   aria-hidden="true"
                   tabindex="-1"
                 ></select>
-                <div
-                  id="pills-filter-hero-role"
-                  class="filter-pill-row"
-                  aria-label="Filter heroes by role"
-                ></div>
+                <div id="pills-filter-hero-role" class="filter-pill-row" aria-label="Filter heroes by role"></div>
               </div>
               <div class="filter-item">
                 <label class="form-label">Lane</label
@@ -217,11 +197,7 @@
                   aria-hidden="true"
                   tabindex="-1"
                 ></select>
-                <div
-                  id="pills-filter-hero-lane"
-                  class="filter-pill-row"
-                  aria-label="Filter heroes by lane"
-                ></div>
+                <div id="pills-filter-hero-lane" class="filter-pill-row" aria-label="Filter heroes by lane"></div>
               </div>
               <div class="filter-item">
                 <label class="form-label">Specialty</label
@@ -232,11 +208,7 @@
                   aria-hidden="true"
                   tabindex="-1"
                 ></select>
-                <div
-                  id="pills-filter-hero-specialty"
-                  class="filter-pill-row"
-                  aria-label="Filter heroes by specialty"
-                ></div>
+                <div id="pills-filter-hero-specialty" class="filter-pill-row" aria-label="Filter heroes by specialty"></div>
               </div>
               <div class="filter-item filter-sort-item">
                 <label class="form-label">Sort</label>
@@ -286,9 +258,7 @@
           >
             <div class="filter-panel-toolbar">
               <div class="filter-quick-search">
-                <span class="material-symbols-outlined filter-search-icon"
-                  >search</span
-                >
+                <span class="material-symbols-outlined filter-search-icon">search</span>
                 <input
                   type="text"
                   id="skin-search"
@@ -296,10 +266,7 @@
                   placeholder="Search skins..."
                   aria-label="Search skins"
                 />
-                <div
-                  id="skin-search-suggestions"
-                  class="search-suggestions"
-                ></div>
+                <div id="skin-search-suggestions" class="search-suggestions"></div>
               </div>
               <button
                 type="button"
@@ -311,15 +278,10 @@
                 <span class="material-symbols-outlined">tune</span>
                 <span>Filters</span>
                 <span class="filter-active-count" data-count="0">0</span>
-                <span class="material-symbols-outlined filter-toggle-icon"
-                  >expand_more</span
-                >
+                <span class="material-symbols-outlined filter-toggle-icon">expand_more</span>
               </button>
             </div>
-            <div
-              id="skin-filter-panel-body"
-              class="filters-bar filter-panel-body"
-            >
+            <div id="skin-filter-panel-body" class="filters-bar filter-panel-body">
               <div class="filter-item">
                 <label class="form-label">Hero</label
                 ><select
@@ -337,11 +299,7 @@
                   aria-hidden="true"
                   tabindex="-1"
                 ></select>
-                <div
-                  id="pills-filter-skin-rarity"
-                  class="filter-pill-row"
-                  aria-label="Filter skins by rarity"
-                ></div>
+                <div id="pills-filter-skin-rarity" class="filter-pill-row" aria-label="Filter skins by rarity"></div>
               </div>
               <div class="filter-item">
                 <label class="form-label">Type / Tag</label
@@ -352,11 +310,7 @@
                   aria-hidden="true"
                   tabindex="-1"
                 ></select>
-                <div
-                  id="pills-filter-skin-collectible"
-                  class="filter-pill-row filter-pill-row-wide"
-                  aria-label="Filter skins by type or collectible tag"
-                ></div>
+                <div id="pills-filter-skin-collectible" class="filter-pill-row filter-pill-row-wide" aria-label="Filter skins by type or collectible tag"></div>
               </div>
               <div class="filter-item filter-sort-item">
                 <label class="form-label">Sort</label>
@@ -1223,14 +1177,7 @@
       <div class="modal-container">
         <header class="modal-header">
           <div class="modal-header-title-group">
-            <button
-              id="modal-back-btn"
-              class="modal-btn-circle modal-back-btn"
-              type="button"
-              onclick="goBackModal()"
-              title="Back"
-              aria-label="Back to previous modal"
-            >
+            <button id="modal-back-btn" class="modal-btn-circle modal-back-btn" type="button" onclick="goBackModal()" title="Back" aria-label="Back to previous modal">
               <span class="material-symbols-outlined">arrow_back</span>
             </button>
             <h2 id="modal-title" class="modal-title">Title</h2>
@@ -1246,11 +1193,7 @@
         <div class="modal-body">
           <div class="modal-image-section">
             <div class="modal-main-image-wrapper" id="modal-single-view">
-              <img
-                id="modal-img"
-                class="modal-main-image"
-                alt="Selected artwork"
-              />
+              <img id="modal-img" class="modal-main-image" alt="Selected artwork" />
             </div>
             <div class="modal-gallery" id="modal-gallery-view"></div>
             <div class="image-toggles" id="modal-toggles">

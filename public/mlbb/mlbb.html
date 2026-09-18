@@ -672,11 +672,17 @@
               </div>
             </div>
             <div id="matrix-insights" class="matrix-insights"></div>
-            <div class="matrix-table-shell">
-              <div id="matrix-container" class="matrix-table-container"></div>
-            </div>
-            <div id="matrix-selection" class="matrix-selection-panel">
-              <div class="matrix-selection-empty">Click a matrix cell to inspect the heroes in that combination.</div>
+            <div class="matrix-workspace">
+              <div class="matrix-table-shell" aria-label="Hero attribute matrix">
+                <div id="matrix-container" class="matrix-table-container"></div>
+              </div>
+              <aside id="matrix-selection" class="matrix-selection-panel" aria-live="polite">
+                <div class="matrix-selection-empty">
+                  <span class="material-symbols-outlined">touch_app</span>
+                  <strong>Select a cell</strong>
+                  <span>Matching heroes will appear here.</span>
+                </div>
+              </aside>
             </div>
           </div>
         </div>

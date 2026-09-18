@@ -104,7 +104,7 @@
         const panel = document.getElementById("matrix-selection");
         if (!panel) return;
         if (!matrixSelectedCell) {
-          panel.innerHTML = `<div class="matrix-selection-empty">Click a matrix cell to inspect the heroes in that combination.</div>`;
+          panel.innerHTML = `<div class="matrix-selection-empty"><span class="material-symbols-outlined">touch_app</span><strong>Select a cell</strong><span>Matching heroes will appear here.</span></div>`;
           return;
         }
         const { row, column } = matrixSelectedCell;
@@ -119,7 +119,7 @@
               })
               .join("")
           : `<div class="matrix-selection-empty">No heroes currently match this combination.</div>`;
-        panel.innerHTML = `<div class="matrix-selection-head"><div><span class="matrix-selection-kicker">Selected combination</span><h3>${rowCfg.singular}: ${row} <span>×</span> ${colCfg.singular}: ${column}</h3></div><span class="matrix-selection-count">${matched.length} hero${matched.length === 1 ? "" : "es"}</span></div><div class="matrix-selection-heroes">${avatars}</div>`;
+        panel.innerHTML = `<div class="matrix-selection-head"><div><span class="matrix-selection-kicker">Matching heroes</span><h3>${row} <span>×</span> ${column}</h3><p>${rowCfg.singular} + ${colCfg.singular}</p></div><span class="matrix-selection-count">${matched.length}</span></div><div class="matrix-selection-heroes">${avatars}</div>`;
       }
 
       function renderMatrixPage() {
@@ -168,7 +168,7 @@
               b.heroes.length - a.heroes.length ||
               `${a.rowValue}${a.columnValue}`.localeCompare(`${b.rowValue}${b.columnValue}`),
           )
-          .slice(0, 4);
+          .slice(0, 2);
         const coveredHeroes = new Set(populated.flatMap((cell) => cell.heroes.map((h) => h.id))).size;
         insights.innerHTML = `<div class="matrix-insight-card matrix-insight-stat"><span class="material-symbols-outlined">groups</span><div><strong>${coveredHeroes}</strong><span>heroes represented</span></div></div><div class="matrix-insight-card matrix-insight-stat"><span class="material-symbols-outlined">grid_view</span><div><strong>${populated.length}</strong><span>active combinations</span></div></div>${topCombos
           .map(

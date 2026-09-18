@@ -1422,6 +1422,7 @@
         const ctx = document.getElementById("skin-form-context").value;
         const isStatue = document.getElementById("is-sacred-statue").checked;
         const type = isStatue ? "statue" : "skin";
+        const existingSkin = (ctx === "upcoming" ? getUpcoming() : getSkins()).find((item) => item.id === id);
         const s = {
           id,
           type,
@@ -1440,7 +1441,9 @@
           priceDiamonds: document.getElementById("skin-price-diamonds")
             ? document.getElementById("skin-price-diamonds").value || ""
             : "",
-          addedAt: Date.now(),
+          addedAt: existingSkin?.addedAt || Date.now(),
+          firstAddedAt: existingSkin?.firstAddedAt || (!existingSkin ? Date.now() : null),
+          collectionAddedAt: existingSkin?.collectionAddedAt || (!existingSkin && ctx !== "upcoming" ? Date.now() : 0),
         };
         if (!isStatue) {
           s.rarity = document.getElementById("skin-rarity-select").value;
@@ -1680,8 +1683,8 @@
             return true;
           });
         h = applySortPill(h, "heroes");
-        h = applyStarredSort(h);
-        const starred = getStarred();
+        h = applyRevampingSort(h);
+        const revamping = getRevamping();
         const frag = document.createDocumentFragment();
 
         const normRole = (r) =>
@@ -1691,8 +1694,8 @@
             .replace(/[^a-z\-]/g, "");
         h.forEach((x) => {
           const c = document.createElement("div");
-          const isStarredCard = !!starred[x.id];
-          c.className = "unified-card" + (isStarredCard ? " starred-card" : "");
+          const isRevampingCard = !!revamping[x.id];
+          c.className = "unified-card" + (isRevampingCard ? " revamping-card" : "");
           // Remove card-level tooltip; skill icons have their own title attribute
           c.onclick = (e) => {
             if (!e.target.closest(".card-overlay-actions"))
@@ -1755,9 +1758,9 @@
             metaHtml += "</div>";
           }
 
-          const starIcon = isStarredCard ? "star" : "star_border";
-          const starClass = isStarredCard ? "starred" : "";
-          c.innerHTML = `<div class="card-image-wrapper"><img src="${x.splashArt || IMAGE_PLACEHOLDER}" class="card-image" loading="lazy">${skillsHtml}<div class="card-overlay-actions"><div class="overlay-btn star ${starClass}" onclick="event.stopPropagation();toggleStar('${x.id}',renderHeroesPage)"><span class="material-symbols-outlined">${starIcon}</span></div><div class="overlay-btn" onclick="renderHeroFormPage('${x.id}',false)"><span class="material-symbols-outlined">edit</span></div><div class="overlay-btn delete" onclick="deleteHero('${x.id}',false)"><span class="material-symbols-outlined">delete</span></div></div></div><div class="card-content"><h3 class="card-title">${x.name}</h3>${attrStripHtml}${metaHtml}</div>`;
+          const revampIcon = isRevampingCard ? "construction" : "handyman";
+          const revampClass = isRevampingCard ? "active" : "";
+          c.innerHTML = `<div class="card-image-wrapper"><img src="${x.splashArt || IMAGE_PLACEHOLDER}" class="card-image" loading="lazy">${skillsHtml}<div class="card-overlay-actions"><div class="overlay-btn revamp ${revampClass}" data-tooltip="${isRevampingCard ? 'Remove Revamping status' : 'Mark as Revamping'}" onclick="event.stopPropagation();toggleRevamping('${x.id}',renderHeroesPage)"><span class="material-symbols-outlined">${revampIcon}</span></div><div class="overlay-btn" onclick="renderHeroFormPage('${x.id}',false)"><span class="material-symbols-outlined">edit</span></div><div class="overlay-btn delete" onclick="deleteHero('${x.id}',false)"><span class="material-symbols-outlined">delete</span></div></div></div><div class="card-content"><h3 class="card-title">${x.name}</h3>${attrStripHtml}${metaHtml}</div>`;
           frag.appendChild(c);
         });
         g.appendChild(frag);
@@ -1840,6 +1843,7 @@
         const isStatue = s.isStatue || s.type === "statue";
         const rarityColor = `var(--rarity-${(s.collectible || s.rarity || "basic").toLowerCase().replace(/\s+/g, "-")}, var(--accent))`;
         const identityGroups = [
+          isRevamping(s.id) ? detailGroup("Status", [{ text: "Revamping", color: "#60a5fa" }]) : "",
           detailGroup(
             "Hero",
             h
@@ -1919,6 +1923,7 @@
         }
 
         const classification = [
+          isRevamping(h.id) ? detailGroup("Status", [{ text: "Revamping", color: "#60a5fa" }]) : "",
           detailGroup("Tier", [{ text: heroTier || "Unranked", color: heroTier ? tierColors[heroTier] : "" }]),
           detailGroup(
             "Role",
@@ -2050,8 +2055,8 @@
           });
         }
         display = applySortPill(display, "skins");
-        display = applyStarredSort(display);
-        const starred = getStarred();
+        display = applyRevampingSort(display);
+        const revamping = getRevamping();
 
         if (display.length === 0) {
           document.getElementById("no-skins-message").style.display = "block";
@@ -2101,7 +2106,7 @@
             }
           }
 
-          c.className = cc + (starred[x.id] ? " starred-card" : "");
+          c.className = cc + (revamping[x.id] ? " revamping-card" : "");
           c.style.setProperty("--card-glow", glowStyle);
 
           // Subtitle text (skinTag only affects the image, not the label)
@@ -2213,9 +2218,9 @@
 
           let act = "";
           if (x.type !== "painted") {
-            const starIcon = starred[x.id] ? "star" : "star_border";
-            const starCls = starred[x.id] ? "starred" : "";
-            act = `<div class="card-overlay-actions"><div class="overlay-btn star ${starCls}" onclick="event.stopPropagation();toggleStar('${x.id}',renderSkinsPage)"><span class="material-symbols-outlined">${starIcon}</span></div><div class="overlay-btn" onclick="renderSkinForm('${x.id}',false)"><span class="material-symbols-outlined">edit</span></div><div class="overlay-btn delete" onclick="deleteSkin('${x.id}',false)"><span class="material-symbols-outlined">delete</span></div></div>`;
+            const revampIcon = revamping[x.id] ? "construction" : "handyman";
+            const revampCls = revamping[x.id] ? "active" : "";
+            act = `<div class="card-overlay-actions"><div class="overlay-btn revamp ${revampCls}" data-tooltip="${revamping[x.id] ? 'Remove Revamping status' : 'Mark as Revamping'}" onclick="event.stopPropagation();toggleRevamping('${x.id}',renderSkinsPage)"><span class="material-symbols-outlined">${revampIcon}</span></div><div class="overlay-btn" onclick="renderSkinForm('${x.id}',false)"><span class="material-symbols-outlined">edit</span></div><div class="overlay-btn delete" onclick="deleteSkin('${x.id}',false)"><span class="material-symbols-outlined">delete</span></div></div>`;
           }
 
           // Image with fallback
@@ -2233,10 +2238,10 @@
 
           if (isSacredStatue) {
             // Sacred statue: portrait card with hero icon top-right and name overlay
-            const starIconSt = starred[x.id] ? "star" : "star_border";
-            const starClsSt = starred[x.id] ? "starred" : "";
+            const revampIconSt = revamping[x.id] ? "construction" : "handyman";
+            const revampClsSt = revamping[x.id] ? "active" : "";
             const statueAct = `<div class="card-overlay-actions" style="top:8px;left:8px;right:auto;flex-direction:column;gap:6px;">
-              <div class="overlay-btn star ${starClsSt}" onclick="event.stopPropagation();toggleStar('${x.id}',renderSkinsPage)" style="width:30px;height:30px;"><span class="material-symbols-outlined" style="font-size:16px;">${starIconSt}</span></div>
+              <div class="overlay-btn revamp ${revampClsSt}" data-tooltip="${revamping[x.id] ? 'Remove Revamping status' : 'Mark as Revamping'}" onclick="event.stopPropagation();toggleRevamping('${x.id}',renderSkinsPage)" style="width:30px;height:30px;"><span class="material-symbols-outlined" style="font-size:16px;">${revampIconSt}</span></div>
               <div class="overlay-btn" onclick="renderSkinForm('${x.id}',false)" style="width:30px;height:30px;"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></div>
               <div class="overlay-btn delete" onclick="deleteSkin('${x.id}',false)" style="width:30px;height:30px;"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></div>
             </div>`;
@@ -2330,8 +2335,8 @@
         // Recently added
         renderRecentlyAdded();
 
-        const now = Date.now();
-        const oneWeek = 7 * 24 * 60 * 60 * 1000;
+        const newestSkin = typeof getNewestSkinAddition === "function" ? getNewestSkinAddition() : null;
+        const newestSkinId = newestSkin?.id || "";
         const chartItems = [];
 
         keys.forEach((k) => {
@@ -2353,7 +2358,9 @@
 
           const d = document.createElement("div");
           d.className = "skin-group-details";
-          const isClosed = cState[k];
+          d.dataset.groupKey = k;
+          const isClosed = !!cState[k];
+          d.classList.toggle("is-collapsed", isClosed);
           const sum = document.createElement("div");
           sum.className = "skin-group-summary";
           // Header icon based on group-by type
@@ -2376,15 +2383,13 @@
           sum.innerHTML = `<span class="group-title" style="display:flex;align-items:center;gap:8px;">${groupIcon}${g.name} <span class="group-count" style="font-size:0.9em;opacity:0.7;">(${filt.length})</span></span><span class="material-symbols-outlined group-expand-arrow" style="transform:${isClosed ? "rotate(0deg)" : "rotate(180deg)"}">expand_more</span>`;
           const con = document.createElement("div");
           con.className = "skin-group-content";
-          con.style.display = isClosed ? "none" : "block";
+          con.hidden = isClosed;
 
           sum.onclick = () => {
-            const cl = con.style.display !== "none";
-            con.style.display = cl ? "none" : "block";
-            sum.querySelector(".group-expand-arrow").style.transform = cl
-              ? "rotate(0deg)"
-              : "rotate(180deg)";
-            cState[k] = cl;
+            const shouldOpen = d.classList.contains("is-collapsed");
+            if (typeof setSkinCountGroupOpen === "function") setSkinCountGroupOpen(d, shouldOpen, true);
+            else { d.classList.toggle("is-collapsed", !shouldOpen); con.hidden = !shouldOpen; }
+            cState[k] = !shouldOpen;
             saveData(KEYS.SKIN_COUNT_STATE, cState);
           };
 
@@ -2462,9 +2467,9 @@
             icon.dataset.tooltip = skin.name;
             icon.onclick = () => openModal("skin", skin.id);
 
-            // New badge for skins added within a week
+            // "New" belongs only to the single newest skin added to the collection.
             wrapper.appendChild(icon);
-            if (skin.addedAt && now - skin.addedAt <= oneWeek) {
+            if (skin.id === newestSkinId) {
               const badge = document.createElement("span");
               badge.className = "new-badge";
               badge.textContent = "New";
@@ -2478,6 +2483,7 @@
           frag.appendChild(d);
         });
         l.appendChild(frag);
+        if (typeof updateSkinCountGroupControls === "function") updateSkinCountGroupControls();
 
         // Update chart data after rendering (accurate counts post-filter)
         renderSkinCountPage._chartData = chartItems;

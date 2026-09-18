@@ -79,8 +79,8 @@
           l = l.filter((x) => x.name.toLowerCase().includes(fSearch));
         if (fHero) l = l.filter((x) => x.heroId === fHero);
         l = applySortPill(l, "upcoming");
-        l = applyStarredSort(l);
-        const starred = getStarred();
+        l = applyRevampingSort(l);
+        const revamping = getRevamping();
 
         if (l.length === 0) {
           document.getElementById("no-upcoming-message").style.display =
@@ -97,8 +97,8 @@
         const f = document.createDocumentFragment();
         l.forEach((x) => {
           const c = document.createElement("div");
-          const isStarredCard = !!starred[x.id];
-          c.className = "unified-card" + (isStarredCard ? " starred-card" : "");
+          const isRevampingCard = !!revamping[x.id];
+          c.className = "unified-card" + (isRevampingCard ? " revamping-card" : "");
 
           let glowStyle = "transparent";
           if (x.itemType === "hero") {
@@ -212,13 +212,13 @@
             upcomingMetaHtml += "</div>";
           }
 
-          const starIcon = isStarredCard ? "star" : "star_border";
-          const starCls = isStarredCard ? "starred" : "";
+          const revampIcon = isRevampingCard ? "construction" : "handyman";
+          const revampCls = isRevampingCard ? "active" : "";
           let overlayActions;
           if (x.itemType === "skin") {
-            overlayActions = `<div class="card-overlay-actions"><div class="overlay-btn star ${starCls}" onclick="event.stopPropagation();toggleStar('${x.id}',renderUpcomingPage)"><span class="material-symbols-outlined">${starIcon}</span></div><div class="overlay-btn" onclick="renderSkinForm('${x.id}',true)"><span class="material-symbols-outlined">edit</span></div><div class="overlay-btn delete" onclick="deleteSkin('${x.id}',true)"><span class="material-symbols-outlined">delete</span></div></div>`;
+            overlayActions = `<div class="card-overlay-actions"><div class="overlay-btn revamp ${revampCls}" data-tooltip="${isRevampingCard ? 'Remove Revamping status' : 'Mark as Revamping'}" onclick="event.stopPropagation();toggleRevamping('${x.id}',renderUpcomingPage)"><span class="material-symbols-outlined">${revampIcon}</span></div><div class="overlay-btn" onclick="renderSkinForm('${x.id}',true)"><span class="material-symbols-outlined">edit</span></div><div class="overlay-btn delete" onclick="deleteSkin('${x.id}',true)"><span class="material-symbols-outlined">delete</span></div></div>`;
           } else {
-            overlayActions = `<div class="card-overlay-actions"><div class="overlay-btn star ${starCls}" onclick="event.stopPropagation();toggleStar('${x.id}',renderUpcomingPage)"><span class="material-symbols-outlined">${starIcon}</span></div><div class="overlay-btn" onclick="renderHeroFormPage('${x.id}',true)"><span class="material-symbols-outlined">edit</span></div><div class="overlay-btn delete" onclick="deleteHero('${x.id}',true)"><span class="material-symbols-outlined">delete</span></div></div>`;
+            overlayActions = `<div class="card-overlay-actions"><div class="overlay-btn revamp ${revampCls}" data-tooltip="${isRevampingCard ? 'Remove Revamping status' : 'Mark as Revamping'}" onclick="event.stopPropagation();toggleRevamping('${x.id}',renderUpcomingPage)"><span class="material-symbols-outlined">${revampIcon}</span></div><div class="overlay-btn" onclick="renderHeroFormPage('${x.id}',true)"><span class="material-symbols-outlined">edit</span></div><div class="overlay-btn delete" onclick="deleteHero('${x.id}',true)"><span class="material-symbols-outlined">delete</span></div></div>`;
           }
 
           // Rarity image for upcoming skins
@@ -291,6 +291,11 @@
             const s = l.find((x) => x.id === id && x.itemType === "skin");
             if (s) {
               delete s.itemType;
+              // Releasing an Upcoming skin is a new collection addition now,
+              // regardless of when the upcoming record was originally created.
+              s.collectionAddedAt = Date.now();
+              s.addedAt = s.addedAt || s.collectionAddedAt;
+              s.firstAddedAt = s.firstAddedAt || s.collectionAddedAt;
               const skins = getSkins();
               const idx = skins.findIndex((x) => x.id === id);
               if (idx > -1) skins[idx] = s;

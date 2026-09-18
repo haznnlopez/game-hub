@@ -721,6 +721,39 @@
         if (countSearch)
           countSearch.oninput = debounce(() => renderSkinCountPage(), 300);
       }
+
+      function migrateNativeTitles(root = document) {
+        const nodes = [];
+        if (root.nodeType === 1 && root.hasAttribute?.("title")) nodes.push(root);
+        root.querySelectorAll?.("[title]").forEach((el) => nodes.push(el));
+        nodes.forEach((el) => {
+          const value = el.getAttribute("title");
+          if (!value) return;
+          if (!el.dataset.tooltip) el.dataset.tooltip = value;
+          if (!el.getAttribute("aria-label") && !el.textContent.trim()) {
+            el.setAttribute("aria-label", value);
+          }
+          el.removeAttribute("title");
+        });
+      }
+
+      function installCustomTooltipMigration() {
+        migrateNativeTitles(document);
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === 1) migrateNativeTitles(node);
+            });
+            if (mutation.type === "attributes" && mutation.target?.hasAttribute?.("title")) {
+              migrateNativeTitles(mutation.target);
+            }
+          });
+        });
+        observer.observe(document.body, {
+          childList: true, subtree: true, attributes: true, attributeFilter: ["title"]
+        });
+      }
+
       function setupTooltips() {
         const tooltip = document.getElementById("custom-tooltip");
         document.addEventListener("mousemove", (e) => {
@@ -865,6 +898,7 @@
         populateFilters();
         setupCollapsibleFilters();
         renderHeroesPage();
+        installCustomTooltipMigration();
         setupTooltips();
         setupSearchDebounce();
         initImagePreview();
@@ -956,7 +990,8 @@
         { key: "mlbb_skillcat_groups", label: "Skill Category Groups" },
         { key: "mlbb_skillcat_tag_groups", label: "Skill Category Tag Map" },
         { key: "mlbb_tier_config", label: "Tier Config" },
-        { key: "mlbb_starred", label: "Starred Items" },
+        { key: "mlbb_revamping", label: "Revamping Status" },
+        { key: "mlbb_starred", label: "Legacy Favorites (migration)" },
       ];
       function getStorageReport() {
         let total = 0;

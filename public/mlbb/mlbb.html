@@ -351,25 +351,16 @@
         <div id="page-skin-count" class="page">
           <header class="page-header">
             <h1>Skin Count</h1>
-            <div style="display: flex; gap: 0.5rem; align-items: center">
-              <button
-                class="btn btn-secondary btn-sm"
-                onclick="collapseAllGroups()"
-              >
-                <span class="material-symbols-outlined" style="font-size: 16px"
-                  >unfold_less</span
-                >
-                Collapse All
-              </button>
-              <button
-                class="btn btn-secondary btn-sm"
-                onclick="expandAllGroups()"
-              >
-                <span class="material-symbols-outlined" style="font-size: 16px"
-                  >unfold_more</span
-                >
-                Expand All
-              </button>
+            <div class="skin-count-group-toolbar">
+              <span id="skin-count-group-status" class="skin-count-group-status">0/0 groups open</span>
+              <div class="skin-count-group-actions">
+                <button id="skin-count-collapse-all" class="btn btn-secondary btn-sm" onclick="collapseAllGroups()" data-tooltip="Collapse every visible group">
+                  <span class="material-symbols-outlined">unfold_less</span><span>Collapse</span>
+                </button>
+                <button id="skin-count-expand-all" class="btn btn-secondary btn-sm" onclick="expandAllGroups()" data-tooltip="Expand every visible group">
+                  <span class="material-symbols-outlined">unfold_more</span><span>Expand</span>
+                </button>
+              </div>
             </div>
           </header>
           <div
@@ -427,11 +418,11 @@
                 <span id="view-stats-label">View Stats</span>
               </button>
             </div>
-            <div
-              id="skin-count-chart-container"
-              style="display: none; margin-top: 1.5rem; position: relative"
-            >
-              <canvas id="skin-count-chart" style="max-height: 380px"></canvas>
+            <div id="skin-count-chart-container" class="skin-count-chart-container" style="display:none">
+              <div class="skin-count-chart-layout">
+                <div class="skin-count-chart-canvas-wrap"><canvas id="skin-count-chart"></canvas></div>
+                <div id="skin-count-chart-legend" class="skin-count-chart-legend" aria-label="Skin count chart legend"></div>
+              </div>
             </div>
           </div>
           <div class="filters-bar">

@@ -142,6 +142,14 @@
         modal.classList.add("open");
         updateModalBackButton();
 
+        // Every modal opens at the top. Modal history remembers what was open,
+        // not the previous scroll offset, so navigating back is predictable.
+        const modalBody = modal.querySelector(".modal-body");
+        if (modalBody) {
+          modalBody.scrollTop = 0;
+          requestAnimationFrame(() => { modalBody.scrollTop = 0; });
+        }
+
         document.querySelectorAll("#modal-toggles .toggle-btn").forEach((btn) => {
           btn.onclick = () => {
             document.querySelectorAll("#modal-toggles .toggle-btn").forEach((b) => b.classList.remove("active"));

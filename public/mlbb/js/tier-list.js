@@ -95,7 +95,7 @@
 
       function tierMovementBadgeHtml(heroId) {
         const movement = getTierMovement(heroId);
-        if (!movement || movement.kind === "same") return "";
+        if (!movement || movement.kind === "same" || movement.kind === "same-tier") return "";
         const title = (() => {
           if (movement.kind === "up")
             return `Moved from ${movement.previous.tierLabel} to ${movement.current.tierLabel}`;
@@ -140,6 +140,17 @@
         if (del) del.disabled = !hasSelection;
       }
 
+      let tierDiffCollapsed = sessionStorage.getItem("mlbb_tier_diff_collapsed") !== "open";
+
+      function toggleTierComparisonSummary() {
+        tierDiffCollapsed = !tierDiffCollapsed;
+        sessionStorage.setItem("mlbb_tier_diff_collapsed", tierDiffCollapsed ? "closed" : "open");
+        const panel = document.getElementById("tier-comparison-summary");
+        panel?.classList.toggle("is-collapsed", tierDiffCollapsed);
+        const button = panel?.querySelector(".tier-comparison-toggle");
+        if (button) button.setAttribute("aria-expanded", String(!tierDiffCollapsed));
+      }
+
       function renderTierComparisonSummary() {
         const panel = document.getElementById("tier-comparison-summary");
         if (!panel) return;
@@ -172,7 +183,9 @@
           }</div></div>`;
         };
         panel.hidden = false;
-        panel.innerHTML = `<div class="tier-comparison-head"><div><span class="tier-comparison-kicker">Changes since</span><strong>${snapshot.name || "Saved Version"}</strong></div><span>${snapshot.createdAt ? new Date(snapshot.createdAt).toLocaleString() : ""}</span></div><div class="tier-change-grid">${groupHtml("up", "Moved Up", "trending_up")}${groupHtml("down", "Moved Down", "trending_down")}${groupHtml("new", "Newly Ranked", "add_circle")}${groupHtml("unranked", "Unranked", "remove_circle")}</div>`;
+        panel.classList.toggle("is-collapsed", tierDiffCollapsed);
+        const totalChanges = groups.up.length + groups.down.length + groups.new.length + groups.unranked.length;
+        panel.innerHTML = `<button type="button" class="tier-comparison-toggle" onclick="toggleTierComparisonSummary()" aria-expanded="${!tierDiffCollapsed}"><div><span class="tier-comparison-kicker">Changes since</span><strong>${snapshot.name || "Saved Version"}</strong><span class="tier-diff-count">${totalChanges} changed</span></div><span class="material-symbols-outlined tier-diff-chevron">expand_more</span></button><div class="tier-change-grid">${groupHtml("up", "Moved Up", "trending_up")}${groupHtml("down", "Moved Down", "trending_down")}${groupHtml("new", "Newly Ranked", "add_circle")}${groupHtml("unranked", "Unranked", "remove_circle")}</div>`;
       }
 
       function setTierCompareVersion(id) {

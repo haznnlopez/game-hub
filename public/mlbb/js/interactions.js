@@ -180,200 +180,143 @@
       }
 
       // ============================================================
-      // STAR SYSTEM
+      // REVAMPING STATUS
       // ============================================================
-      function getStarred() {
+      function getRevamping() {
         try {
-          return JSON.parse(DB.getItem("mlbb_starred") || "{}");
+          const raw = DB.getItem("mlbb_revamping");
+          if (raw) return JSON.parse(raw) || {};
+          // One-time migration: old Favorites become Revamping marks.
+          const legacy = JSON.parse(DB.getItem("mlbb_starred") || "{}");
+          if (legacy && Object.keys(legacy).length) {
+            safeLocalStorageSet("mlbb_revamping", JSON.stringify(legacy));
+            return legacy;
+          }
+          return {};
         } catch (e) {
           return {};
         }
       }
-      function saveStarred(d) {
-        safeLocalStorageSet("mlbb_starred", JSON.stringify(d));
+      function saveRevamping(d) {
+        safeLocalStorageSet("mlbb_revamping", JSON.stringify(d));
       }
-      function isStarred(id) {
-        return !!getStarred()[id];
+      function isRevamping(id) {
+        return !!getRevamping()[id];
       }
-      function toggleStar(id, renderFn) {
-        const s = getStarred();
-        if (s[id]) delete s[id];
-        else s[id] = true;
-        saveStarred(s);
-        renderFn();
+      function toggleRevamping(id, renderFn) {
+        const state = getRevamping();
+        if (state[id]) delete state[id];
+        else state[id] = true;
+        saveRevamping(state);
+        if (typeof renderFn === "function") renderFn();
       }
+      // Revamping is a status, not a priority sort. Keep catalog order unchanged.
+      function applyRevampingSort(arr) { return arr; }
 
-      function applyStarredSort(arr) {
-        const starred = getStarred();
-        return [
-          ...arr.filter((x) => starred[x.id]),
-          ...arr.filter((x) => !starred[x.id]),
-        ];
-      }
+      // Compatibility aliases for any older extension code.
+      const getStarred = getRevamping;
+      const toggleStar = toggleRevamping;
+      const applyStarredSort = applyRevampingSort;
 
       // ============================================================
       // COLLAPSE / EXPAND ALL (Skin Count)
       // ============================================================
+      function updateSkinCountGroupControls() {
+        const groups = [...document.querySelectorAll(".skin-group-details")];
+        const open = groups.filter((group) => !group.classList.contains("is-collapsed")).length;
+        const status = document.getElementById("skin-count-group-status");
+        if (status) status.textContent = `${open}/${groups.length} groups open`;
+        const collapseBtn = document.getElementById("skin-count-collapse-all");
+        const expandBtn = document.getElementById("skin-count-expand-all");
+        if (collapseBtn) collapseBtn.disabled = groups.length === 0 || open === 0;
+        if (expandBtn) expandBtn.disabled = groups.length === 0 || open === groups.length;
+      }
+
+      function setSkinCountGroupOpen(group, open, animate = true) {
+        if (!group) return;
+        const content = group.querySelector(".skin-group-content");
+        const arrow = group.querySelector(".group-expand-arrow");
+        if (!content) return;
+        const currentlyOpen = !group.classList.contains("is-collapsed");
+        if (currentlyOpen === open) return;
+        group.classList.toggle("is-collapsed", !open);
+        if (arrow) arrow.style.transform = open ? "rotate(180deg)" : "rotate(0deg)";
+        if (!animate || !content.animate) {
+          content.hidden = !open;
+          updateSkinCountGroupControls();
+          return;
+        }
+        content.hidden = false;
+        const full = content.scrollHeight;
+        const animation = content.animate(
+          open
+            ? [{ height: "0px", opacity: 0 }, { height: `${full}px`, opacity: 1 }]
+            : [{ height: `${full}px`, opacity: 1 }, { height: "0px", opacity: 0 }],
+          { duration: 220, easing: "cubic-bezier(.2,.8,.2,1)" }
+        );
+        animation.onfinish = () => {
+          content.hidden = !open;
+          content.style.height = "";
+          content.style.opacity = "";
+          updateSkinCountGroupControls();
+        };
+      }
+
       function collapseAllGroups() {
         const cState = getData(KEYS.SKIN_COUNT_STATE, {});
-        document.querySelectorAll(".skin-group-details").forEach((d) => {
-          const con = d.querySelector(".skin-group-content");
-          const arrow = d.querySelector(
-            ".skin-group-summary .group-expand-arrow",
-          );
-          if (con) con.style.display = "none";
-          if (arrow) arrow.style.transform = "rotate(0deg)";
+        document.querySelectorAll(".skin-group-details").forEach((group) => {
+          setSkinCountGroupOpen(group, false, true);
+          if (group.dataset.groupKey) cState[group.dataset.groupKey] = true;
         });
-        // Mark all as closed in state
-        const keys = Object.keys(cState);
-        // Get all current group keys from DOM
-        document.querySelectorAll(".skin-group-summary").forEach((s) => {
-          const title = s.querySelector(".group-title");
-          if (title) {
-            // find key from rendered groups
-          }
-        });
-        // Rebuild state: just set all visible groups as closed
-        renderSkinCountPage._lastGroupKeys &&
-          renderSkinCountPage._lastGroupKeys.forEach((k) => {
-            cState[k] = true;
-          });
         saveData(KEYS.SKIN_COUNT_STATE, cState);
+        setTimeout(updateSkinCountGroupControls, 240);
       }
 
       function expandAllGroups() {
         const cState = getData(KEYS.SKIN_COUNT_STATE, {});
-        document.querySelectorAll(".skin-group-details").forEach((d) => {
-          const con = d.querySelector(".skin-group-content");
-          const arrow = d.querySelector(
-            ".skin-group-summary .group-expand-arrow",
-          );
-          if (con) con.style.display = "block";
-          if (arrow) arrow.style.transform = "rotate(180deg)";
+        document.querySelectorAll(".skin-group-details").forEach((group) => {
+          setSkinCountGroupOpen(group, true, true);
+          if (group.dataset.groupKey) cState[group.dataset.groupKey] = false;
         });
-        renderSkinCountPage._lastGroupKeys &&
-          renderSkinCountPage._lastGroupKeys.forEach((k) => {
-            cState[k] = false;
-          });
         saveData(KEYS.SKIN_COUNT_STATE, cState);
+        setTimeout(updateSkinCountGroupControls, 240);
       }
 
       // ============================================================
       // RECENTLY ADDED (Skin Count) - skins added within 7 days
       // ============================================================
+      function getSkinCollectionAddedAt(skin) {
+        // V2.4 uses a dedicated immutable collection-add timestamp. Editing no
+        // longer changes it. Older records fall back to array insertion order.
+        return Number(skin?.collectionAddedAt || 0);
+      }
+
+      function getNewestSkinAddition() {
+        const released = getSkins().filter((skin) => !skin.isStatue && skin.type !== "statue");
+        const timestamped = released.filter((skin) => getSkinCollectionAddedAt(skin) > 0);
+        if (timestamped.length) {
+          return timestamped.reduce((latest, skin) =>
+            getSkinCollectionAddedAt(skin) > getSkinCollectionAddedAt(latest) ? skin : latest
+          );
+        }
+        // Legacy data had no stable add timestamp because edits rewrote addedAt.
+        // The collection array itself preserves insertion order, so use its last
+        // released skin instead of accidentally calling a recently edited skin new.
+        return released[released.length - 1] || null;
+      }
+
       function renderRecentlyAdded() {
         const section = document.getElementById("recently-added-section");
         if (!section) return;
-        const now = Date.now();
-        const oneWeek = 7 * 24 * 60 * 60 * 1000;
-        const skins = getSkins().filter(
-          (x) => !x.isStatue && x.type !== "statue",
-        );
-        // "New" skins: those with addedAt timestamp within a week
-        const recent = skins.filter(
-          (x) => x.firstAddedAt && now - x.firstAddedAt <= oneWeek,
-        );
+        const skin = getNewestSkinAddition();
+        if (!skin) { section.innerHTML = ""; return; }
 
-        if (recent.length === 0) {
-          section.innerHTML = "";
-          return;
-        }
-
-        const isOpen = !getData("mlbb_recently_collapsed", false);
-
-        section.innerHTML = "";
-        const dropdown = document.createElement("div");
-        dropdown.className = "recently-added-dropdown";
-
-        const summary = document.createElement("div");
-        summary.className = "recently-added-summary";
-        summary.innerHTML = `<span style="font-weight:700;color:var(--danger);display:flex;align-items:center;gap:0.5rem;"><span class="material-symbols-outlined" style="font-size:18px;">new_releases</span> Recently Added <span style="background:var(--danger);color:white;font-size:0.7rem;padding:2px 7px;border-radius:10px;margin-left:4px;">${recent.length}</span></span><span class="material-symbols-outlined recently-expand-arrow" style="transition:transform 0.3s;transform:${isOpen ? "rotate(180deg)" : "rotate(0deg)"}">expand_more</span>`;
-
-        const contentDiv = document.createElement("div");
-        contentDiv.className = "recently-added-content";
-        contentDiv.style.display = isOpen ? "flex" : "none";
-
-        recent.forEach((skin) => {
-          const wrapper = document.createElement("div");
-          wrapper.style.cssText = "position:relative;cursor:pointer;";
-
-          const icon = document.createElement("div");
-          const imgData = getSkinImageWithFallback(skin, "icon");
-          const raritySlug = (skin.collectible || skin.rarity || "")
-            .toLowerCase()
-            .replace(/\s+/g, "-");
-          icon.className = `icon-item rarity-${raritySlug}`;
-          if (imgData.src) {
-            icon.style.backgroundImage = `url('${imgData.src}')`;
-            if (imgData.isGreyed) {
-              icon.style.filter = "grayscale(100%) opacity(0.5)";
-            }
-          }
-          icon.dataset.tooltip = skin.name;
-
-          const badge = document.createElement("span");
-          badge.className = "new-badge";
-          badge.textContent = "New";
-
-          wrapper.appendChild(icon);
-          wrapper.appendChild(badge);
-
-          // Clicking navigates to the hero group in skin count and reveals the skin
-          wrapper.onclick = () => {
-            const by = document.getElementById("filter-count-sort").value;
-            if (by !== "hero") {
-              document.getElementById("filter-count-sort").value = "hero";
-              if (typeof renderFilterPills === "function")
-                renderFilterPills("filter-count-sort", null, null, {
-                  multiple: false,
-                });
-            }
-            renderSkinCountPage();
-            setTimeout(() => {
-              // Find the icon with matching skinId in the rendered list
-              const skinIcon = document.querySelector(
-                `.icon-item[data-skin-id="${skin.id}"]`,
-              );
-              if (skinIcon) {
-                const groupDetails = skinIcon.closest(".skin-group-details");
-                if (groupDetails) {
-                  const con = groupDetails.querySelector(".skin-group-content");
-                  const arrow = groupDetails.querySelector(
-                    ".skin-group-summary .group-expand-arrow",
-                  );
-                  if (con) con.style.display = "block";
-                  if (arrow) arrow.style.transform = "rotate(180deg)";
-                  groupDetails.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center",
-                  });
-                  // Flash highlight the icon
-                  skinIcon.style.outline = "3px solid var(--danger)";
-                  skinIcon.style.outlineOffset = "3px";
-                  setTimeout(() => {
-                    skinIcon.style.outline = "";
-                    skinIcon.style.outlineOffset = "";
-                  }, 1500);
-                }
-              }
-            }, 150);
-          };
-
-          contentDiv.appendChild(wrapper);
-        });
-
-        summary.onclick = () => {
-          const open = contentDiv.style.display !== "none";
-          contentDiv.style.display = open ? "none" : "flex";
-          summary.querySelector("span:last-child").style.transform = open
-            ? "rotate(0deg)"
-            : "rotate(180deg)";
-          saveData("mlbb_recently_collapsed", open);
-        };
-
-        dropdown.appendChild(summary);
-        dropdown.appendChild(contentDiv);
-        section.appendChild(dropdown);
+        const imgData = getSkinImageWithFallback(skin, "icon");
+        section.innerHTML = `<button type="button" class="newest-skin-card" onclick="openModal('skin','${skin.id}')">
+          <span class="newest-skin-kicker"><span class="material-symbols-outlined">new_releases</span>Newest Addition</span>
+          <span class="newest-skin-main"><img src="${imgData.src || IMAGE_PLACEHOLDER}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt=""><span><strong>${skin.name}</strong><small>${skin.rarity || skin.collectible || "Skin"}</small></span></span>
+          <span class="new-badge">New</span>
+        </button>`;
       }
 
       // ============================================================
@@ -496,306 +439,119 @@
 
       function drawSkinCountChart(data) {
         const canvas = document.getElementById("skin-count-chart");
+        const legend = document.getElementById("skin-count-chart-legend");
         if (!canvas) return;
-
-        // Filter out zero-count groups, sort by count desc
-        const items = data
-          .filter((d) => d.count > 0)
-          .sort((a, b) => b.count - a.count);
-        if (items.length === 0) return;
-
-        // Destroy existing chart + clear any cycling timer
-        if (skinCountChartInstance) {
-          skinCountChartInstance.destroy();
-          skinCountChartInstance = null;
+        const items = data.filter((d) => d.count > 0).sort((a, b) => b.count - a.count);
+        if (!items.length) {
+          if (legend) legend.innerHTML = '<div class="chart-empty">No data to chart.</div>';
+          return;
         }
-        if (window._chartCycleTimer) {
-          clearInterval(window._chartCycleTimer);
-          window._chartCycleTimer = null;
-        }
-
-        const total = items.reduce((s, d) => s + d.count, 0);
-
-        // Pre-load all splash images as Image objects per group
-        const groupImages = items.map((item) => {
-          const imgs = (item.splashUrls || []).map((url) => {
-            const img = new window.Image();
-            img.crossOrigin = "anonymous";
-            img.src = url;
-            return img;
-          });
-          return imgs;
-        });
-
-        // State for the center cycling display
-        const cycleState = {
-          activeIndex: -1, // which group segment is hovered (-1 = none)
-          frameIndex: 0, // which image in the group we're showing
-          opacity: 0, // for fade transition
-          fadingIn: false,
-        };
-
-        // Palette
-        const basePalette = [
-          "#fbbf24",
-          "#ef4444",
-          "#3b82f6",
-          "#22c55e",
-          "#a855f7",
-          "#f472b6",
-          "#06b6d4",
-          "#f97316",
-          "#84cc16",
-          "#8b5cf6",
-          "#ec4899",
-          "#14b8a6",
-          "#eab308",
-          "#6366f1",
-          "#10b981",
-          "#f43f5e",
-          "#0ea5e9",
-          "#d946ef",
-          "#fb923c",
-          "#4ade80",
-          "#c084fc",
-          "#38bdf8",
-          "#facc15",
-          "#f87171",
+        if (skinCountChartInstance) skinCountChartInstance.destroy();
+        const total = items.reduce((sum, item) => sum + item.count, 0);
+        const palette = [
+          "#fbbf24", "#60a5fa", "#34d399", "#c084fc", "#fb7185", "#22d3ee",
+          "#fb923c", "#a3e635", "#818cf8", "#f472b6", "#2dd4bf", "#facc15"
         ];
-        const palette = items.map((_, i) =>
-          i < basePalette.length
-            ? basePalette[i]
-            : `hsl(${(i * 137.508) % 360},70%,58%)`,
-        );
+        const colors = items.map((_, i) => palette[i % palette.length]);
+        const state = { activeIndex: -1 };
 
-        // ── Custom plugin: draws cycling skin splash art in the doughnut hole ──
-        const centerImagePlugin = {
-          id: "centerImage",
+        if (legend) {
+          legend.innerHTML = items.map((item, index) => {
+            const pct = total ? ((item.count / total) * 100).toFixed(1) : "0.0";
+            return `<button type="button" class="skin-chart-legend-item" data-chart-index="${index}">
+              <span class="skin-chart-swatch" style="background:${colors[index]}"></span>
+              <span class="skin-chart-legend-copy"><strong>${item.label}</strong><small>${item.count} skins · ${pct}%</small></span>
+            </button>`;
+          }).join("");
+        }
 
-          // Compute the hole geometry once after layout
-          _getHole(chart) {
-            const { chartArea, data } = chart;
-            const meta = chart.getDatasetMeta(0);
-            if (!meta || !meta.data || !meta.data[0]) return null;
-            const arc = meta.data[0];
-            const cx = (chartArea.left + chartArea.right) / 2;
-            const cy = (chartArea.top + chartArea.bottom) / 2;
-            // innerRadius is the hole edge
-            const r = arc.innerRadius * 0.88; // slight inset so we don't overlap the ring
-            return { cx, cy, r };
-          },
-
+        const centerPlugin = {
+          id: "skinCountCenter",
           afterDraw(chart) {
-            const { activeIndex, frameIndex, opacity } = cycleState;
-            if (activeIndex < 0 || opacity <= 0) return;
-
-            const hole = this._getHole(chart);
-            if (!hole) return;
-            const { cx, cy, r } = hole;
-
-            const imgs = groupImages[activeIndex];
-            if (!imgs || imgs.length === 0) return;
-            const img = imgs[frameIndex % imgs.length];
-            if (!img.complete || img.naturalWidth === 0) return;
-
+            const meta = chart.getDatasetMeta(0);
+            if (!meta?.data?.[0]) return;
+            const { x, y } = meta.data[0];
             const ctx = chart.ctx;
+            const idx = state.activeIndex;
+            const main = idx >= 0 ? String(items[idx].count) : String(total);
+            const sub = idx >= 0 ? items[idx].label : "Total skins";
             ctx.save();
-
-            // Clip to circle
-            ctx.beginPath();
-            ctx.arc(cx, cy, r, 0, Math.PI * 2);
-            ctx.clip();
-
-            // Draw image cover-fit inside circle
-            const iw = img.naturalWidth,
-              ih = img.naturalHeight;
-            const scale = Math.max((r * 2) / iw, (r * 2) / ih);
-            const dw = iw * scale,
-              dh = ih * scale;
-            const dx = cx - dw / 2,
-              dy = cy - dh / 2;
-
-            ctx.globalAlpha = Math.min(1, opacity);
-            ctx.drawImage(img, dx, dy, dw, dh);
-
-            // Subtle dark vignette around edges so it blends with the ring
-            const grad = ctx.createRadialGradient(cx, cy, r * 0.55, cx, cy, r);
-            grad.addColorStop(0, "rgba(15,23,42,0)");
-            grad.addColorStop(1, "rgba(15,23,42,0.55)");
-            ctx.globalAlpha = Math.min(1, opacity);
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(cx, cy, r, 0, Math.PI * 2);
-            ctx.fill();
-
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "#f8fafc";
+            ctx.font = '800 28px Montserrat, sans-serif';
+            ctx.fillText(main, x, y - 7);
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = '600 11px Montserrat, sans-serif';
+            const label = sub.length > 22 ? sub.slice(0, 21) + "…" : sub;
+            ctx.fillText(label, x, y + 20);
             ctx.restore();
-          },
-        };
-
-        // ── Fade + cycle animation loop ──
-        let rafId = null;
-        let lastFrame = 0;
-        let cycleInterval = 1600; // ms per skin image
-
-        function ensureAnimLoop() {
-          if (rafId === null) rafId = requestAnimationFrame(animLoop);
-        }
-
-        function animLoop(ts) {
-          rafId = null;
-          const chart = skinCountChartInstance;
-          if (!chart) return;
-          let keepAnimating = false;
-
-          if (cycleState.activeIndex >= 0) {
-            keepAnimating = true;
-            // Fade in
-            if (cycleState.opacity < 1) {
-              cycleState.opacity = Math.min(1, cycleState.opacity + 0.06);
-              chart.render();
-            }
-            // Cycle image
-            if (ts - lastFrame > cycleInterval) {
-              const imgs = groupImages[cycleState.activeIndex] || [];
-              if (imgs.length > 1) {
-                cycleState.frameIndex =
-                  (cycleState.frameIndex + 1) % imgs.length;
-                cycleState.opacity = 0.15; // brief dip for transition feel
-              }
-              lastFrame = ts;
-              chart.render();
-            }
-          } else if (cycleState.opacity > 0) {
-            // Fade out, then fully stop the RAF while idle.
-            cycleState.opacity = Math.max(0, cycleState.opacity - 0.08);
-            chart.render();
-            keepAnimating = cycleState.opacity > 0;
           }
-
-          if (keepAnimating) rafId = requestAnimationFrame(animLoop);
-        }
+        };
 
         skinCountChartInstance = new Chart(canvas, {
           type: "doughnut",
-          data: {
-            labels: items.map((d) => d.label),
-            datasets: [
-              {
-                data: items.map((d) => d.count),
-                backgroundColor: palette,
-                borderColor: "rgba(15,23,42,0.8)",
-                borderWidth: 2,
-                hoverBorderWidth: 3,
-                hoverBorderColor: "#fff",
-                hoverOffset: 12,
-              },
-            ],
-          },
+          data: { labels: items.map((d) => d.label), datasets: [{
+            data: items.map((d) => d.count),
+            backgroundColor: colors,
+            borderColor: "#111827",
+            borderWidth: 4,
+            hoverBorderColor: "#f8fafc",
+            hoverBorderWidth: 3,
+            hoverOffset: 8,
+            borderRadius: 5,
+            spacing: 2
+          }]},
           options: {
             responsive: true,
-            maintainAspectRatio: true,
-            cutout: "60%",
-            layout: { padding: 16 },
-            animation: {
-              animateRotate: true,
-              duration: 700,
-              easing: "easeInOutQuart",
-            },
+            maintainAspectRatio: false,
+            cutout: "68%",
+            layout: { padding: 10 },
+            animation: { duration: 520, easing: "easeOutQuart" },
             onHover(event, elements) {
-              if (elements && elements.length > 0) {
-                const idx = elements[0].index;
-                if (cycleState.activeIndex !== idx) {
-                  cycleState.activeIndex = idx;
-                  cycleState.frameIndex = 0;
-                  cycleState.opacity = 0;
-                  lastFrame = 0;
-                  ensureAnimLoop();
-                } else {
-                  ensureAnimLoop();
-                }
-              } else {
-                cycleState.activeIndex = -1;
-                ensureAnimLoop();
-              }
+              state.activeIndex = elements?.length ? elements[0].index : -1;
+              if (event.native?.target) event.native.target.style.cursor = elements?.length ? "pointer" : "default";
+              skinCountChartInstance?.draw();
             },
             plugins: {
               legend: { display: false },
               tooltip: {
-                enabled: false,
-                external(context) {
-                  let el = document.getElementById("skin-chart-tooltip");
-                  if (!el) {
-                    el = document.createElement("div");
-                    el.id = "skin-chart-tooltip";
-                    el.style.cssText =
-                      "position:fixed;pointer-events:none;z-index:9999;background:rgba(15,23,42,0.97);border:1px solid rgba(251,191,36,0.35);border-radius:12px;padding:10px 14px;font-family:Montserrat,sans-serif;font-size:12px;color:#f8fafc;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,0.5);transition:opacity 0.15s;";
-                    document.body.appendChild(el);
-                  }
-                  const { tooltip } = context;
-                  if (tooltip.opacity === 0) {
-                    el.style.opacity = "0";
-                    return;
-                  }
-                  const title = tooltip.title?.[0] || "";
-                  const body = tooltip.body?.[0]?.lines?.[0] || "";
-                  el.innerHTML = `<div style="color:#fbbf24;font-weight:700;font-size:13px;margin-bottom:4px;">${title}</div><div>${body}</div>`;
-                  el.style.opacity = "1";
-                  // Position to the right of cursor, outside the chart
-                  const x =
-                    tooltip.caretX +
-                    context.chart.canvas.getBoundingClientRect().left +
-                    20;
-                  const y =
-                    tooltip.caretY +
-                    context.chart.canvas.getBoundingClientRect().top -
-                    el.offsetHeight / 2;
-                  const safeX = Math.min(
-                    x,
-                    window.innerWidth - el.offsetWidth - 16,
-                  );
-                  const safeY = Math.max(
-                    8,
-                    Math.min(y, window.innerHeight - el.offsetHeight - 8),
-                  );
-                  el.style.left = safeX + "px";
-                  el.style.top = safeY + "px";
-                },
+                backgroundColor: "rgba(15,23,42,.97)",
+                borderColor: "rgba(251,191,36,.28)",
+                borderWidth: 1,
+                padding: 11,
+                cornerRadius: 10,
+                displayColors: true,
                 callbacks: {
-                  title(it) {
-                    return it[0]?.label || "";
-                  },
-                  label(it) {
-                    const count = it.parsed;
-                    const pct =
-                      total > 0 ? ((count / total) * 100).toFixed(1) : 0;
-                    return `  ${count} skins  (${pct}%)`;
-                  },
-                },
-              },
-            },
+                  label(context) {
+                    const count = context.parsed;
+                    const pct = total ? ((count / total) * 100).toFixed(1) : "0.0";
+                    return `${count} skins (${pct}%)`;
+                  }
+                }
+              }
+            }
           },
-          plugins: [centerImagePlugin],
+          plugins: [centerPlugin]
         });
 
-        // Cleanup RAF and external tooltip when chart is destroyed
-        const origDestroy = skinCountChartInstance.destroy.bind(
-          skinCountChartInstance,
-        );
-        skinCountChartInstance.destroy = () => {
-          if (rafId !== null) cancelAnimationFrame(rafId);
-          const tt = document.getElementById("skin-chart-tooltip");
-          if (tt) tt.remove();
-          origDestroy();
-        };
+        if (legend) {
+          legend.querySelectorAll(".skin-chart-legend-item").forEach((button) => {
+            const idx = Number(button.dataset.chartIndex);
+            button.addEventListener("mouseenter", () => {
+              state.activeIndex = idx;
+              skinCountChartInstance.setActiveElements([{ datasetIndex: 0, index: idx }]);
+              skinCountChartInstance.update("none");
+            });
+            button.addEventListener("mouseleave", () => {
+              state.activeIndex = -1;
+              skinCountChartInstance.setActiveElements([]);
+              skinCountChartInstance.update("none");
+            });
+          });
+        }
       }
 
-      // ============================================================
-      // SMART DATE NORMALIZER
-      // Target display format: Mon DD, YYYY  (e.g. "Jun 05, 2023")
-      // Partial inputs accepted: year only → "2024"
-      //                          month + year → "Jun 2023"
-      //                          full → "Jun 05, 2023"
-      // ============================================================
       function normalizeReleaseDate(raw) {
         if (!raw || !raw.trim()) return "";
         const s = raw.trim();

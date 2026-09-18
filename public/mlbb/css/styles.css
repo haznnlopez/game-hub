@@ -4608,3 +4608,108 @@ button.detail-chip {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ============================================================
+   V2.4 — interaction polish
+   ============================================================ */
+
+/* Toasts: centered at top on every viewport. */
+#toast-container {
+  top: 16px !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translateX(-50%);
+  align-items: center !important;
+  width: min(92vw, 520px);
+}
+#toast-container .toast { width: auto; max-width: 100%; }
+
+/* Matrix cells occupy the entire column track and remain visually centered. */
+.hero-matrix-table th:not(:first-child),
+.hero-matrix-table td:not(:first-child) {
+  min-width: 96px;
+  width: 96px;
+}
+.hero-matrix-table td { padding: 2px; vertical-align: middle; }
+.matrix-cell {
+  width: 100% !important;
+  min-width: 100% !important;
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+/* Skin Count — clearer global group controls and smoother groups. */
+.skin-count-group-toolbar { display:flex; align-items:center; gap:.7rem; flex-wrap:wrap; justify-content:flex-end; }
+.skin-count-group-status { font-size:.72rem; font-weight:700; color:var(--text-med); white-space:nowrap; }
+.skin-count-group-actions { display:inline-flex; padding:3px; gap:3px; border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(255,255,255,.025); }
+.skin-count-group-actions .btn { box-shadow:none; border-radius:9px; }
+.skin-count-group-actions .material-symbols-outlined { font-size:16px; }
+.skin-count-group-actions .btn:disabled { opacity:.34; cursor:default; transform:none; }
+.skin-group-details { overflow:hidden; border:1px solid rgba(255,255,255,.06); border-radius:14px; margin-bottom:.65rem; background:rgba(15,23,42,.34); }
+.skin-group-summary { min-height:50px; padding:.65rem .85rem; }
+.skin-group-content { overflow:hidden; padding:.35rem .75rem .8rem; }
+.skin-group-content[hidden] { display:none !important; }
+
+/* Newest skin is singular, not a rolling seven-day bucket. */
+.newest-skin-card {
+  width:100%; display:flex; align-items:center; gap:.8rem; position:relative;
+  border:1px solid rgba(251,191,36,.16); border-radius:14px; padding:.65rem .8rem;
+  background:linear-gradient(90deg,rgba(251,191,36,.07),rgba(255,255,255,.018)); color:var(--text-light); cursor:pointer; text-align:left;
+}
+.newest-skin-card:hover { border-color:rgba(251,191,36,.4); background:rgba(251,191,36,.075); }
+.newest-skin-kicker { display:inline-flex; align-items:center; gap:.35rem; color:var(--accent); font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; min-width:132px; }
+.newest-skin-kicker .material-symbols-outlined { font-size:17px; }
+.newest-skin-main { display:flex; align-items:center; gap:.65rem; min-width:0; flex:1; }
+.newest-skin-main img { width:42px; height:42px; border-radius:10px; object-fit:cover; background:var(--bg-med); }
+.newest-skin-main strong,.newest-skin-main small { display:block; }
+.newest-skin-main strong { font-size:.86rem; }
+.newest-skin-main small { color:var(--text-med); margin-top:2px; font-size:.68rem; }
+.newest-skin-card .new-badge { position:static; margin-left:auto; }
+
+/* Stats: dashboard-style doughnut + scrollable custom legend. */
+.skin-count-chart-container { margin-top:1.15rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,.07); }
+.skin-count-chart-layout { display:grid; grid-template-columns:minmax(280px,430px) minmax(220px,1fr); gap:1.25rem; align-items:center; max-width:920px; margin:0 auto; text-align:left; }
+.skin-count-chart-canvas-wrap { height:340px; min-width:0; position:relative; }
+#skin-count-chart { width:100% !important; height:100% !important; }
+.skin-count-chart-legend { max-height:320px; overflow-y:auto; padding-right:.35rem; display:flex; flex-direction:column; gap:.35rem; scrollbar-width:auto; scrollbar-color:rgba(251,191,36,.52) rgba(255,255,255,.04); }
+.skin-count-chart-legend::-webkit-scrollbar { width:9px; }
+.skin-count-chart-legend::-webkit-scrollbar-track { background:rgba(255,255,255,.04); border-radius:999px; }
+.skin-count-chart-legend::-webkit-scrollbar-thumb { background:rgba(251,191,36,.5); border-radius:999px; border:2px solid #182235; }
+.skin-chart-legend-item { width:100%; border:1px solid transparent; background:rgba(255,255,255,.025); color:var(--text-light); border-radius:10px; padding:.5rem .6rem; display:flex; align-items:center; gap:.6rem; cursor:pointer; text-align:left; font:inherit; }
+.skin-chart-legend-item:hover { border-color:rgba(251,191,36,.2); background:rgba(255,255,255,.055); }
+.skin-chart-swatch { width:10px; height:28px; border-radius:999px; flex:none; }
+.skin-chart-legend-copy { min-width:0; }
+.skin-chart-legend-copy strong,.skin-chart-legend-copy small { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.skin-chart-legend-copy strong { font-size:.78rem; }
+.skin-chart-legend-copy small { margin-top:2px; color:var(--text-med); font-size:.66rem; }
+.chart-empty { color:var(--text-med); font-size:.8rem; padding:1rem; }
+
+/* Tier comparison only shows actual tier changes; summary can collapse. */
+.tier-comparison-summary { overflow:hidden; }
+.tier-comparison-toggle { width:100%; border:0; background:transparent; color:inherit; display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.8rem 1rem; cursor:pointer; text-align:left; font:inherit; }
+.tier-comparison-toggle > div { display:flex; align-items:baseline; gap:.55rem; flex-wrap:wrap; }
+.tier-diff-count { font-size:.68rem; font-weight:700; color:var(--text-med); padding:.16rem .45rem; border-radius:999px; background:rgba(255,255,255,.055); }
+.tier-diff-chevron { transition:transform .2s ease; }
+.tier-comparison-summary.is-collapsed .tier-diff-chevron { transform:rotate(-90deg); }
+.tier-comparison-summary.is-collapsed .tier-change-grid { display:none; }
+
+/* Favorites are now a semantic Revamping status. */
+.overlay-btn.revamp.active { background:rgba(96,165,250,.82); color:#07111f; }
+.overlay-btn.revamp:hover { background:#60a5fa; color:#07111f; }
+.unified-card.revamping-card, .portrait-item.revamping-card { border-color:rgba(96,165,250,.36) !important; }
+.revamping-card::before { opacity:.7 !important; clip-path:inset(0 0 0 0) !important; }
+
+@media (max-width:820px) {
+  #toast-container { top:12px !important; left:50% !important; right:auto !important; width:min(94vw,520px); }
+  #toast-container .toast { width:auto; max-width:100%; }
+  .skin-count-chart-layout { grid-template-columns:1fr; }
+  .skin-count-chart-canvas-wrap { height:300px; }
+  .skin-count-chart-legend { max-height:210px; }
+  .newest-skin-kicker { min-width:0; }
+}

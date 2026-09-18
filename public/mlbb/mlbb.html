@@ -949,6 +949,31 @@
                 placeholder="e.g. 599"
               />
             </div>
+            <h3 class="form-section-title">Hero Stats</h3>
+            <p class="form-section-help">Enter comparable base/reference values consistently across heroes. Rankings recalculate automatically from saved hero data.</p>
+            <div class="hero-metric-grid hero-stats-form-grid">
+              <label class="hero-metric-field"><span>HP</span><input type="number" step="any" min="0" id="hero-stat-hp" class="form-input" placeholder="e.g. 2500"></label>
+              <label class="hero-metric-field"><span>HP Regen</span><input type="number" step="any" min="0" id="hero-stat-hpRegen" class="form-input" placeholder="e.g. 8"></label>
+              <label class="hero-metric-field"><span>Physical ATK</span><input type="number" step="any" min="0" id="hero-stat-physicalAtk" class="form-input" placeholder="e.g. 120"></label>
+              <label class="hero-metric-field"><span>Magic POW</span><input type="number" step="any" min="0" id="hero-stat-magicPower" class="form-input" placeholder="e.g. 0"></label>
+              <label class="hero-metric-field"><span>Physical DEF</span><input type="number" step="any" min="0" id="hero-stat-physicalDef" class="form-input" placeholder="e.g. 20"></label>
+              <label class="hero-metric-field"><span>Magic DEF</span><input type="number" step="any" min="0" id="hero-stat-magicDef" class="form-input" placeholder="e.g. 10"></label>
+              <label class="hero-metric-field"><span>ATK SPD</span><input type="number" step="any" min="0" id="hero-stat-attackSpeed" class="form-input" placeholder="e.g. 0.85"></label>
+              <label class="hero-metric-field"><span>ATK SPD Ratio</span><div class="metric-input-with-unit"><input type="number" step="any" min="0" id="hero-stat-attackSpeedRatio" class="form-input" placeholder="e.g. 100"><em>%</em></div></label>
+              <label class="hero-metric-field"><span>Critical DMG</span><div class="metric-input-with-unit"><input type="number" step="any" min="0" id="hero-stat-criticalDamage" class="form-input" placeholder="e.g. 200"><em>%</em></div></label>
+              <label class="hero-metric-field"><span>MOV SPD</span><input type="number" step="any" min="0" id="hero-stat-moveSpeed" class="form-input" placeholder="e.g. 260"></label>
+              <label class="hero-metric-field"><span>Basic ATK Range</span><input type="number" step="any" min="0" id="hero-stat-basicAttackRange" class="form-input" placeholder="e.g. 4.6"></label>
+            </div>
+
+            <h3 class="form-section-title">Hero Ratings</h3>
+            <p class="form-section-help">Rate each category from 0 to 10. Higher Difficulty means harder to use; rankings place the highest rating first.</p>
+            <div class="hero-metric-grid hero-ratings-form-grid">
+              <label class="hero-metric-field"><span>Durability</span><div class="metric-input-with-unit rating-unit"><input type="number" step="0.1" min="0" max="10" id="hero-rating-durability" class="form-input" placeholder="0–10"><em>/10</em></div></label>
+              <label class="hero-metric-field"><span>Offense</span><div class="metric-input-with-unit rating-unit"><input type="number" step="0.1" min="0" max="10" id="hero-rating-offense" class="form-input" placeholder="0–10"><em>/10</em></div></label>
+              <label class="hero-metric-field"><span>Control Effects</span><div class="metric-input-with-unit rating-unit"><input type="number" step="0.1" min="0" max="10" id="hero-rating-controlEffects" class="form-input" placeholder="0–10"><em>/10</em></div></label>
+              <label class="hero-metric-field"><span>Difficulty</span><div class="metric-input-with-unit rating-unit"><input type="number" step="0.1" min="0" max="10" id="hero-rating-difficulty" class="form-input" placeholder="0–10"><em>/10</em></div></label>
+            </div>
+
             <h3
               style="
                 border-bottom: 1px solid var(--accent);

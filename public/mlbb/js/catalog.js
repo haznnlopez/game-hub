@@ -1,3 +1,110 @@
+      /* HERO STATS + RATINGS */
+      const HERO_STAT_DEFS = [
+        { key: "hp", label: "HP", icon: "favorite" },
+        { key: "hpRegen", label: "HP Regen", icon: "healing", decimals: 2 },
+        { key: "physicalAtk", label: "Physical ATK", icon: "swords" },
+        { key: "magicPower", label: "Magic POW", icon: "auto_fix_high" },
+        { key: "physicalDef", label: "Physical DEF", icon: "shield" },
+        { key: "magicDef", label: "Magic DEF", icon: "security" },
+        { key: "attackSpeed", label: "ATK SPD", icon: "speed", decimals: 3 },
+        { key: "attackSpeedRatio", label: "ATK SPD Ratio", icon: "percent", unit: "%", decimals: 2 },
+        { key: "criticalDamage", label: "Critical DMG", icon: "stat_3", unit: "%", decimals: 2 },
+        { key: "moveSpeed", label: "MOV SPD", icon: "directions_run", decimals: 2 },
+        { key: "basicAttackRange", label: "Basic ATK Range", icon: "straighten", decimals: 2 },
+      ];
+      const HERO_RATING_DEFS = [
+        { key: "durability", label: "Durability", icon: "health_and_safety", max: 10, decimals: 1 },
+        { key: "offense", label: "Offense", icon: "local_fire_department", max: 10, decimals: 1 },
+        { key: "controlEffects", label: "Control Effects", icon: "motion_mode", max: 10, decimals: 1 },
+        { key: "difficulty", label: "Difficulty", icon: "psychology", max: 10, decimals: 1 },
+      ];
+
+      function heroMetricNumber(value) {
+        if (value === null || value === undefined || value === "") return null;
+        const num = Number(value);
+        return Number.isFinite(num) ? num : null;
+      }
+
+      function collectHeroMetricValues(defs, prefix, clampMax = null) {
+        const out = {};
+        defs.forEach((def) => {
+          const input = document.getElementById(`${prefix}${def.key}`);
+          if (!input) return;
+          let value = heroMetricNumber(input.value);
+          if (value === null) return;
+          value = Math.max(0, value);
+          if (clampMax != null) value = Math.min(clampMax, value);
+          out[def.key] = value;
+        });
+        return out;
+      }
+
+      function populateHeroMetricInputs(hero) {
+        HERO_STAT_DEFS.forEach((def) => {
+          const input = document.getElementById(`hero-stat-${def.key}`);
+          if (input) input.value = heroMetricNumber(hero?.stats?.[def.key]) ?? "";
+        });
+        HERO_RATING_DEFS.forEach((def) => {
+          const input = document.getElementById(`hero-rating-${def.key}`);
+          if (input) input.value = heroMetricNumber(hero?.ratings?.[def.key]) ?? "";
+        });
+      }
+
+      function getHeroMetricRanking(hero, groupKey, metricKey) {
+        const currentValue = heroMetricNumber(hero?.[groupKey]?.[metricKey]);
+        if (currentValue === null) return null;
+        const official = getHeroes();
+        const candidates = official.some((item) => item.id === hero.id) ? official : [...official, hero];
+        const values = candidates
+          .map((item) => heroMetricNumber(item?.[groupKey]?.[metricKey]))
+          .filter((value) => value !== null);
+        if (!values.length) return null;
+        const rank = 1 + values.filter((value) => value > currentValue).length;
+        const max = Math.max(...values);
+        return { rank, total: values.length, max, value: currentValue };
+      }
+
+      function formatHeroMetricValue(def, value, isRating = false) {
+        const num = heroMetricNumber(value);
+        if (num === null) return "—";
+        const decimals = def.decimals ?? (Number.isInteger(num) ? 0 : 2);
+        const text = num.toLocaleString(undefined, {
+          maximumFractionDigits: decimals,
+          minimumFractionDigits: 0,
+        });
+        return isRating ? `${text}/10` : `${text}${def.unit || ""}`;
+      }
+
+      function heroMetricRankBadge(rankInfo, label) {
+        if (!rankInfo) return "";
+        const rankClass = rankInfo.rank <= 3 ? ` top-${rankInfo.rank}` : rankInfo.rank <= 10 ? " top-10" : "";
+        const tooltip = `Rank #${rankInfo.rank} of ${rankInfo.total} heroes with ${label} data`;
+        return `<span class="hero-metric-rank${rankClass}" data-tooltip="${tooltip}">#${rankInfo.rank}</span>`;
+      }
+
+      function buildHeroMetricGrid(hero, defs, groupKey, isRating = false) {
+        const available = defs.filter((def) => heroMetricNumber(hero?.[groupKey]?.[def.key]) !== null);
+        if (!available.length) return "";
+        const cards = available.map((def) => {
+          const value = heroMetricNumber(hero[groupKey][def.key]);
+          const ranking = getHeroMetricRanking(hero, groupKey, def.key);
+          const denominator = isRating ? 10 : Math.max(ranking?.max || value || 1, 1);
+          const percent = Math.max(0, Math.min(100, (value / denominator) * 100));
+          return `<div class="hero-metric-card${isRating ? " rating" : ""}">
+            <div class="hero-metric-card-head"><span class="material-symbols-outlined">${def.icon}</span><span>${def.label}</span>${heroMetricRankBadge(ranking, def.label)}</div>
+            <div class="hero-metric-value">${formatHeroMetricValue(def, value, isRating)}</div>
+            <div class="hero-metric-track" aria-hidden="true"><i style="width:${percent.toFixed(2)}%"></i></div>
+          </div>`;
+        }).join("");
+        return `<div class="hero-metric-modal-grid${isRating ? " ratings" : ""}">${cards}</div>`;
+      }
+
+      function buildHeroStatsAndRatingsHtml(hero) {
+        const stats = buildHeroMetricGrid(hero, HERO_STAT_DEFS, "stats", false);
+        const ratings = buildHeroMetricGrid(hero, HERO_RATING_DEFS, "ratings", true);
+        return `${stats ? `<div class="modal-section-header">Hero Stats</div>${stats}` : ""}${ratings ? `<div class="modal-section-header">Ratings</div>${ratings}` : ""}`;
+      }
+
       /* MATRIX PAGE — interactive cross-tab explorer */
       const MATRIX_CONFIG = {
         roles: {
@@ -908,6 +1015,7 @@
             document.getElementById("hero-price-bp").value = h.priceBP || "";
             document.getElementById("hero-price-diamonds").value =
               h.priceDiamonds || "";
+            populateHeroMetricInputs(h);
             formTags["hero-roles"] = h.roles || [];
             formTags["hero-specialties"] = h.specialties || [];
             formTags["hero-lanes"] = h.lanes || [];
@@ -1125,6 +1233,8 @@
           priceBP: document.getElementById("hero-price-bp").value || "",
           priceDiamonds:
             document.getElementById("hero-price-diamonds").value || "",
+          stats: collectHeroMetricValues(HERO_STAT_DEFS, "hero-stat-"),
+          ratings: collectHeroMetricValues(HERO_RATING_DEFS, "hero-rating-", 10),
           relationships:
             typeof collectHeroRelationships === "function"
               ? collectHeroRelationships()
@@ -1984,7 +2094,8 @@
             ? buildHeroRelationshipsHtml(h)
             : "";
 
-        let html = `<div class="modal-detail-summary"><div class="detail-groups">${classification}</div>${meta ? `<div class="detail-meta-strip">${meta}</div>` : ""}</div>${changeLogHtml}${skillsHtml}${relationshipsHtml}`;
+        const statsAndRatingsHtml = buildHeroStatsAndRatingsHtml(h);
+        let html = `<div class="modal-detail-summary"><div class="detail-groups">${classification}</div>${meta ? `<div class="detail-meta-strip">${meta}</div>` : ""}</div>${statsAndRatingsHtml}${changeLogHtml}${skillsHtml}${relationshipsHtml}`;
         html += `<div class="modal-section-header">Skins <span class="section-count">${skins.length}</span></div><div class="mini-grid compact-gallery">${skins
           .map((skin) => {
             const ex = getSkinExtraInfo(skin);

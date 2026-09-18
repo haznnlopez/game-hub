@@ -5101,3 +5101,177 @@ button.detail-chip {
   .hero-relationship-editor-row.mirrored { padding: 0.5rem; }
   .relationship-mirror-badge { width: 100%; }
 }
+
+/* V2.6 — hero stats, ratings, and automatic ranking badges */
+.hero-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.hero-ratings-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.hero-metric-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.45);
+}
+.hero-metric-field > span {
+  color: var(--text-med);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+.metric-input-with-unit {
+  position: relative;
+  min-width: 0;
+}
+.metric-input-with-unit .form-input {
+  width: 100%;
+  padding-right: 3.15rem;
+}
+.metric-input-with-unit em {
+  position: absolute;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dark);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 800;
+  pointer-events: none;
+}
+.metric-input-with-unit.rating-unit .form-input {
+  padding-right: 3.55rem;
+}
+
+.hero-metric-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.72rem;
+  margin: 0.2rem 0 1.2rem;
+}
+.hero-metric-modal-grid.ratings {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.hero-metric-card {
+  position: relative;
+  min-width: 0;
+  padding: 0.8rem 0.85rem 0.72rem;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background:
+    linear-gradient(145deg, rgba(30, 41, 59, 0.72), rgba(15, 23, 42, 0.64));
+}
+.hero-metric-card.rating {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(251, 191, 36, 0.08), transparent 44%),
+    linear-gradient(145deg, rgba(30, 41, 59, 0.72), rgba(15, 23, 42, 0.64));
+}
+.hero-metric-card-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  color: var(--text-med);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+.hero-metric-card-head > span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hero-metric-card-head > .material-symbols-outlined {
+  color: var(--accent);
+  font-size: 1rem;
+}
+.hero-metric-value {
+  margin-top: 0.6rem;
+  color: var(--text-light);
+  font-size: 1.18rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.hero-metric-track {
+  height: 4px;
+  margin-top: 0.65rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+}
+.hero-metric-track i {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+}
+.hero-metric-card.rating .hero-metric-track i {
+  background: linear-gradient(90deg, rgba(251,191,36,.64), var(--accent));
+}
+.hero-metric-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 22px;
+  padding: 0 0.42rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.76);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.hero-metric-rank.top-1 {
+  border-color: rgba(251, 191, 36, 0.46);
+  color: #fde68a;
+  background: rgba(161, 98, 7, 0.22);
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.08);
+}
+.hero-metric-rank.top-2 {
+  border-color: rgba(203, 213, 225, 0.42);
+  color: #e2e8f0;
+  background: rgba(100, 116, 139, 0.2);
+}
+.hero-metric-rank.top-3 {
+  border-color: rgba(251, 146, 60, 0.38);
+  color: #fdba74;
+  background: rgba(154, 52, 18, 0.18);
+}
+.hero-metric-rank.top-10 {
+  border-color: rgba(96, 165, 250, 0.32);
+  color: #93c5fd;
+  background: rgba(30, 64, 175, 0.16);
+}
+
+@media (max-width: 900px) {
+  .hero-metric-grid,
+  .hero-metric-modal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .hero-metric-grid,
+  .hero-ratings-form-grid,
+  .hero-metric-modal-grid,
+  .hero-metric-modal-grid.ratings {
+    grid-template-columns: 1fr;
+  }
+  .hero-metric-field { padding: 0.65rem; }
+}

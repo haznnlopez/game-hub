@@ -164,8 +164,23 @@
               getUpcoming().find(
                 (z) => z.id === x.heroId && z.itemType === "hero",
               );
-            if (hero && hero.icon)
-              heroIconHtml = `<div class="card-hero-icon" style="background-image:url('${hero.icon}')" title="${hero.name}"></div>`;
+            if (hero) {
+              const heroBadge = getHeroBadgeImageSources(hero);
+              heroIconHtml = `<div class="card-hero-icon upcoming-hero-badge" title="${hero.name}"><img src="${heroBadge.src}" data-fallback-src="${heroBadge.fallback}" data-fallback-src2="${heroBadge.fallback2}" alt="${hero.name} icon" loading="lazy" decoding="async"></div>`;
+              if (x.showSkillIcons && hero.skills?.length) {
+                const skillItems = hero.skills
+                  .map((skill, i) => {
+                    const variants = getSkinSkillDisplayVariants(x, skill, i);
+                    const first = variants[0] || {
+                      icon: skill.icon || IMAGE_PLACEHOLDER,
+                      greyed: true,
+                    };
+                    return `<div class="card-skill-strip-wrapper" data-skill-name="${skill.name.replace(/"/g, "&quot;")}" data-skill-variants="${encodeURIComponent(JSON.stringify(variants))}" onmouseenter="startSkillCycle(this)" onmouseleave="stopSkillCycle(this)"><img src="${first.icon || IMAGE_PLACEHOLDER}" data-fallback-src="${IMAGE_PLACEHOLDER}" class="card-skill-strip-icon${variants.length > 1 ? " sub-cycling" : ""}" style="${first.greyed ? "filter:grayscale(100%) opacity(0.5);" : ""}"></div>`;
+                  })
+                  .join("");
+                skillsHtml = `<div class="card-skill-strip skin-skill-strip">${skillItems}</div>`;
+              }
+            }
           }
 
           // Painted pill

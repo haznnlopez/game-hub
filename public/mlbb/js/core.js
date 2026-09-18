@@ -3,6 +3,7 @@
         SKINS: "game_hub_mlbb_skins",
         ATTRIBUTES: "game_hub_mlbb_attributes",
         TIER_LIST: "game_hub_mlbb_tier_list",
+        TIER_SNAPSHOTS: "game_hub_mlbb_tier_snapshots",
         SIDEBAR: "game_hub_mlbb_sidebar_collapsed",
         UPCOMING: "game_hub_mlbb_upcoming",
         SKIN_COUNT_STATE: "game_hub_mlbb_skin_count_state",
@@ -238,6 +239,7 @@
         _skinsData = null,
         _attributesData = null,
         _tierListData = null,
+        _tierSnapshotsData = null,
         _upcomingData = null,
         _heroById = null,
         _skinById = null,
@@ -272,18 +274,33 @@
 
       function applyImageFallback(img) {
         if (!img || img.tagName !== "IMG") return;
-        const fallback = (img.dataset && img.dataset.fallbackSrc) || "";
-        if (fallback && !img.dataset.fallbackAttempted && img.src !== fallback) {
-          img.dataset.fallbackAttempted = "true";
-          img.src = fallback;
-          img.classList.add("image-fallback-secondary");
+        if (img.classList.contains("filter-pill-icon-wide")) {
+          img.style.display = "none";
+          const fallbackLabel = img
+            .closest(".filter-pill")
+            ?.querySelector(".filter-pill-fallback-label");
+          if (fallbackLabel) fallbackLabel.hidden = false;
           return;
         }
-        if (img.src === IMAGE_PLACEHOLDER) return;
-        img.dataset.placeholderApplied = "true";
-        img.removeAttribute("srcset");
-        img.src = IMAGE_PLACEHOLDER;
-        img.classList.add("image-fallback");
+
+        // Try every supplied fallback in order before giving up on the image.
+        // Hero badges use this for icon → portrait → splash → placeholder.
+        const chain = [
+          img.dataset?.fallbackSrc || "",
+          img.dataset?.fallbackSrc2 || "",
+          IMAGE_PLACEHOLDER,
+        ].filter(Boolean);
+        let index = Number(img.dataset?.fallbackIndex || 0);
+        while (index < chain.length) {
+          const candidate = chain[index++];
+          img.dataset.fallbackIndex = String(index);
+          if (!candidate || img.src === candidate) continue;
+          img.removeAttribute("srcset");
+          img.src = candidate;
+          img.classList.toggle("image-fallback", candidate === IMAGE_PLACEHOLDER);
+          img.classList.toggle("image-fallback-secondary", candidate !== IMAGE_PLACEHOLDER);
+          return;
+        }
       }
 
       function installImageFallbacks() {
@@ -318,6 +335,35 @@
         observer.observe(document.body, { childList: true, subtree: true });
       }
 
+      function installAutocompleteGuard() {
+        const normalize = (node) => {
+          if (!node || node.nodeType !== 1) return;
+          if (node.tagName === "FORM") node.setAttribute("autocomplete", "off");
+          if (node.matches?.("input, textarea")) {
+            const type = String(node.getAttribute("type") || "text").toLowerCase();
+            if (type !== "hidden" && type !== "checkbox" && type !== "radio" && type !== "file") {
+              node.setAttribute("autocomplete", type === "password" ? "new-password" : "off");
+              node.setAttribute("aria-autocomplete", "none");
+            }
+          }
+          node.querySelectorAll?.("form").forEach((form) => form.setAttribute("autocomplete", "off"));
+          node.querySelectorAll?.("input, textarea").forEach((field) => {
+            const type = String(field.getAttribute("type") || "text").toLowerCase();
+            if (type === "hidden" || type === "checkbox" || type === "radio" || type === "file") return;
+            field.setAttribute("autocomplete", type === "password" ? "new-password" : "off");
+            field.setAttribute("aria-autocomplete", "none");
+          });
+        };
+
+        normalize(document.body);
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach(normalize);
+          });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
+
       function updateFilterPanelSummary(panelOrId) {
         const panel =
           typeof panelOrId === "string"
@@ -330,7 +376,14 @@
           .filter(Boolean);
         const count = ids.reduce((total, id) => {
           const input = document.getElementById(id);
-          return total + (input && String(input.value || "").trim() ? 1 : 0);
+          if (!input) return total;
+          if (input.tagName === "SELECT" && input.multiple) {
+            return (
+              total +
+              Array.from(input.selectedOptions).filter((o) => o.value).length
+            );
+          }
+          return total + (String(input.value || "").trim() ? 1 : 0);
         }, 0);
         const badge = panel.querySelector(".filter-active-count");
         const button = panel.querySelector(".filter-panel-toggle");
@@ -782,6 +835,7 @@
         setupSidebar();
         setupNavigation();
         installImageFallbacks();
+        installAutocompleteGuard();
         populateFilters();
         setupCollapsibleFilters();
         renderHeroesPage();
@@ -866,6 +920,7 @@
         { key: "game_hub_mlbb_skins", label: "Skins" },
         { key: "game_hub_mlbb_attributes", label: "Attributes" },
         { key: "game_hub_mlbb_tier_list", label: "Tier List" },
+        { key: "game_hub_mlbb_tier_snapshots", label: "Tier List Versions" },
         { key: "game_hub_mlbb_upcoming", label: "Upcoming" },
         { key: "game_hub_mlbb_skin_count_state", label: "Skin Count State" },
         { key: "game_hub_mlbb_sidebar_collapsed", label: "Sidebar State" },
@@ -1081,6 +1136,7 @@
           }
           if (key === KEYS.ATTRIBUTES) _attributesData = data;
           if (key === KEYS.TIER_LIST) _tierListData = data;
+          if (key === KEYS.TIER_SNAPSHOTS) _tierSnapshotsData = data;
           if (key === KEYS.UPCOMING) _upcomingData = data;
         }
         return ok;
@@ -1362,6 +1418,14 @@
       function saveTierList(d) {
         saveData(KEYS.TIER_LIST, d);
       }
+      function getTierSnapshots() {
+        if (!_tierSnapshotsData)
+          _tierSnapshotsData = getData(KEYS.TIER_SNAPSHOTS, []);
+        return _tierSnapshotsData;
+      }
+      function saveTierSnapshots(d) {
+        saveData(KEYS.TIER_SNAPSHOTS, d);
+      }
       function getUpcoming() {
         if (!_upcomingData) _upcomingData = getData(KEYS.UPCOMING, []);
         return _upcomingData;
@@ -1424,7 +1488,13 @@
       }
 
       // Keys that support an icon image
-      const ATTR_IMAGE_KEYS = ["roles", "lanes", "nations", "skinRarities"];
+      const ATTR_IMAGE_KEYS = [
+        "roles",
+        "lanes",
+        "nations",
+        "skinRarities",
+        "collectibleRarities",
+      ];
       // Keys that support a custom tag color
       const ATTR_COLOR_KEYS = ["skillCategories"];
       // Keys that support a modal background image (shown behind hero modal)

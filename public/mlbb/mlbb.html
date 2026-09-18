@@ -4,10 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f172a" />
-    <meta
-      name="description"
-      content="Mobile Legends: Bang Bang wiki and collection dashboard"
-    />
+    <meta name="description" content="Mobile Legends: Bang Bang wiki and collection dashboard" />
     <title>Mobile Legends - Wiki</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,10 +19,7 @@
     />
 
     <link rel="icon" type="image/jpeg" href="images/mlbb-logo.jpg" />
-    <script
-      defer
-      src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
-    ></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body class="app-layout">
@@ -155,13 +149,11 @@
           <div
             id="hero-filter-panel"
             class="filter-panel collapsed"
-            data-filter-ids="filter-hero-role,filter-hero-lane,filter-hero-specialty"
+            data-filter-ids="filter-hero-role,filter-hero-lane,filter-hero-specialty,filter-hero-nation"
           >
             <div class="filter-panel-toolbar">
               <div class="filter-quick-search">
-                <span class="material-symbols-outlined filter-search-icon"
-                  >search</span
-                >
+                <span class="material-symbols-outlined filter-search-icon">search</span>
                 <input
                   type="text"
                   id="filter-hero-search"
@@ -169,10 +161,7 @@
                   placeholder="Search heroes..."
                   aria-label="Search heroes"
                 />
-                <div
-                  id="hero-search-suggestions"
-                  class="search-suggestions"
-                ></div>
+                <div id="hero-search-suggestions" class="search-suggestions"></div>
               </div>
               <button
                 type="button"
@@ -184,85 +173,65 @@
                 <span class="material-symbols-outlined">tune</span>
                 <span>Filters</span>
                 <span class="filter-active-count" data-count="0">0</span>
-                <span class="material-symbols-outlined filter-toggle-icon"
-                  >expand_more</span
-                >
+                <span class="material-symbols-outlined filter-toggle-icon">expand_more</span>
               </button>
             </div>
-            <div
-              id="hero-filter-panel-body"
-              class="filters-bar filter-panel-body"
-            >
+            <div id="hero-filter-panel-body" class="filters-bar filter-panel-body">
               <div class="filter-item">
                 <label class="form-label">Role</label
                 ><select
                   id="filter-hero-role"
                   class="form-select filter-source-select"
+                  multiple
                   onchange="renderHeroesPage()"
                   aria-hidden="true"
                   tabindex="-1"
                 ></select>
-                <div
-                  id="pills-filter-hero-role"
-                  class="filter-pill-row"
-                  aria-label="Filter heroes by role"
-                ></div>
+                <div id="pills-filter-hero-role" class="filter-pill-row" aria-label="Filter heroes by role"></div>
               </div>
               <div class="filter-item">
                 <label class="form-label">Lane</label
                 ><select
                   id="filter-hero-lane"
                   class="form-select filter-source-select"
+                  multiple
                   onchange="renderHeroesPage()"
                   aria-hidden="true"
                   tabindex="-1"
                 ></select>
-                <div
-                  id="pills-filter-hero-lane"
-                  class="filter-pill-row"
-                  aria-label="Filter heroes by lane"
-                ></div>
+                <div id="pills-filter-hero-lane" class="filter-pill-row" aria-label="Filter heroes by lane"></div>
               </div>
               <div class="filter-item">
                 <label class="form-label">Specialty</label
                 ><select
                   id="filter-hero-specialty"
                   class="form-select filter-source-select"
+                  multiple
                   onchange="renderHeroesPage()"
                   aria-hidden="true"
                   tabindex="-1"
                 ></select>
-                <div
-                  id="pills-filter-hero-specialty"
-                  class="filter-pill-row"
-                  aria-label="Filter heroes by specialty"
-                ></div>
+                <div id="pills-filter-hero-specialty" class="filter-pill-row" aria-label="Filter heroes by specialty"></div>
               </div>
-              <div class="filter-item filter-sort-item">
-                <label class="form-label">Sort</label>
-                <div class="sort-pills" id="sort-pills-heroes">
-                  <button
-                    class="sort-pill active asc"
-                    data-sort="releaseDate"
-                    onclick="handleSortPill('heroes', 'releaseDate', this)"
-                  >
-                    Release Date <span class="sort-arrow">↑</span>
-                  </button>
-                  <button
-                    class="sort-pill"
-                    data-sort="az"
-                    onclick="handleSortPill('heroes', 'az', this)"
-                  >
-                    A–Z <span class="sort-arrow"></span>
-                  </button>
-                  <button
-                    class="sort-pill"
-                    data-sort="price"
-                    onclick="handleSortPill('heroes', 'price', this)"
-                  >
-                    Price <span class="sort-arrow"></span>
-                  </button>
-                </div>
+              <div class="filter-item">
+                <label class="form-label">Nation</label>
+                <select
+                  id="filter-hero-nation"
+                  class="form-select filter-source-select"
+                  multiple
+                  onchange="renderHeroesPage()"
+                  aria-hidden="true"
+                  tabindex="-1"
+                ></select>
+                <div id="pills-filter-hero-nation" class="filter-pill-row" aria-label="Filter heroes by nation"></div>
+              </div>
+            </div>
+            <div class="filter-sort-bar">
+              <span class="filter-sort-label">Sort</span>
+              <div class="sort-pills" id="sort-pills-heroes">
+                <button class="sort-pill active asc" data-sort="releaseDate" onclick="handleSortPill('heroes', 'releaseDate', this)">Release Date <span class="sort-arrow">↑</span></button>
+                <button class="sort-pill" data-sort="az" onclick="handleSortPill('heroes', 'az', this)">A–Z <span class="sort-arrow"></span></button>
+                <button class="sort-pill" data-sort="price" onclick="handleSortPill('heroes', 'price', this)">Price <span class="sort-arrow"></span></button>
               </div>
             </div>
           </div>
@@ -286,9 +255,7 @@
           >
             <div class="filter-panel-toolbar">
               <div class="filter-quick-search">
-                <span class="material-symbols-outlined filter-search-icon"
-                  >search</span
-                >
+                <span class="material-symbols-outlined filter-search-icon">search</span>
                 <input
                   type="text"
                   id="skin-search"
@@ -296,10 +263,7 @@
                   placeholder="Search skins..."
                   aria-label="Search skins"
                 />
-                <div
-                  id="skin-search-suggestions"
-                  class="search-suggestions"
-                ></div>
+                <div id="skin-search-suggestions" class="search-suggestions"></div>
               </div>
               <button
                 type="button"
@@ -311,15 +275,10 @@
                 <span class="material-symbols-outlined">tune</span>
                 <span>Filters</span>
                 <span class="filter-active-count" data-count="0">0</span>
-                <span class="material-symbols-outlined filter-toggle-icon"
-                  >expand_more</span
-                >
+                <span class="material-symbols-outlined filter-toggle-icon">expand_more</span>
               </button>
             </div>
-            <div
-              id="skin-filter-panel-body"
-              class="filters-bar filter-panel-body"
-            >
+            <div id="skin-filter-panel-body" class="filters-bar filter-panel-body">
               <div class="filter-item">
                 <label class="form-label">Hero</label
                 ><select
@@ -333,56 +292,32 @@
                 ><select
                   id="filter-skin-rarity"
                   class="form-select filter-source-select"
+                  multiple
                   onchange="renderSkinsPage()"
                   aria-hidden="true"
                   tabindex="-1"
                 ></select>
-                <div
-                  id="pills-filter-skin-rarity"
-                  class="filter-pill-row"
-                  aria-label="Filter skins by rarity"
-                ></div>
+                <div id="pills-filter-skin-rarity" class="filter-pill-row" aria-label="Filter skins by rarity"></div>
               </div>
               <div class="filter-item">
                 <label class="form-label">Type / Tag</label
                 ><select
                   id="filter-skin-collectible"
                   class="form-select filter-source-select"
+                  multiple
                   onchange="renderSkinsPage()"
                   aria-hidden="true"
                   tabindex="-1"
                 ></select>
-                <div
-                  id="pills-filter-skin-collectible"
-                  class="filter-pill-row filter-pill-row-wide"
-                  aria-label="Filter skins by type or collectible tag"
-                ></div>
+                <div id="pills-filter-skin-collectible" class="filter-pill-row filter-pill-row-wide" aria-label="Filter skins by type or collectible tag"></div>
               </div>
-              <div class="filter-item filter-sort-item">
-                <label class="form-label">Sort</label>
-                <div class="sort-pills" id="sort-pills-skins">
-                  <button
-                    class="sort-pill active asc"
-                    data-sort="releaseDate"
-                    onclick="handleSortPill('skins', 'releaseDate', this)"
-                  >
-                    Release Date <span class="sort-arrow">↑</span>
-                  </button>
-                  <button
-                    class="sort-pill"
-                    data-sort="az"
-                    onclick="handleSortPill('skins', 'az', this)"
-                  >
-                    A–Z <span class="sort-arrow"></span>
-                  </button>
-                  <button
-                    class="sort-pill"
-                    data-sort="price"
-                    onclick="handleSortPill('skins', 'price', this)"
-                  >
-                    Price <span class="sort-arrow"></span>
-                  </button>
-                </div>
+            </div>
+            <div class="filter-sort-bar">
+              <span class="filter-sort-label">Sort</span>
+              <div class="sort-pills" id="sort-pills-skins">
+                <button class="sort-pill active asc" data-sort="releaseDate" onclick="handleSortPill('skins', 'releaseDate', this)">Release Date <span class="sort-arrow">↑</span></button>
+                <button class="sort-pill" data-sort="az" onclick="handleSortPill('skins', 'az', this)">A–Z <span class="sort-arrow"></span></button>
+                <button class="sort-pill" data-sort="price" onclick="handleSortPill('skins', 'price', this)">Price <span class="sort-arrow"></span></button>
               </div>
             </div>
           </div>
@@ -491,14 +426,17 @@
               <label class="form-label">Group By</label
               ><select
                 id="filter-count-sort"
-                class="form-select"
+                class="form-select filter-source-select"
                 onchange="renderSkinCountPage()"
+                aria-hidden="true"
+                tabindex="-1"
               >
                 <option value="hero">Hero</option>
                 <option value="rarity">Rarity</option>
                 <option value="role">Role</option>
                 <option value="collectible">Collectible Tag</option>
               </select>
+              <div id="pills-filter-count-sort" class="filter-pill-row" aria-label="Group skin count by"></div>
             </div>
 
             <div class="filter-item">
@@ -700,36 +638,68 @@
         </div>
 
         <div id="page-matrix" class="page">
-          <header class="page-header"><h1>Matrix</h1></header>
-          <div class="attr-tabs" id="matrix-tabs"></div>
-          <div class="attr-panel" id="matrix-container"></div>
+          <header class="page-header matrix-page-header">
+            <div>
+              <h1>Hero Matrix</h1>
+              <p class="page-subtitle">Compare two attributes to discover common hero combinations.</p>
+            </div>
+          </header>
+          <div class="matrix-explorer">
+            <div class="matrix-axis-toolbar">
+              <div class="matrix-axis-group">
+                <span class="form-label">Rows</span>
+                <div id="matrix-row-pills" class="filter-pill-row matrix-axis-pills"></div>
+              </div>
+              <button type="button" class="matrix-swap-btn" onclick="swapMatrixAxes()" title="Swap rows and columns" aria-label="Swap matrix axes">
+                <span class="material-symbols-outlined">swap_horiz</span>
+              </button>
+              <div class="matrix-axis-group">
+                <span class="form-label">Columns</span>
+                <div id="matrix-column-pills" class="filter-pill-row matrix-axis-pills"></div>
+              </div>
+            </div>
+            <div id="matrix-insights" class="matrix-insights"></div>
+            <div class="matrix-table-shell">
+              <div id="matrix-container" class="matrix-table-container"></div>
+            </div>
+            <div id="matrix-selection" class="matrix-selection-panel">
+              <div class="matrix-selection-empty">Click a matrix cell to inspect the heroes in that combination.</div>
+            </div>
+          </div>
         </div>
 
         <div id="page-tier-list" class="page">
           <header class="page-header">
             <h1>Tier List</h1>
-            <div
-              style="
-                display: flex;
-                gap: 0.5rem;
-                align-items: center;
-                margin-left: auto;
-              "
-            >
+            <div class="tier-header-actions">
+              <button class="btn btn-primary btn-sm" onclick="saveTierSnapshot()">
+                <span class="material-symbols-outlined" style="font-size:15px">bookmark_add</span> Save Version
+              </button>
               <button class="btn btn-secondary btn-sm" onclick="addTier()">
-                <span class="material-symbols-outlined" style="font-size: 15px"
-                  >add</span
-                >
-                Add Tier
+                <span class="material-symbols-outlined" style="font-size:15px">add</span> Add Tier
               </button>
               <button class="btn btn-danger btn-sm" onclick="resetTierList()">
-                <span class="material-symbols-outlined" style="font-size: 16px"
-                  >restart_alt</span
-                >
-                Reset
+                <span class="material-symbols-outlined" style="font-size:16px">restart_alt</span> Reset
               </button>
             </div>
           </header>
+          <div class="tier-version-bar">
+            <div class="tier-version-select-wrap">
+              <span class="form-label">Compare current tier list against</span>
+              <select id="tier-compare-version" class="form-select" onchange="setTierCompareVersion(this.value)">
+                <option value="">No saved version</option>
+              </select>
+            </div>
+            <div class="tier-version-actions">
+              <button id="tier-restore-version" class="btn btn-secondary btn-sm" onclick="restoreSelectedTierSnapshot()" disabled>
+                <span class="material-symbols-outlined" style="font-size:15px">history</span> Restore
+              </button>
+              <button id="tier-delete-version" class="btn btn-danger btn-sm" onclick="deleteSelectedTierSnapshot()" disabled>
+                <span class="material-symbols-outlined" style="font-size:15px">delete</span> Delete
+              </button>
+            </div>
+          </div>
+          <div id="tier-comparison-summary" class="tier-comparison-summary" hidden></div>
           <div class="tier-page-layout">
             <div class="tier-main"><div id="tier-list-container"></div></div>
             <div id="unranked-sidebar" class="tier-sidebar">
@@ -779,6 +749,7 @@
           </header>
           <form
             id="hero-form"
+            autocomplete="off"
             class="unified-card"
             style="
               padding: 3rem;
@@ -970,6 +941,7 @@
           </header>
           <form
             id="skin-form"
+            autocomplete="off"
             class="unified-card"
             style="
               padding: 3rem;
@@ -1104,8 +1076,9 @@
                     margin-bottom: 1rem;
                   "
                 >
-                  Paste URL to override default hero skill icons. Leave blank to
-                  show greyed-out original.
+                  Override a base/sub-skill icon, or add extra icon variations that
+                  cycle after the base icon. Leave overrides blank to keep the
+                  greyed-out original.
                 </p>
                 <div id="skin-skill-variants-container"></div>
               </div>
@@ -1223,14 +1196,7 @@
       <div class="modal-container">
         <header class="modal-header">
           <div class="modal-header-title-group">
-            <button
-              id="modal-back-btn"
-              class="modal-btn-circle modal-back-btn"
-              type="button"
-              onclick="goBackModal()"
-              title="Back"
-              aria-label="Back to previous modal"
-            >
+            <button id="modal-back-btn" class="modal-btn-circle modal-back-btn" type="button" onclick="goBackModal()" title="Back" aria-label="Back to previous modal">
               <span class="material-symbols-outlined">arrow_back</span>
             </button>
             <h2 id="modal-title" class="modal-title">Title</h2>
@@ -1246,11 +1212,7 @@
         <div class="modal-body">
           <div class="modal-image-section">
             <div class="modal-main-image-wrapper" id="modal-single-view">
-              <img
-                id="modal-img"
-                class="modal-main-image"
-                alt="Selected artwork"
-              />
+              <img id="modal-img" class="modal-main-image" alt="Selected artwork" />
             </div>
             <div class="modal-gallery" id="modal-gallery-view"></div>
             <div class="image-toggles" id="modal-toggles">

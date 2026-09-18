@@ -127,7 +127,7 @@
               : x.rarity || x.collectible || "Skin";
 
           let imgSrc =
-            x.splashArt || x.imageUrl || "https://placehold.co/400x225";
+            x.splashArt || x.imageUrl || IMAGE_PLACEHOLDER;
           let imgStyle = "";
           if (x.itemType === "skin" && !x.splashArt && !x.imageUrl) {
             const imgData = getSkinImageWithFallback(x, "splash");
@@ -150,7 +150,7 @@
                   })),
                 ];
                 const hasSubs = all.length > 1;
-                return `<div class="card-skill-strip-wrapper" data-skill-name="${s.name.replace(/"/g, "&quot;")}" data-skill-variants="${encodeURIComponent(JSON.stringify(all))}" onmouseenter="startSkillCycle(this)" onmouseleave="stopSkillCycle(this)"><img src="${s.icon || ""}" class="card-skill-strip-icon${hasSubs ? " sub-cycling" : ""}" onerror="this.src=''"></div>`;
+                return `<div class="card-skill-strip-wrapper" data-skill-name="${s.name.replace(/"/g, "&quot;")}" data-skill-variants="${encodeURIComponent(JSON.stringify(all))}" onmouseenter="startSkillCycle(this)" onmouseleave="stopSkillCycle(this)"><img src="${s.icon || IMAGE_PLACEHOLDER}" data-fallback-src="${IMAGE_PLACEHOLDER}" class="card-skill-strip-icon${hasSubs ? " sub-cycling" : ""}"></div>`;
               })
               .join("");
             skillsHtml = `<div class="card-skill-strip">${skillItems}</div>`;

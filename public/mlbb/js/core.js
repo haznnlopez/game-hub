@@ -228,7 +228,9 @@
         }
       }
       let currentModalData = null,
+        modalHistory = [],
         draggedHeroId = null,
+        draggedAttribute = null,
         toastDebounce = null,
         currentUpcomingView = "heroes",
         currentPageId = "page-heroes";
@@ -249,6 +251,72 @@
         "hero-specialties": [],
         "hero-lanes": [],
       };
+
+      const IMAGE_PLACEHOLDER = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+          <defs>
+            <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#1e293b"/>
+              <stop offset="1" stop-color="#0f172a"/>
+            </linearGradient>
+          </defs>
+          <rect width="800" height="450" fill="url(#g)"/>
+          <g fill="none" stroke="#fbbf24" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity=".72">
+            <rect x="310" y="132" width="180" height="145" rx="18"/>
+            <circle cx="365" cy="184" r="18"/>
+            <path d="M330 250l52-48 38 34 26-24 25 38"/>
+          </g>
+          <text x="400" y="330" text-anchor="middle" fill="#94a3b8" font-family="Montserrat,Arial,sans-serif" font-size="26" font-weight="600">Image unavailable</text>
+        </svg>
+      `)}`;
+
+      function applyImageFallback(img) {
+        if (!img || img.tagName !== "IMG") return;
+        const fallback = (img.dataset && img.dataset.fallbackSrc) || "";
+        if (fallback && !img.dataset.fallbackAttempted && img.src !== fallback) {
+          img.dataset.fallbackAttempted = "true";
+          img.src = fallback;
+          img.classList.add("image-fallback-secondary");
+          return;
+        }
+        if (img.src === IMAGE_PLACEHOLDER) return;
+        img.dataset.placeholderApplied = "true";
+        img.removeAttribute("srcset");
+        img.src = IMAGE_PLACEHOLDER;
+        img.classList.add("image-fallback");
+      }
+
+      function installImageFallbacks() {
+        const normalize = (img) => {
+          if (!img || img.tagName !== "IMG") return;
+          const raw = img.getAttribute("src");
+          if (!raw || !raw.trim()) applyImageFallback(img);
+        };
+
+        // Capture image errors before legacy inline handlers can leave a broken-image icon.
+        document.addEventListener(
+          "error",
+          (event) => {
+            const img = event.target;
+            if (!img || img.tagName !== "IMG") return;
+            event.stopImmediatePropagation();
+            applyImageFallback(img);
+          },
+          true,
+        );
+
+        document.querySelectorAll("img").forEach(normalize);
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType !== 1) return;
+              if (node.tagName === "IMG") normalize(node);
+              node.querySelectorAll?.("img").forEach(normalize);
+            });
+          });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
 
       function debounce(func, wait) {
         let timeout;
@@ -565,8 +633,7 @@
             url.match(/\.(jpeg|jpg|gif|png|webp|bmp|svg)/i) ||
             url.includes("wikia.nocookie.net") ||
             url.includes("images.contentstack.io") ||
-            url.includes("ddragon.leagueoflegends.com") ||
-            url.includes("placehold.co")
+            url.includes("ddragon.leagueoflegends.com")
           );
         };
 
@@ -609,7 +676,7 @@
         document.addEventListener("mouseout", function (e) {
           if (e.target.tagName === "INPUT") {
             tooltip.style.display = "none";
-            tooltipImg.src = "";
+            tooltipImg.removeAttribute("src");
           }
         });
 
@@ -637,6 +704,7 @@
         loadDefaults();
         setupSidebar();
         setupNavigation();
+        installImageFallbacks();
         populateFilters();
         renderHeroesPage();
         setupTooltips();
@@ -1340,10 +1408,15 @@
             ? `<div style="width:100%;height:100%;border-radius:8px;background:${color || "var(--bg-light)"};display:flex;align-items:center;justify-content:center;">${color ? "" : `<span class="material-symbols-outlined" style="opacity:0.5;">palette</span>`}</div>`
             : hasImg(key)
               ? imgUrl
-                ? `<img src="${imgUrl}" onerror="this.style.display='none'">`
-                : `<span class="material-symbols-outlined">image</span>`
+                ? `<img src="${imgUrl}" data-fallback-src="${IMAGE_PLACEHOLDER}">`
+                : `<img src="${IMAGE_PLACEHOLDER}" alt="Image unavailable">`
               : `<span class="material-symbols-outlined">label</span>`;
-          return `<div class="attr-square-item">
+          return `<div class="attr-square-item attr-reorderable" draggable="true" data-attr-key="${key}" data-attr-value="${esc}" ondragstart="startAttributeDrag(event,'${key}','${esc}')" ondragend="endAttributeDrag(event)" ondragover="attributeDragOver(event)" ondragleave="attributeDragLeave(event)" ondrop="dropAttribute(event,'${key}','${esc}')">
+              <div class="attr-reorder-controls">
+                <button type="button" class="attr-order-btn" title="Move earlier" onclick="event.stopPropagation();moveAttribute('${key}','${esc}',-1)"><span class="material-symbols-outlined">chevron_left</span></button>
+                <span class="attr-drag-handle material-symbols-outlined" title="Drag to rearrange">drag_indicator</span>
+                <button type="button" class="attr-order-btn" title="Move later" onclick="event.stopPropagation();moveAttribute('${key}','${esc}',1)"><span class="material-symbols-outlined">chevron_right</span></button>
+              </div>
               <div class="card-overlay-actions">
                 <div class="overlay-btn" title="Edit" onclick="editAttributeFull('${key}','${esc}')"><span class="material-symbols-outlined">edit</span></div>
                 <div class="overlay-btn delete" title="Delete" onclick="deleteAttribute('${key}','${esc}')"><span class="material-symbols-outlined">delete</span></div>
@@ -1420,4 +1493,78 @@
       function switchAttrTab(key) {
         currentAttrTab = key;
         renderAttributesPage();
+      }
+
+      function getAttributeReorderPeers(key, value) {
+        const values = getAttributes()[key] || [];
+        if (key !== "skillCategories") return values;
+        const groupMap = getTagGroupMap();
+        const groupId = groupMap[value] || "";
+        return values.filter((item) => (groupMap[item] || "") === groupId);
+      }
+
+      function moveAttribute(key, value, direction) {
+        const attrs = getAttributes();
+        const values = attrs[key] || [];
+        const peers = getAttributeReorderPeers(key, value);
+        const peerIndex = peers.indexOf(value);
+        const targetValue = peers[peerIndex + direction];
+        if (peerIndex < 0 || !targetValue) return;
+        const from = values.indexOf(value);
+        const to = values.indexOf(targetValue);
+        [values[from], values[to]] = [values[to], values[from]];
+        saveAttributes(attrs);
+        renderAttributesPage();
+        populateFilters();
+      }
+
+      function startAttributeDrag(event, key, value) {
+        draggedAttribute = { key, value };
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", value);
+        event.currentTarget.classList.add("dragging");
+      }
+
+      function endAttributeDrag(event) {
+        event.currentTarget?.classList.remove("dragging");
+        document.querySelectorAll(".attr-square-item.drag-over").forEach((el) => el.classList.remove("drag-over"));
+        draggedAttribute = null;
+      }
+
+      function attributeDragOver(event) {
+        event.preventDefault();
+        event.currentTarget.classList.add("drag-over");
+      }
+
+      function attributeDragLeave(event) {
+        event.currentTarget.classList.remove("drag-over");
+      }
+
+      function dropAttribute(event, key, targetValue) {
+        event.preventDefault();
+        document.querySelectorAll(".attr-square-item.dragging,.attr-square-item.drag-over").forEach((el) => el.classList.remove("dragging", "drag-over"));
+        if (!draggedAttribute || draggedAttribute.key !== key || draggedAttribute.value === targetValue) {
+          draggedAttribute = null;
+          return;
+        }
+        if (key === "skillCategories") {
+          const groupMap = getTagGroupMap();
+          if ((groupMap[draggedAttribute.value] || "") !== (groupMap[targetValue] || "")) {
+            showToast("Reorder skill categories within the same color group.", "info");
+            draggedAttribute = null;
+            return;
+          }
+        }
+        const attrs = getAttributes();
+        const values = attrs[key] || [];
+        const from = values.indexOf(draggedAttribute.value);
+        let to = values.indexOf(targetValue);
+        if (from < 0 || to < 0) return;
+        const [moved] = values.splice(from, 1);
+        to = values.indexOf(targetValue);
+        values.splice(to, 0, moved);
+        saveAttributes(attrs);
+        draggedAttribute = null;
+        renderAttributesPage();
+        populateFilters();
       }

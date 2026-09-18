@@ -339,7 +339,7 @@
         return ` data-cat-tooltip="${json}"`;
       }
       window.handleImageError = function (img) {
-        img.src = "https://placehold.co/400x225?text=Image+Error";
+        img.src = IMAGE_PLACEHOLDER;
         img.onerror = null;
       };
       function scrollToTop() {
@@ -434,60 +434,123 @@
         }, 3000);
       }
       function goBackFromForm(rid) {
-        const p = document.getElementById(rid).value;
+        const raw = document.getElementById(rid).value;
+        if (
+          raw &&
+          raw.startsWith("modal:") &&
+          typeof restoreModalReturnContext === "function"
+        ) {
+          restoreModalReturnContext(raw);
+          return;
+        }
         const target =
-          p || (rid === "hero-return-page" ? "page-heroes" : "page-skins");
+          raw || (rid === "hero-return-page" ? "page-heroes" : "page-skins");
         showPage(target, true);
+      }
+
+      function renderFilterPills(selectId, imageKey = null, customImages = null) {
+        const select = document.getElementById(selectId);
+        const wrap = document.getElementById(`pills-${selectId}`);
+        if (!select || !wrap) return;
+        const images = customImages || (imageKey ? getAttributeImages()[imageKey] || {} : {});
+        const current = select.value;
+        const options = Array.from(select.options).filter((o) => !o.disabled);
+        wrap.innerHTML = options
+          .map((option) => {
+            const value = option.value;
+            const active = value === current;
+            const img = value && images[value] ? images[value] : "";
+            const icon = img
+              ? `<img class="filter-pill-icon" src="${img}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="">`
+              : "";
+            return `<button type="button" class="filter-pill${active ? " active" : ""}" data-value="${value.replace(/"/g, "&quot;")}" aria-pressed="${active}">${icon}<span>${option.textContent}</span></button>`;
+          })
+          .join("");
+        wrap.querySelectorAll(".filter-pill").forEach((pill) => {
+          pill.onclick = () => {
+            select.value = pill.dataset.value;
+            wrap.querySelectorAll(".filter-pill").forEach((p) => {
+              const isActive = p === pill;
+              p.classList.toggle("active", isActive);
+              p.setAttribute("aria-pressed", String(isActive));
+            });
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+          };
+        });
+      }
+
+      function getSkinTagFilterImages() {
+        const images = {};
+        getSkins().forEach((skin) => {
+          if (skin.collectible && skin.skinTag && !images[skin.collectible]) {
+            images[skin.collectible] = skin.skinTag;
+          }
+        });
+        return images;
+      }
+
+      function refreshFilterPills() {
+        renderFilterPills("filter-hero-role", "roles");
+        renderFilterPills("filter-hero-lane", "lanes");
+        renderFilterPills("filter-hero-specialty");
+        renderFilterPills("filter-skin-rarity", "skinRarities");
+        renderFilterPills(
+          "filter-skin-collectible",
+          null,
+          getSkinTagFilterImages(),
+        );
       }
 
       function populateFilters() {
         const attrs = getAttributes();
         const h = getHeroes().sort((a, b) => a.name.localeCompare(b.name));
         const fill = (id, list) => {
-          const s = document.getElementById(id);
-          if (s) {
-            s.innerHTML = '<option value="">All</option>';
-            (list || []).forEach(
-              (i) => (s.innerHTML += `<option value="${i}">${i}</option>`),
-            );
+          const select = document.getElementById(id);
+          if (!select) return;
+          const previous = select.value;
+          select.innerHTML = '<option value="">All</option>';
+          (list || []).forEach(
+            (item) =>
+              (select.innerHTML += `<option value="${item}">${item}</option>`),
+          );
+          if (Array.from(select.options).some((o) => o.value === previous)) {
+            select.value = previous;
           }
         };
         fill("filter-hero-role", attrs.roles);
         fill("filter-hero-lane", attrs.lanes);
         fill("filter-hero-specialty", attrs.specialties);
         fill("filter-skin-rarity", attrs.skinRarities);
-        decorateImageSelect(
-          document.getElementById("filter-hero-role"),
-          "roles",
-        );
-        decorateImageSelect(
-          document.getElementById("filter-hero-lane"),
-          "lanes",
-        );
-        decorateImageSelect(
-          document.getElementById("filter-skin-rarity"),
-          "skinRarities",
-        );
+
         const cs = document.getElementById("filter-skin-collectible");
         if (cs) {
+          const previous = cs.value;
           cs.innerHTML = '<option value="">All</option>';
           ["Painted Skin", "Sacred Statue"].forEach(
-            (t) =>
-              (cs.innerHTML += `<option value="${t}" style="color:var(--accent)">${t}</option>`),
+            (type) =>
+              (cs.innerHTML += `<option value="${type}">${type}</option>`),
           );
-          cs.innerHTML += "<option disabled>──────────</option>";
           (attrs.collectibleRarities || []).forEach(
-            (i) => (cs.innerHTML += `<option value="${i}">${i}</option>`),
+            (item) => (cs.innerHTML += `<option value="${item}">${item}</option>`),
           );
+          if (Array.from(cs.options).some((o) => o.value === previous)) {
+            cs.value = previous;
+          }
         }
+
         const hs = document.getElementById("filter-skin-hero");
         if (hs) {
+          const previous = hs.value;
           hs.innerHTML = '<option value="">All Heroes</option>';
           h.forEach(
             (x) =>
               (hs.innerHTML += `<option value="${x.id}">${x.name}</option>`),
           );
+          if (Array.from(hs.options).some((o) => o.value === previous)) {
+            hs.value = previous;
+          }
         }
+        refreshFilterPills();
       }
       function populateSelect(id, list) {
         const s = document.getElementById(id);
@@ -594,7 +657,7 @@
       }
 
       /* FORM LOGIC */
-      function renderHeroFormPage(id = null, isUpcoming = false) {
+      function renderHeroFormPage(id = null, isUpcoming = false, returnContext = null) {
         const src = currentPageId;
         saveScrollPos(src);
         showPage("page-hero-form");
@@ -604,7 +667,7 @@
         document.getElementById("hero-form-context").value = isUpcoming
           ? "upcoming"
           : "official";
-        document.getElementById("hero-return-page").value = src;
+        document.getElementById("hero-return-page").value = returnContext || src;
         const attrs = getAttributes();
         formTags["hero-roles"] = [];
         formTags["hero-specialties"] = [];
@@ -952,7 +1015,7 @@
         c.innerHTML = h;
         c.style.display = h ? "block" : "none";
       }
-      function renderSkinForm(id = null, isUpcoming = false) {
+      function renderSkinForm(id = null, isUpcoming = false, returnContext = null) {
         const src = currentPageId;
         saveScrollPos(src);
         showPage("page-skin-form");
@@ -961,7 +1024,7 @@
         document.getElementById("skin-form-context").value = isUpcoming
           ? "upcoming"
           : "official";
-        document.getElementById("skin-return-page").value = src;
+        document.getElementById("skin-return-page").value = returnContext || src;
         const sel = document.getElementById("skin-hero-id");
         sel.innerHTML = "";
         const heroSources = isUpcoming
@@ -1247,7 +1310,7 @@
 
         const hero = getHeroById(skin.heroId);
         if (!hero)
-          return { src: "https://placehold.co/400x225", isGreyed: true };
+          return { src: IMAGE_PLACEHOLDER, isGreyed: true };
 
         const fallbackMap = {
           splash: () => hero.splashArt || hero.imageUrl,
@@ -1256,7 +1319,7 @@
         };
         const heroImg = fallbackMap[imageType]?.();
         return {
-          src: heroImg || "https://placehold.co/400x225",
+          src: heroImg || IMAGE_PLACEHOLDER,
           isGreyed: true,
         };
       }
@@ -1289,7 +1352,7 @@
           const heroImg = heroMap[imageType]?.();
           if (heroImg) return { src: heroImg, isGreyed: true };
         }
-        return { src: "https://placehold.co/400x225", isGreyed: true };
+        return { src: IMAGE_PLACEHOLDER, isGreyed: true };
       }
 
       function renderHeroesPage() {
@@ -1368,7 +1431,7 @@
                   })),
                 ];
                 const hasSubs = all.length > 1;
-                return `<div class="card-skill-strip-wrapper" data-skill-name="${s.name.replace(/"/g, "&quot;")}" data-skill-variants="${encodeURIComponent(JSON.stringify(all))}" onmouseenter="startSkillCycle(this)" onmouseleave="stopSkillCycle(this)"><img src="${s.icon || ""}" class="card-skill-strip-icon${hasSubs ? " sub-cycling" : ""}" onerror="this.src=''"></div>`;
+                return `<div class="card-skill-strip-wrapper" data-skill-name="${s.name.replace(/"/g, "&quot;")}" data-skill-variants="${encodeURIComponent(JSON.stringify(all))}" onmouseenter="startSkillCycle(this)" onmouseleave="stopSkillCycle(this)"><img src="${s.icon || IMAGE_PLACEHOLDER}" data-fallback-src="${IMAGE_PLACEHOLDER}" class="card-skill-strip-icon${hasSubs ? " sub-cycling" : ""}"></div>`;
               })
               .join("");
             skillsHtml = `<div class="card-skill-strip">${skillItems}</div>`;
@@ -1389,7 +1452,7 @@
 
           const starIcon = isStarredCard ? "star" : "star_border";
           const starClass = isStarredCard ? "starred" : "";
-          c.innerHTML = `<div class="card-image-wrapper"><img src="${x.splashArt || "https://placehold.co/400x225"}" class="card-image" loading="lazy">${skillsHtml}<div class="card-overlay-actions"><div class="overlay-btn star ${starClass}" onclick="event.stopPropagation();toggleStar('${x.id}',renderHeroesPage)"><span class="material-symbols-outlined">${starIcon}</span></div><div class="overlay-btn" onclick="renderHeroFormPage('${x.id}',false)"><span class="material-symbols-outlined">edit</span></div><div class="overlay-btn delete" onclick="deleteHero('${x.id}',false)"><span class="material-symbols-outlined">delete</span></div></div></div><div class="card-content"><h3 class="card-title">${x.name}</h3>${attrStripHtml}${metaHtml}</div>`;
+          c.innerHTML = `<div class="card-image-wrapper"><img src="${x.splashArt || IMAGE_PLACEHOLDER}" class="card-image" loading="lazy">${skillsHtml}<div class="card-overlay-actions"><div class="overlay-btn star ${starClass}" onclick="event.stopPropagation();toggleStar('${x.id}',renderHeroesPage)"><span class="material-symbols-outlined">${starIcon}</span></div><div class="overlay-btn" onclick="renderHeroFormPage('${x.id}',false)"><span class="material-symbols-outlined">edit</span></div><div class="overlay-btn delete" onclick="deleteHero('${x.id}',false)"><span class="material-symbols-outlined">delete</span></div></div></div><div class="card-content"><h3 class="card-title">${x.name}</h3>${attrStripHtml}${metaHtml}</div>`;
           frag.appendChild(c);
         });
         g.appendChild(frag);
@@ -1406,253 +1469,181 @@
         document.getElementById("painted-skins-container").appendChild(div);
       }
 
+      function detailPill(label, value, options = {}) {
+        if (value == null || value === "") return "";
+        const className = `detail-pill${options.clickable ? " detail-pill-clickable" : ""}`;
+        const style = options.color ? ` style="--detail-accent:${options.color};"` : "";
+        const click = options.onclick ? ` onclick="${options.onclick}"` : "";
+        const tag = options.clickable ? "button" : "div";
+        const type = options.clickable ? ' type="button"' : "";
+        return `<${tag}${type} class="${className}"${style}${click}><span class="detail-pill-label">${label}</span><span class="detail-pill-value">${value}</span></${tag}>`;
+      }
+
+      function formatDetailKey(key) {
+        return key
+          .replace(/([A-Z])/g, " $1")
+          .replace(/^./, (m) => m.toUpperCase())
+          .trim();
+      }
+
       function renderSkinModalContent(s, c) {
         const h =
           getHeroById(s.heroId) ||
           getUpcoming().find((x) => x.id === s.heroId && x.itemType === "hero");
-        let skH = "";
-        if (h && h.skills) {
+        let skillsHtml = "";
+        if (h?.skills?.length && !s.isStatue && s.type !== "statue") {
           const rawV = s.variantSkills || [];
           const skillsMarkup = h.skills
-            .map((k, i) => {
+            .map((skill, i) => {
               const rv = rawV[i];
               const mainOverride = rv
                 ? typeof rv === "string"
                   ? rv
                   : rv.main || ""
                 : "";
-              const subOverrides =
-                rv && typeof rv === "object" ? rv.subs || [] : [];
-              // 1. Checkbox unchecked → original, full color
-              // 2. Checkbox checked + URL → override, full color
-              // 3. Checkbox checked + no URL → original, greyed
-              const mainIcon = mainOverride || k.icon || "";
+              const subOverrides = rv && typeof rv === "object" ? rv.subs || [] : [];
+              const mainIcon = mainOverride || skill.icon || IMAGE_PLACEHOLDER;
               const mainGreyed = s.showSkillIcons && !mainOverride;
               const allVariants = [
-                { name: k.name, icon: mainIcon, greyed: mainGreyed },
-                ...(k.subSkills || []).map((ss, j) => {
+                { name: skill.name, icon: mainIcon, greyed: mainGreyed },
+                ...(skill.subSkills || []).map((ss, j) => {
                   const subUrl = subOverrides[j] || "";
-                  if (!s.showSkillIcons) {
-                    // Checkbox off → original sub icon, full color
-                    return {
-                      name: ss.name || k.name,
-                      icon: ss.icon || k.icon || "",
-                      greyed: false,
-                    };
-                  } else if (subUrl) {
-                    // Sub override entered → full color
-                    return {
-                      name: ss.name || k.name,
-                      icon: subUrl,
-                      greyed: false,
-                    };
-                  } else if (mainOverride) {
-                    // No sub URL but parent override exists → parent override, greyed
-                    return {
-                      name: ss.name || k.name,
-                      icon: mainOverride,
-                      greyed: true,
-                    };
-                  } else {
-                    // No sub or parent override → original hero sub/parent icon, greyed
-                    return {
-                      name: ss.name || k.name,
-                      icon: ss.icon || k.icon || "",
-                      greyed: true,
-                    };
-                  }
+                  if (!s.showSkillIcons)
+                    return { name: ss.name || skill.name, icon: ss.icon || skill.icon || IMAGE_PLACEHOLDER, greyed: false };
+                  if (subUrl)
+                    return { name: ss.name || skill.name, icon: subUrl, greyed: false };
+                  if (mainOverride)
+                    return { name: ss.name || skill.name, icon: mainOverride, greyed: true };
+                  return { name: ss.name || skill.name, icon: ss.icon || skill.icon || IMAGE_PLACEHOLDER, greyed: true };
                 }),
               ];
               const safeJson = encodeURIComponent(JSON.stringify(allVariants));
               const hasSubs = allVariants.length > 1;
-              const subDots = hasSubs
-                ? `<div style="display:flex;justify-content:center;gap:3px;margin-top:3px;">${allVariants.map((_, j) => `<div style="width:5px;height:5px;border-radius:50%;background:${j === 0 ? "var(--accent)" : "rgba(255,255,255,0.25)"};" class="modal-skill-dot"></div>`).join("")}</div>`
+              const dots = hasSubs
+                ? `<div class="modal-skill-dots">${allVariants.map((_, j) => `<span class="modal-skill-dot${j === 0 ? " active" : ""}"></span>`).join("")}</div>`
                 : "";
-              const catTooltip = buildCatTooltipAttr(k.categories);
-              return `<div class="skill-item modal-skill-cycler${hasSubs ? " has-subs" : ""}" data-skill-variants="${safeJson}" data-skill-idx="0"${catTooltip} onmouseenter="startModalSkillCycle(this)" onmouseleave="stopModalSkillCycle(this)">
-              <img src="${mainIcon}" class="skill-icon" style="${mainGreyed ? "filter:grayscale(100%) opacity(0.45)" : ""}">
-              <div class="skill-name">${k.name}</div>
-              ${subDots}
-            </div>`;
+              return `<div class="skill-item modal-skill-cycler${hasSubs ? " has-subs" : ""}" data-skill-variants="${safeJson}" data-skill-idx="0"${buildCatTooltipAttr(skill.categories)} onmouseenter="startModalSkillCycle(this)" onmouseleave="stopModalSkillCycle(this)">
+                <img src="${mainIcon}" class="skill-icon" style="${mainGreyed ? "filter:grayscale(100%) opacity(0.45)" : ""}">
+                <div class="skill-name">${skill.name}</div>${dots}</div>`;
             })
             .join("");
-          skH = `<div class="modal-section-header">Skill Effects</div><div class="skill-list">${skillsMarkup}</div>`;
+          skillsHtml = `<div class="modal-section-header">Skill Effects</div><div class="skill-list">${skillsMarkup}</div>`;
         }
 
-        const skinRelDate = s.releaseDate
-          ? `<p><strong>Released:</strong> ${s.releaseDate}</p>`
-          : "";
-        const skinDia = s.priceDiamonds
-          ? `<p><strong>Price:</strong> ${s.priceDiamonds} Diamonds</p>`
-          : "";
-        let html = `<div class="modal-section-header">Details</div>
-      <p><strong>Hero:</strong> ${h ? h.name : "Unknown"}</p>
-      ${!s.isStatue && s.type !== "statue" ? `<p><strong>Rarity:</strong> <span style="color:var(--rarity-${(s.collectible || "basic").toLowerCase().replace(/\s/g, "-")}, var(--text-light))">${s.collectible || s.rarity || "Basic"}</span></p>` : ""}
-      ${skinRelDate}${skinDia}
-      <div style="margin-top:1rem;font-size:0.9rem;color:var(--text-med);">
-          ${
-            s.tagDetails
-              ? Object.entries(s.tagDetails)
-                  .map(
-                    ([k, v]) =>
-                      `<div style="margin-bottom:0.25rem;"><span style="text-transform:capitalize;color:var(--accent);">${k.replace(/([A-Z])/g, " $1").trim()}:</span> ${v}</div>`,
-                  )
-                  .join("")
-              : ""
-          }
-      </div>
-      ${!s.isStatue && s.type !== "statue" ? skH : ""}
-      `;
+        const isStatue = s.isStatue || s.type === "statue";
+        const rarityColor = `var(--rarity-${(s.collectible || s.rarity || "basic").toLowerCase().replace(/\s+/g, "-")}, var(--accent))`;
+        const overview = [
+          h
+            ? detailPill("Hero", h.name, {
+                clickable: true,
+                onclick: `openModal('hero','${h.id}')`,
+              })
+            : detailPill("Hero", "Unknown"),
+          detailPill("Type", isStatue ? "Sacred Statue" : "Skin"),
+          !isStatue ? detailPill("Rarity", s.rarity || "Basic", { color: rarityColor }) : "",
+          !isStatue && s.collectible ? detailPill("Tag", s.collectible, { color: rarityColor }) : "",
+          detailPill("Released", s.releaseDate),
+          detailPill("Diamonds", s.priceDiamonds),
+          ...Object.entries(s.tagDetails || {}).map(([key, value]) =>
+            detailPill(formatDetailKey(key), value),
+          ),
+        ].join("");
 
-        if (!s.isStatue && s.type !== "statue") {
-          html += `<div class="modal-section-header">Painted Skins</div><div class="mini-grid">
-          <div class="landscape-item active" data-tooltip="Original" onclick="togglePaintedSkin(null,this)" style="--card-glow: var(--accent);"><img src="${s.splashArt || s.imageUrl}" class="item-bg" loading="lazy"></div>
-          ${
-            s.paintedSkins
-              ? s.paintedSkins
-                  .map((p, i) => {
-                    const imgData = getPaintedSkinImage(p, s, "splash");
-                    const filter = imgData.isGreyed
-                      ? ' style="filter: grayscale(100%) opacity(0.5)"'
-                      : "";
-                    return `<div class="landscape-item" data-tooltip="${p.name}" onclick="togglePaintedSkin(${i},this)"><img src="${imgData.src}" class="item-bg" loading="lazy"${filter}></div>`;
-                  })
-                  .join("")
-              : ""
-          }
+        let html = `<div class="modal-section-header">Overview</div><div class="detail-pill-grid">${overview}</div>${skillsHtml}`;
+
+        if (!isStatue && s.paintedSkins?.length) {
+          html += `<div class="modal-section-header">Painted Skins</div><div class="mini-grid compact-gallery">
+            <div class="landscape-item active" data-tooltip="Original" onclick="togglePaintedSkin(null,this)" style="--card-glow:var(--accent);"><img src="${s.splashArt || s.imageUrl || IMAGE_PLACEHOLDER}" class="item-bg" loading="lazy"></div>
+            ${s.paintedSkins
+              .map((painted, i) => {
+                const imgData = getPaintedSkinImage(painted, s, "splash");
+                return `<div class="landscape-item" data-tooltip="${painted.name}" onclick="togglePaintedSkin(${i},this)"><img src="${imgData.src}" class="item-bg" loading="lazy"${imgData.isGreyed ? ' style="filter:grayscale(100%) opacity(0.5)"' : ""}></div>`;
+              })
+              .join("")}
           </div>`;
         }
         c.innerHTML = html;
       }
 
       function renderHeroModalContent(h, c) {
-        const s = getSkins().filter(
-          (x) => x.heroId === h.id && x.type !== "statue",
-        );
-        const st = getSkins().filter(
-          (x) => x.heroId === h.id && (x.type === "statue" || x.isStatue),
-        );
-        let skH = "";
-        if (h.skills && h.skills.length > 0) {
+        const skins = getSkins().filter((x) => x.heroId === h.id && x.type !== "statue");
+        const statues = getSkins().filter((x) => x.heroId === h.id && (x.type === "statue" || x.isStatue));
+
+        let skillsHtml = "";
+        if (h.skills?.length) {
           const skillsMarkup = h.skills
-            .map((sk) => {
+            .map((skill) => {
               const allVariants = [
-                { name: sk.name, icon: sk.icon },
-                ...(sk.subSkills || []).map((ss) => ({
-                  name: ss.name || sk.name,
-                  icon: ss.icon || "", // empty = fallback to parent greyed
+                { name: skill.name, icon: skill.icon || IMAGE_PLACEHOLDER },
+                ...(skill.subSkills || []).map((ss) => ({
+                  name: ss.name || skill.name,
+                  icon: ss.icon || skill.icon || IMAGE_PLACEHOLDER,
+                  greyed: !ss.icon,
                 })),
               ];
               const safeJson = encodeURIComponent(JSON.stringify(allVariants));
               const hasSubs = allVariants.length > 1;
-              const subDots = hasSubs
-                ? `<div style="display:flex;justify-content:center;gap:3px;margin-top:3px;">${allVariants.map((_, i) => `<div style="width:5px;height:5px;border-radius:50%;background:${i === 0 ? "var(--accent)" : "rgba(255,255,255,0.25)"};" class="modal-skill-dot"></div>`).join("")}</div>`
+              const dots = hasSubs
+                ? `<div class="modal-skill-dots">${allVariants.map((_, i) => `<span class="modal-skill-dot${i === 0 ? " active" : ""}"></span>`).join("")}</div>`
                 : "";
-              const catTooltip = buildCatTooltipAttr(sk.categories);
-              return `<div class="skill-item modal-skill-cycler${hasSubs ? " has-subs" : ""}" data-skill-variants="${safeJson}" data-skill-idx="0"${catTooltip} onmouseenter="startModalSkillCycle(this)" onmouseleave="stopModalSkillCycle(this)">
-              <img src="${sk.icon || ""}" class="skill-icon" onerror="this.style.filter='grayscale(100%) opacity(0.4)'">
-              <div class="skill-name">${sk.name}</div>
-              ${subDots}
-            </div>`;
+              return `<div class="skill-item modal-skill-cycler${hasSubs ? " has-subs" : ""}" data-skill-variants="${safeJson}" data-skill-idx="0"${buildCatTooltipAttr(skill.categories)} onmouseenter="startModalSkillCycle(this)" onmouseleave="stopModalSkillCycle(this)">
+                <img src="${skill.icon || IMAGE_PLACEHOLDER}" class="skill-icon">
+                <div class="skill-name">${skill.name}</div>${dots}</div>`;
             })
             .join("");
-          skH = `<div class="modal-section-header">Skills</div><div class="skill-list">${skillsMarkup}</div>`;
+          skillsHtml = `<div class="modal-section-header">Skills</div><div class="skill-list">${skillsMarkup}</div>`;
         }
 
-        const rolesHtml = createRolesBadge(h.roles);
-
-        const tierColors = {
-          S: "#ff7f7f",
-          A: "#ffbf7f",
-          B: "#ffff7f",
-          C: "#7fff7f",
-          D: "#7fbfff",
-        };
-        const td = getTierList();
+        const tierColors = { S: "#ff7f7f", A: "#ffbf7f", B: "#ffff7f", C: "#7fff7f", D: "#7fbfff" };
         let heroTier = null;
-        for (const [tier, heroes] of Object.entries(td)) {
+        for (const [tier, heroes] of Object.entries(getTierList())) {
           if (heroes.some((x) => (x.id || x) === h.id)) {
             heroTier = tier;
             break;
           }
         }
-        const tierHtml = heroTier
-          ? `<div style="display:flex;align-items:center;gap:0.75rem;"><strong>Tier:</strong>
-              <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;font-size:1.1rem;font-weight:900;color:#000;background:${tierColors[heroTier]};box-shadow:0 4px 12px ${tierColors[heroTier]}88;">${heroTier}</span>
-            </div>`
-          : `<div><strong>Tier:</strong> <span style="color:var(--text-dark);font-style:italic;">Unranked</span></div>`;
 
-        const relDateHtml = h.releaseDate
-          ? `<div><strong>Released:</strong> ${h.releaseDate}</div>`
-          : "";
-        const bpHtml = h.priceBP
-          ? `<div><strong>Price:</strong> ${h.priceBP} BP</div>`
-          : "";
-        const diaHtml = h.priceDiamonds
-          ? `<div><strong>Price:</strong> ${h.priceDiamonds} Diamonds</div>`
-          : "";
-        let html = `<div class="modal-section-header">Details</div>
-      <div style="display:inline-flex;flex-direction:column;align-items:center;gap:0.6rem;margin-bottom:1.5rem;min-width:260px;">
-        ${tierHtml}
-        <div style="display:flex;align-items:center;gap:0.75rem;"><strong>Roles:</strong> ${rolesHtml}</div>
-        <div><strong>Lanes:</strong> ${(h.lanes || []).join(", ") || "—"}</div>
-        <div><strong>Specialties:</strong> ${(h.specialties || []).join(", ") || "—"}</div>
-        <div><strong>Nation:</strong> ${h.nation || "—"}</div>
-        ${relDateHtml}${bpHtml}${diaHtml}
-      </div>
-      ${skH}
-      <div class="modal-section-header">Skins</div>
-      <div class="mini-grid">
-          ${s
-            .map((x) => {
-              const ex = getSkinExtraInfo(x);
-              const tt = x.name + (ex ? ` (${ex})` : "");
-              let raritySlug = "basic";
-              if (x.collectible)
-                raritySlug = x.collectible.toLowerCase().replace(/\s+/g, "-");
-              else if (x.rarity)
-                raritySlug = x.rarity.toLowerCase().replace(/\s+/g, "-");
-              const glowColor = `var(--rarity-${raritySlug}, var(--rarity-basic))`;
+        const overview = [
+          detailPill("Tier", heroTier || "Unranked", heroTier ? { color: tierColors[heroTier] } : {}),
+          ...(h.roles || []).map((v) => detailPill("Role", v, { color: `var(--role-${v.toLowerCase().replace(/\s+/g, "-")}, var(--accent))` })),
+          ...(h.lanes || []).map((v) => detailPill("Lane", v)),
+          ...(h.specialties || []).map((v) => detailPill("Specialty", v)),
+          detailPill("Nation", h.nation),
+          detailPill("Released", h.releaseDate),
+          detailPill("Battle Points", h.priceBP),
+          detailPill("Diamonds", h.priceDiamonds),
+        ].join("");
 
-              return `<div class="landscape-item" style="--card-glow: ${glowColor};" data-tooltip="${tt}" onclick="closeModal();setTimeout(()=>openModal('skin','${x.id}'),200)">
-                  <img src="${x.splashArt || x.imageUrl}" class="item-bg" loading="lazy">
-              </div>`;
-            })
-            .join("")}
-          <div class="landscape-item add-skin-btn" onclick="closeModal();renderSkinForm(null,false);setTimeout(()=>{document.getElementById('skin-hero-id').value='${h.id}'},100);" title="Add Skin"><span class="material-symbols-outlined">add</span></div>
-      </div>`;
+        let html = `<div class="modal-section-header">Overview</div><div class="detail-pill-grid">${overview}</div>${skillsHtml}`;
+        html += `<div class="modal-section-header">Skins <span class="section-count">${skins.length}</span></div><div class="mini-grid compact-gallery">${skins
+          .map((skin) => {
+            const ex = getSkinExtraInfo(skin);
+            const raritySlug = (skin.collectible || skin.rarity || "basic").toLowerCase().replace(/\s+/g, "-");
+            return `<div class="landscape-item" style="--card-glow:var(--rarity-${raritySlug},var(--rarity-basic));" data-tooltip="${skin.name}${ex ? ` (${ex})` : ""}" onclick="openModal('skin','${skin.id}')"><img src="${skin.splashArt || skin.imageUrl || IMAGE_PLACEHOLDER}" class="item-bg" loading="lazy"></div>`;
+          })
+          .join("")}
+          <div class="landscape-item add-skin-btn" onclick="openSkinFormFromModal('${h.id}')" title="Add Skin"><span class="material-symbols-outlined">add</span></div>
+        </div>`;
 
-        const painted = s.filter(
-          (x) => x.paintedSkins && x.paintedSkins.length > 0,
-        );
-        if (painted.length > 0) {
-          html += `<div class="modal-section-header">Painted Skins</div><div class="mini-grid">${painted
-            .map((p) =>
-              p.paintedSkins
-                .map((ps) => {
-                  const imgData = getPaintedSkinImage(ps, p, "splash");
-                  const filter = imgData.isGreyed
-                    ? ' style="filter: grayscale(100%) opacity(0.5)"'
-                    : "";
-                  return `<div class="landscape-item" data-tooltip="${ps.name}" onclick="closeModal();setTimeout(()=>openModal('skin','${p.id}'),200)">
-                  <img src="${imgData.src}" class="item-bg" loading="lazy"${filter}>
-              </div>`;
+        const painted = skins.filter((x) => x.paintedSkins?.length);
+        if (painted.length) {
+          html += `<div class="modal-section-header">Painted Skins</div><div class="mini-grid compact-gallery">${painted
+            .map((base) =>
+              base.paintedSkins
+                .map((paintedSkin) => {
+                  const imgData = getPaintedSkinImage(paintedSkin, base, "splash");
+                  return `<div class="landscape-item" data-tooltip="${paintedSkin.name}" onclick="openModal('skin','${base.id}')"><img src="${imgData.src}" class="item-bg" loading="lazy"${imgData.isGreyed ? ' style="filter:grayscale(100%) opacity(0.5)"' : ""}></div>`;
                 })
                 .join(""),
             )
             .join("")}</div>`;
         }
 
-        if (st.length > 0) {
-          html += `<div class="modal-section-header">Sacred Statues</div><div class="mini-grid">${st
-            .map((x) => {
-              const imgData = getSkinImageWithFallback(x, "splash");
-              const filter = imgData.isGreyed
-                ? ' style="filter: grayscale(100%) opacity(0.5)"'
-                : "";
-              return `<div class="portrait-item" style="--card-glow: var(--rarity-basic);" data-tooltip="${x.name}" onclick="closeModal();setTimeout(()=>openModal('skin','${x.id}'),200)">
-            <img src="${imgData.src}" class="item-bg" loading="lazy"${filter}>
-        </div>`;
+        if (statues.length) {
+          html += `<div class="modal-section-header">Sacred Statues</div><div class="mini-grid compact-gallery">${statues
+            .map((statue) => {
+              const imgData = getSkinImageWithFallback(statue, "splash");
+              return `<div class="portrait-item" style="--card-glow:var(--rarity-basic);" data-tooltip="${statue.name}" onclick="openModal('skin','${statue.id}')"><img src="${imgData.src}" class="item-bg" loading="lazy"${imgData.isGreyed ? ' style="filter:grayscale(100%) opacity(0.5)"' : ""}></div>`;
             })
             .join("")}</div>`;
         }
@@ -1814,14 +1805,12 @@
 
           // Hero icon overlay (top-left for normal, top-right for sacred statue)
           const hero = getHeroById(x.heroId);
-          const heroIconHtml =
-            hero && hero.icon
-              ? `<div class="card-hero-icon" style="background-image:url('${hero.icon}')" title="${hero.name}"></div>`
-              : "";
-          const heroIconRightHtml =
-            hero && hero.icon
-              ? `<div class="card-hero-icon" style="background-image:url('${hero.icon}');top:8px;right:8px;left:auto;" title="${hero.name}"></div>`
-              : "";
+          const heroIconHtml = hero
+            ? `<div class="card-hero-icon" title="${hero.name}"><img src="${hero.icon || IMAGE_PLACEHOLDER}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt=""></div>`
+            : "";
+          const heroIconRightHtml = hero
+            ? `<div class="card-hero-icon card-hero-icon-right" title="${hero.name}"><img src="${hero.icon || IMAGE_PLACEHOLDER}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt=""></div>`
+            : "";
 
           // Skin skill strip (if showSkillIcons is enabled)
           let skinSkillStripHtml = "";

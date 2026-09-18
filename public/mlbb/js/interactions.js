@@ -384,7 +384,7 @@
           popup = document.createElement("div");
           popup.id = "painted-popup-global";
           popup.className = "painted-popup";
-          popup.innerHTML = `<img class="painted-popup-img" src="" /><div class="painted-popup-name"></div><div class="painted-popup-dots"></div>`;
+          popup.innerHTML = `<img class="painted-popup-img" alt="Painted skin preview" /><div class="painted-popup-name"></div><div class="painted-popup-dots"></div>`;
           document.body.appendChild(popup);
         }
         paintedPopupState.skins = skins;
@@ -417,7 +417,7 @@
       function updatePaintedPopup(popup, skins, idx) {
         const skin = skins[idx];
         const img = popup.querySelector(".painted-popup-img");
-        img.src = skin.splashArt || skin.splash || "";
+        img.src = skin.splashArt || skin.splash || IMAGE_PLACEHOLDER;
         img.style.filter = skin.isGreyed
           ? "grayscale(100%) opacity(0.6)"
           : "none";

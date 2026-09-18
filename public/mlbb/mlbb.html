@@ -4,10 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f172a" />
-    <meta
-      name="description"
-      content="Mobile Legends: Bang Bang wiki and collection dashboard"
-    />
+    <meta name="description" content="Mobile Legends: Bang Bang wiki and collection dashboard" />
     <title>Mobile Legends - Wiki</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,10 +19,7 @@
     />
 
     <link rel="icon" type="image/jpeg" href="images/mlbb-logo.jpg" />
-    <script
-      defer
-      src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
-    ></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body class="app-layout">
@@ -157,25 +151,34 @@
               <label class="form-label">Role</label
               ><select
                 id="filter-hero-role"
-                class="form-select"
+                class="form-select filter-source-select"
                 onchange="renderHeroesPage()"
+                aria-hidden="true"
+                tabindex="-1"
               ></select>
+              <div id="pills-filter-hero-role" class="filter-pill-row" aria-label="Filter heroes by role"></div>
             </div>
             <div class="filter-item">
               <label class="form-label">Lane</label
               ><select
                 id="filter-hero-lane"
-                class="form-select"
+                class="form-select filter-source-select"
                 onchange="renderHeroesPage()"
+                aria-hidden="true"
+                tabindex="-1"
               ></select>
+              <div id="pills-filter-hero-lane" class="filter-pill-row" aria-label="Filter heroes by lane"></div>
             </div>
             <div class="filter-item">
               <label class="form-label">Specialty</label
               ><select
                 id="filter-hero-specialty"
-                class="form-select"
+                class="form-select filter-source-select"
                 onchange="renderHeroesPage()"
+                aria-hidden="true"
+                tabindex="-1"
               ></select>
+              <div id="pills-filter-hero-specialty" class="filter-pill-row" aria-label="Filter heroes by specialty"></div>
             </div>
             <div class="filter-item" style="position: relative; z-index: 101">
               <label class="form-label">Name Search</label
@@ -256,17 +259,23 @@
               <label class="form-label">Rarity</label
               ><select
                 id="filter-skin-rarity"
-                class="form-select"
+                class="form-select filter-source-select"
                 onchange="renderSkinsPage()"
+                aria-hidden="true"
+                tabindex="-1"
               ></select>
+              <div id="pills-filter-skin-rarity" class="filter-pill-row" aria-label="Filter skins by rarity"></div>
             </div>
             <div class="filter-item">
-              <label class="form-label">Type</label
+              <label class="form-label">Type / Tag</label
               ><select
                 id="filter-skin-collectible"
-                class="form-select"
+                class="form-select filter-source-select"
                 onchange="renderSkinsPage()"
+                aria-hidden="true"
+                tabindex="-1"
               ></select>
+              <div id="pills-filter-skin-collectible" class="filter-pill-row filter-pill-row-wide" aria-label="Filter skins by type or collectible tag"></div>
             </div>
             <div class="filter-item" style="position: relative; z-index: 101">
               <label class="form-label">Search</label
@@ -1157,7 +1166,12 @@
     <div id="universal-modal" class="modal-overlay">
       <div class="modal-container">
         <header class="modal-header">
-          <h2 id="modal-title" class="modal-title">Title</h2>
+          <div class="modal-header-title-group">
+            <button id="modal-back-btn" class="modal-btn-circle modal-back-btn" type="button" onclick="goBackModal()" title="Back" aria-label="Back to previous modal">
+              <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <h2 id="modal-title" class="modal-title">Title</h2>
+          </div>
           <div class="modal-header-actions">
             <button id="modal-edit-btn" class="modal-btn-circle">
               <span class="material-symbols-outlined">edit</span></button
@@ -1169,7 +1183,7 @@
         <div class="modal-body">
           <div class="modal-image-section">
             <div class="modal-main-image-wrapper" id="modal-single-view">
-              <img id="modal-img" class="modal-main-image" src="" />
+              <img id="modal-img" class="modal-main-image" alt="Selected artwork" />
             </div>
             <div class="modal-gallery" id="modal-gallery-view"></div>
             <div class="image-toggles" id="modal-toggles">
@@ -1194,7 +1208,7 @@
     </div>
     <div id="toast-container"></div>
     <div id="custom-tooltip" class="custom-tooltip"></div>
-    <div id="img-preview-tooltip"><img src="" alt="Preview" /></div>
+    <div id="img-preview-tooltip"><img alt="Preview" /></div>
 
     <script src="js/core.js" defer></script>
     <script src="js/catalog.js" defer></script>

@@ -191,16 +191,19 @@
           <div class="changelog-layout">
             <section class="changelog-editor-panel">
               <div class="changelog-panel-head">
-                <div><span class="dashboard-eyebrow">New entry</span><h2>Add Hero Change</h2></div>
+                <div><span id="changelog-editor-eyebrow" class="dashboard-eyebrow">New entry</span><h2 id="changelog-editor-title">Add Hero Change</h2></div>
               </div>
               <div class="changelog-editor-grid">
                 <label class="form-group"><span class="form-label">Hero</span><select id="changelog-hero" class="form-select"></select></label>
                 <label class="form-group"><span class="form-label">Date / Patch</span><input id="changelog-date" class="form-input" type="text" placeholder="e.g. Sep 18, 2026 or Patch 2.1.14" autocomplete="off"></label>
-                <label class="form-group"><span class="form-label">Type</span><select id="changelog-type" class="form-select"></select></label>
+                <div class="form-group changelog-type-field"><span class="form-label">Type</span><input id="changelog-type" type="hidden" value="Adjusted"><div id="changelog-type-pills" class="changelog-type-pills" role="group" aria-label="Change type"></div></div>
                 <label class="form-group changelog-summary-field"><span class="form-label">Summary</span><input id="changelog-summary" class="form-input" type="text" placeholder="Short summary of the change" autocomplete="off"></label>
                 <label class="form-group changelog-notes-field"><span class="form-label">Details</span><textarea id="changelog-notes" class="form-input" rows="3" placeholder="Optional details..."></textarea></label>
               </div>
-              <button type="button" class="btn btn-primary" onclick="saveChangeLogEntry()"><span class="material-symbols-outlined">add</span> Add Change</button>
+              <div class="changelog-editor-actions">
+                <button id="changelog-save-btn" type="button" class="btn btn-primary" onclick="saveChangeLogEntry()"><span class="material-symbols-outlined">add</span><span>Add Change</span></button>
+                <button id="changelog-cancel-edit-btn" type="button" class="btn btn-secondary" onclick="cancelChangeLogEdit()" hidden><span class="material-symbols-outlined">close</span> Cancel Edit</button>
+              </div>
             </section>
             <section class="changelog-feed-panel">
               <div class="changelog-toolbar">
@@ -950,10 +953,12 @@
               />
             </div>
             <h3 class="form-section-title">Hero Stats</h3>
-            <p class="form-section-help">Enter comparable base/reference values consistently across heroes. Rankings recalculate automatically from saved hero data.</p>
+            <p class="form-section-help">Enter comparable base/reference values consistently across heroes. Rankings recalculate automatically from saved hero data. For heroes without Mana, enter 0 for both Mana and Mana Regen.</p>
             <div class="hero-metric-grid hero-stats-form-grid">
               <label class="hero-metric-field"><span>HP</span><input type="number" step="any" min="0" id="hero-stat-hp" class="form-input" placeholder="e.g. 2500"></label>
               <label class="hero-metric-field"><span>HP Regen</span><input type="number" step="any" min="0" id="hero-stat-hpRegen" class="form-input" placeholder="e.g. 8"></label>
+              <label class="hero-metric-field"><span>Mana</span><input type="number" step="any" min="0" id="hero-stat-mana" class="form-input" placeholder="e.g. 450 (use 0 if none)"></label>
+              <label class="hero-metric-field"><span>Mana Regen</span><input type="number" step="any" min="0" id="hero-stat-manaRegen" class="form-input" placeholder="e.g. 15 (use 0 if none)"></label>
               <label class="hero-metric-field"><span>Physical ATK</span><input type="number" step="any" min="0" id="hero-stat-physicalAtk" class="form-input" placeholder="e.g. 120"></label>
               <label class="hero-metric-field"><span>Magic POW</span><input type="number" step="any" min="0" id="hero-stat-magicPower" class="form-input" placeholder="e.g. 0"></label>
               <label class="hero-metric-field"><span>Physical DEF</span><input type="number" step="any" min="0" id="hero-stat-physicalDef" class="form-input" placeholder="e.g. 20"></label>
@@ -966,7 +971,7 @@
             </div>
 
             <h3 class="form-section-title">Hero Ratings</h3>
-            <p class="form-section-help">Rate each category from 0 to 10. Higher Difficulty means harder to use; rankings place the highest rating first.</p>
+            <p class="form-section-help">Rate each category from 0 to 10. Higher Difficulty means harder to use; rankings place the highest rating first. Overall Rating is calculated automatically from all four ratings and is ranked only when all four are filled.</p>
             <div class="hero-metric-grid hero-ratings-form-grid">
               <label class="hero-metric-field"><span>Durability</span><div class="metric-input-with-unit rating-unit"><input type="number" step="0.1" min="0" max="10" id="hero-rating-durability" class="form-input" placeholder="0–10"><em>/10</em></div></label>
               <label class="hero-metric-field"><span>Offense</span><div class="metric-input-with-unit rating-unit"><input type="number" step="0.1" min="0" max="10" id="hero-rating-offense" class="form-input" placeholder="0–10"><em>/10</em></div></label>

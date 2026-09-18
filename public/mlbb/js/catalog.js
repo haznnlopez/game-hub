@@ -2,6 +2,8 @@
       const HERO_STAT_DEFS = [
         { key: "hp", label: "HP", icon: "favorite" },
         { key: "hpRegen", label: "HP Regen", icon: "healing", decimals: 2 },
+        { key: "mana", label: "Mana", icon: "water_drop" },
+        { key: "manaRegen", label: "Mana Regen", icon: "autorenew", decimals: 2 },
         { key: "physicalAtk", label: "Physical ATK", icon: "swords" },
         { key: "magicPower", label: "Magic POW", icon: "auto_fix_high" },
         { key: "physicalDef", label: "Physical DEF", icon: "shield" },
@@ -64,6 +66,26 @@
         return { rank, total: values.length, max, value: currentValue };
       }
 
+
+      function getHeroOverallRating(hero) {
+        const values = HERO_RATING_DEFS.map((def) => heroMetricNumber(hero?.ratings?.[def.key]));
+        if (values.some((value) => value === null)) return null;
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+      }
+
+      function getHeroOverallRatingRanking(hero) {
+        const currentValue = getHeroOverallRating(hero);
+        if (currentValue === null) return null;
+        const official = getHeroes();
+        const candidates = official.some((item) => item.id === hero.id) ? official : [...official, hero];
+        const values = candidates
+          .map((item) => getHeroOverallRating(item))
+          .filter((value) => value !== null);
+        if (!values.length) return null;
+        const rank = 1 + values.filter((value) => value > currentValue).length;
+        return { rank, total: values.length, max: 10, value: currentValue };
+      }
+
       function formatHeroMetricValue(def, value, isRating = false) {
         const num = heroMetricNumber(value);
         if (num === null) return "—";
@@ -99,10 +121,28 @@
         return `<div class="hero-metric-modal-grid${isRating ? " ratings" : ""}">${cards}</div>`;
       }
 
+      function buildHeroOverallRatingHtml(hero) {
+        const value = getHeroOverallRating(hero);
+        if (value === null) return "";
+        const ranking = getHeroOverallRatingRanking(hero);
+        const percent = Math.max(0, Math.min(100, (value / 10) * 100));
+        const valueText = `${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/10`;
+        return `<div class="hero-overall-rating-wrap"><div class="hero-metric-card rating overall-rating">
+          <div class="hero-metric-card-head"><span class="material-symbols-outlined">workspace_premium</span><span>Overall Rating</span>${heroMetricRankBadge(ranking, "Overall Rating")}</div>
+          <div class="hero-metric-value">${valueText}</div>
+          <div class="hero-overall-rating-note">Average of Durability, Offense, Control Effects, and Difficulty</div>
+          <div class="hero-metric-track" aria-hidden="true"><i style="width:${percent.toFixed(2)}%"></i></div>
+        </div></div>`;
+      }
+
       function buildHeroStatsAndRatingsHtml(hero) {
         const stats = buildHeroMetricGrid(hero, HERO_STAT_DEFS, "stats", false);
         const ratings = buildHeroMetricGrid(hero, HERO_RATING_DEFS, "ratings", true);
-        return `${stats ? `<div class="modal-section-header">Hero Stats</div>${stats}` : ""}${ratings ? `<div class="modal-section-header">Ratings</div>${ratings}` : ""}`;
+        const overallRating = buildHeroOverallRatingHtml(hero);
+        const ratingSection = overallRating || ratings
+          ? `<div class="modal-section-header">Ratings</div>${overallRating}${ratings}`
+          : "";
+        return `${stats ? `<div class="modal-section-header">Hero Stats</div>${stats}` : ""}${ratingSection}`;
       }
 
       /* MATRIX PAGE — interactive cross-tab explorer */

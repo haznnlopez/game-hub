@@ -47,15 +47,55 @@
       }
 
       // ---------------- CHANGE LOG PAGE ----------------
+      let changeLogEditing = null;
+
       function getAllHeroChangeEntries() {
         return getHeroes()
           .flatMap((hero) => (hero.changeLog || []).map((entry, index) => ({ hero, entry, index })))
           .sort((a, b) => parseLooseDate(b.entry.date) - parseLooseDate(a.entry.date));
       }
 
+      function getSelectedChangeLogType() {
+        const input = document.getElementById("changelog-type");
+        const value = input?.value || "Adjusted";
+        return CHANGE_TYPES.includes(value) ? value : "Adjusted";
+      }
+
+      function setChangeLogType(type) {
+        const normalized = CHANGE_TYPES.includes(type) ? type : "Adjusted";
+        const input = document.getElementById("changelog-type");
+        if (input) input.value = normalized;
+        renderChangeLogTypePills();
+      }
+
+      function renderChangeLogTypePills() {
+        const wrap = document.getElementById("changelog-type-pills");
+        if (!wrap) return;
+        const selected = getSelectedChangeLogType();
+        wrap.innerHTML = CHANGE_TYPES.map((type) => {
+          const active = type === selected;
+          return `<button type="button" class="changelog-type-pill ${changeTypeClass(type)}${active ? " active" : ""}" aria-pressed="${active}" onclick="setChangeLogType('${type}')"><span class="material-symbols-outlined">${CHANGE_TYPE_ICONS[type] || "notes"}</span><span>${type}</span></button>`;
+        }).join("");
+      }
+
+      function updateChangeLogEditorMode() {
+        const editing = !!changeLogEditing;
+        const eyebrow = document.getElementById("changelog-editor-eyebrow");
+        const title = document.getElementById("changelog-editor-title");
+        const saveBtn = document.getElementById("changelog-save-btn");
+        const cancelBtn = document.getElementById("changelog-cancel-edit-btn");
+        const heroSelect = document.getElementById("changelog-hero");
+        if (eyebrow) eyebrow.textContent = editing ? "Editing entry" : "New entry";
+        if (title) title.textContent = editing ? "Edit Hero Change" : "Add Hero Change";
+        if (saveBtn) saveBtn.innerHTML = editing
+          ? '<span class="material-symbols-outlined">save</span><span>Update Change</span>'
+          : '<span class="material-symbols-outlined">add</span><span>Add Change</span>';
+        if (cancelBtn) cancelBtn.hidden = !editing;
+        if (heroSelect) heroSelect.disabled = editing;
+      }
+
       function populateChangeLogControls() {
         const heroSelect = document.getElementById("changelog-hero");
-        const typeSelect = document.getElementById("changelog-type");
         const filterType = document.getElementById("changelog-filter-type");
         if (heroSelect) {
           const current = heroSelect.value;
@@ -65,27 +105,90 @@
           if ([...heroSelect.options].some((o) => o.value === current)) heroSelect.value = current;
         }
         const options = CHANGE_TYPES.map((type) => `<option value="${type}">${type}</option>`).join("");
-        if (typeSelect && !typeSelect.options.length) typeSelect.innerHTML = options;
         if (filterType && filterType.options.length <= 1) filterType.insertAdjacentHTML("beforeend", options);
+        renderChangeLogTypePills();
+        updateChangeLogEditorMode();
+      }
+
+      function clearChangeLogTextFields() {
+        ["changelog-date", "changelog-summary", "changelog-notes"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.value = "";
+        });
+      }
+
+      function resetChangeLogEditorForm() {
+        changeLogEditing = null;
+        clearChangeLogTextFields();
+        const heroSelect = document.getElementById("changelog-hero");
+        if (heroSelect) {
+          heroSelect.disabled = false;
+          heroSelect.value = "";
+        }
+        const typeInput = document.getElementById("changelog-type");
+        if (typeInput) typeInput.value = "Adjusted";
+        renderChangeLogTypePills();
+        updateChangeLogEditorMode();
+      }
+
+      function cancelChangeLogEdit() {
+        resetChangeLogEditorForm();
+      }
+
+      function editChangeLogEntry(heroId, index) {
+        const hero = getHeroes().find((item) => item.id === heroId);
+        const entry = hero?.changeLog?.[index];
+        if (!hero || !entry) return showToast("Change log entry not found.", "info");
+        changeLogEditing = { heroId, index };
+        const heroSelect = document.getElementById("changelog-hero");
+        const date = document.getElementById("changelog-date");
+        const summary = document.getElementById("changelog-summary");
+        const notes = document.getElementById("changelog-notes");
+        if (heroSelect) heroSelect.value = heroId;
+        if (date) date.value = entry.date || "";
+        if (summary) summary.value = entry.summary || "";
+        if (notes) notes.value = entry.notes || "";
+        setChangeLogType(entry.type || "Adjusted");
+        updateChangeLogEditorMode();
+        document.querySelector(".changelog-editor-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }
 
       async function saveChangeLogEntry() {
         const heroId = document.getElementById("changelog-hero")?.value || "";
         const date = document.getElementById("changelog-date")?.value.trim() || "";
-        const type = document.getElementById("changelog-type")?.value || "Adjusted";
+        const type = getSelectedChangeLogType();
         const summary = document.getElementById("changelog-summary")?.value.trim() || "";
         const notes = document.getElementById("changelog-notes")?.value.trim() || "";
         if (!heroId) return showToast("Choose a hero first.", "info");
         if (!date && !summary && !notes) return showToast("Add at least a date, summary, or details.", "info");
+
         const heroes = getHeroes();
-        const hero = heroes.find((item) => item.id === heroId);
+        const targetHeroId = changeLogEditing?.heroId || heroId;
+        const hero = heroes.find((item) => item.id === targetHeroId);
         if (!hero) return showToast("Hero not found.", "info");
-        hero.changeLog = [...(hero.changeLog || []), { date, type, summary, notes }].sort((a,b) => parseLooseDate(b.date)-parseLooseDate(a.date));
+
+        const nextEntry = { date, type, summary, notes };
+        let wasEditing = false;
+        if (changeLogEditing) {
+          const current = hero.changeLog?.[changeLogEditing.index];
+          if (!current) {
+            changeLogEditing = null;
+            updateChangeLogEditorMode();
+            return showToast("That change log entry no longer exists.", "info");
+          }
+          hero.changeLog[changeLogEditing.index] = nextEntry;
+          wasEditing = true;
+        } else {
+          hero.changeLog = [...(hero.changeLog || []), nextEntry];
+        }
+        hero.changeLog = [...(hero.changeLog || [])].sort((a,b) => parseLooseDate(b.date)-parseLooseDate(a.date));
         saveHeroes(heroes);
-        ["changelog-date","changelog-summary","changelog-notes"].forEach((id) => { const el=document.getElementById(id); if(el) el.value=""; });
+
+        // Fully reset the editor after every successful add/update.
+        resetChangeLogEditorForm();
         renderChangeLogPage();
         renderDashboardPage();
-        showToast("Change log entry added.", "success");
+        showToast(wasEditing ? "Change log entry updated." : "Change log entry added.", "success");
       }
 
       function deleteChangeLogEntry(heroId, index) {
@@ -94,6 +197,9 @@
         if (!hero || !Array.isArray(hero.changeLog) || !hero.changeLog[index]) return;
         hero.changeLog.splice(index, 1);
         saveHeroes(heroes);
+        if (changeLogEditing?.heroId === heroId && changeLogEditing?.index === index) {
+          resetChangeLogEditorForm();
+        }
         renderChangeLogPage();
         renderDashboardPage();
         showToast("Change log entry removed.", "success");
@@ -121,7 +227,10 @@
               <div class="changelog-entry-heading"><span class="change-pill ${changeTypeClass(entry.type)}"><span class="material-symbols-outlined">${CHANGE_TYPE_ICONS[entry.type] || "notes"}</span>${escHtml(entry.type || "Other")}</span>${entry.summary ? `<strong>${escHtml(entry.summary)}</strong>` : ""}</div>
               ${entry.notes ? `<p>${escHtml(entry.notes)}</p>` : ""}
             </div>
-            <button type="button" class="icon-button changelog-delete" data-tooltip="Delete change" onclick="deleteChangeLogEntry('${hero.id}',${index})"><span class="material-symbols-outlined">delete</span></button>
+            <div class="changelog-entry-actions">
+              <button type="button" class="icon-button" data-tooltip="Edit change" onclick="editChangeLogEntry('${hero.id}',${index})"><span class="material-symbols-outlined">edit</span></button>
+              <button type="button" class="icon-button changelog-delete" data-tooltip="Delete change" onclick="deleteChangeLogEntry('${hero.id}',${index})"><span class="material-symbols-outlined">delete</span></button>
+            </div>
           </article>`;
         }).join("") : `<div class="dashboard-empty">No change log entries match these filters.</div>`;
         installCustomTooltipMigration(feed);

@@ -224,15 +224,42 @@
         g.classList.add("active");
         g.innerHTML = "";
         const hero = getHeroById(d.heroId);
+        const isHeroGallery = currentModalData?.type === "hero";
         const imgs = [
-          { l: "Splash", s: d.splashArt || d.imageUrl, fallback: hero ? hero.splashArt || hero.imageUrl : "" },
-          { l: "Portrait", s: d.portrait, fallback: hero ? hero.portrait || hero.imageUrl : "" },
-          { l: "Icon", s: d.icon || d.headIconUrl, fallback: hero ? hero.icon || hero.headIconUrl : "" },
-        ];
+          { key: "splash", l: "Splash Art", s: d.splashArt || d.imageUrl, fallback: hero ? hero.splashArt || hero.imageUrl : "" },
+          { key: "portrait", l: "Portrait", s: d.portrait, fallback: hero ? hero.portrait || hero.imageUrl : "" },
+          { key: "icon", l: "Head Icon", s: d.icon || d.headIconUrl, fallback: hero ? hero.icon || hero.headIconUrl : "" },
+        ].map((item) => ({
+          ...item,
+          src: item.s || item.fallback || IMAGE_PLACEHOLDER,
+          fallbackSrc: item.fallback || IMAGE_PLACEHOLDER,
+          fallbackOnly: !item.s && !!item.fallback,
+        }));
+
+        if (isHeroGallery) {
+          const splash = imgs.find((item) => item.key === "splash");
+          const portrait = imgs.find((item) => item.key === "portrait");
+          const icon = imgs.find((item) => item.key === "icon");
+          const mediaCard = (item, cls, iconName) => `
+            <figure class="hero-gallery-media ${cls}">
+              <div class="hero-gallery-media-frame">
+                <img src="${item.src}" data-fallback-src="${item.fallbackSrc}" alt="${d.name} ${item.l}"${item.fallbackOnly ? ' style="filter:grayscale(100%) opacity(0.62)"' : ""}>
+                <figcaption><span class="material-symbols-outlined">${iconName}</span>${item.l}</figcaption>
+              </div>
+            </figure>`;
+          g.innerHTML = `
+            <div class="hero-gallery-showcase">
+              ${mediaCard(splash, "hero-gallery-splash", "wallpaper")}
+              <div class="hero-gallery-side">
+                ${mediaCard(portrait, "hero-gallery-portrait", "portrait")}
+                ${mediaCard(icon, "hero-gallery-icon", "face")}
+              </div>
+            </div>`;
+          return;
+        }
+
         imgs.forEach((item) => {
-          const src = item.s || item.fallback || IMAGE_PLACEHOLDER;
-          const fallback = item.fallback || IMAGE_PLACEHOLDER;
-          const filter = !item.s && item.fallback ? ' style="filter:grayscale(100%) opacity(0.5)"' : "";
-          g.innerHTML += `<div class="gallery-row"><h5>${item.l}</h5><img src="${src}" data-fallback-src="${fallback}" class="gallery-img"${filter}></div>`;
+          const filter = item.fallbackOnly ? ' style="filter:grayscale(100%) opacity(0.5)"' : "";
+          g.innerHTML += `<div class="gallery-row"><h5>${item.l}</h5><img src="${item.src}" data-fallback-src="${item.fallbackSrc}" class="gallery-img"${filter}></div>`;
         });
       }

@@ -58,9 +58,13 @@
         <h2 class="sidebar-game-name">Mobile Legends: BB</h2>
       </div>
       <nav class="sidebar-nav">
-        <button class="sidebar-button active" data-page="page-dashboard">
+        <button class="sidebar-button" data-page="page-dashboard">
           <span class="material-symbols-outlined">dashboard</span>
           <span>Dashboard</span>
+        </button>
+        <button class="sidebar-button" data-page="page-changelog">
+          <span class="material-symbols-outlined">history</span>
+          <span>Change Log</span>
         </button>
         <button class="sidebar-button" data-page="page-heroes">
           <span class="material-symbols-outlined">person</span>
@@ -159,7 +163,7 @@
           <div id="dashboard-kpis" class="dashboard-kpis"></div>
           <div class="dashboard-grid">
             <section class="dashboard-panel dashboard-panel-wide">
-              <div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">Recent activity</span><h2>Change Log</h2></div><button class="btn btn-secondary btn-sm" onclick="showPage('page-heroes')">View Heroes</button></div>
+              <div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">Recent activity</span><h2>Change Log</h2></div><button class="btn btn-secondary btn-sm" onclick="showPage('page-changelog')">Open Change Log</button></div>
               <div id="dashboard-changelog" class="dashboard-feed"></div>
             </section>
             <section class="dashboard-panel">
@@ -173,6 +177,43 @@
             <section class="dashboard-panel dashboard-panel-wide">
               <div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">Data quality</span><h2>Missing Inputs</h2></div><span id="dashboard-health-count" class="dashboard-health-badge"></span></div>
               <div id="dashboard-data-health" class="dashboard-health"></div>
+            </section>
+          </div>
+        </div>
+
+        <div id="page-changelog" class="page">
+          <header class="page-header">
+            <div>
+              <h1>Change Log</h1>
+              <p class="page-subtitle">Track buffs, nerfs, adjustments, revamps, fixes, and other hero updates in one place.</p>
+            </div>
+          </header>
+          <div class="changelog-layout">
+            <section class="changelog-editor-panel">
+              <div class="changelog-panel-head">
+                <div><span class="dashboard-eyebrow">New entry</span><h2>Add Hero Change</h2></div>
+              </div>
+              <div class="changelog-editor-grid">
+                <label class="form-group"><span class="form-label">Hero</span><select id="changelog-hero" class="form-select"></select></label>
+                <label class="form-group"><span class="form-label">Date / Patch</span><input id="changelog-date" class="form-input" type="text" placeholder="e.g. Sep 18, 2026 or Patch 2.1.14" autocomplete="off"></label>
+                <label class="form-group"><span class="form-label">Type</span><select id="changelog-type" class="form-select"></select></label>
+                <label class="form-group changelog-summary-field"><span class="form-label">Summary</span><input id="changelog-summary" class="form-input" type="text" placeholder="Short summary of the change" autocomplete="off"></label>
+                <label class="form-group changelog-notes-field"><span class="form-label">Details</span><textarea id="changelog-notes" class="form-input" rows="3" placeholder="Optional details..."></textarea></label>
+              </div>
+              <button type="button" class="btn btn-primary" onclick="saveChangeLogEntry()"><span class="material-symbols-outlined">add</span> Add Change</button>
+            </section>
+            <section class="changelog-feed-panel">
+              <div class="changelog-toolbar">
+                <div>
+                  <span class="dashboard-eyebrow">History</span>
+                  <h2>All Changes</h2>
+                </div>
+                <div class="changelog-toolbar-controls">
+                  <input id="changelog-search" class="form-input" type="search" placeholder="Search hero or update..." autocomplete="off">
+                  <select id="changelog-filter-type" class="form-select"><option value="">All types</option></select>
+                </div>
+              </div>
+              <div id="changelog-feed" class="changelog-feed"></div>
             </section>
           </div>
         </div>
@@ -950,12 +991,6 @@
             <div id="hero-relationships-container" class="hero-relationship-editor"></div>
             <button type="button" class="btn btn-secondary btn-sm" onclick="addHeroRelationshipInput()">
               <span class="material-symbols-outlined" style="font-size:15px">add</span> Add Relationship
-            </button>
-            <h3 class="form-section-title">Change Log</h3>
-            <p class="form-section-help">Track balance and visual changes for this hero. These entries appear in the hero modal and Dashboard.</p>
-            <div id="hero-changelog-container" class="hero-changelog-editor"></div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="addHeroChangeLogInput()">
-              <span class="material-symbols-outlined" style="font-size:15px">add</span> Add Change
             </button>
             <h3
               style="

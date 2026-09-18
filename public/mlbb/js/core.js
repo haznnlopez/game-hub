@@ -260,7 +260,7 @@
         draggedAttribute = null,
         toastDebounce = null,
         currentUpcomingView = "heroes",
-        currentPageId = "page-heroes";
+        currentPageId = "page-dashboard";
       let _heroesData = null,
         _skinsData = null,
         _attributesData = null,

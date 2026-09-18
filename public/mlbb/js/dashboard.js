@@ -46,37 +46,85 @@
         }
       }
 
-      // ---------------- HERO CHANGE LOG EDITOR ----------------
-      function addHeroChangeLogInput(entry = {}) {
-        const container = document.getElementById("hero-changelog-container");
-        if (!container) return;
-        const row = document.createElement("div");
-        row.className = "hero-changelog-row";
-        const opts = CHANGE_TYPES.map(
-          (type) => `<option value="${type}"${type === entry.type ? " selected" : ""}>${type}</option>`,
-        ).join("");
-        row.innerHTML = `
-          <div class="hero-changelog-main">
-            <input type="text" class="form-input hero-change-date" placeholder="Patch/date (e.g. Sep 18, 2026)" value="${escHtml(entry.date || "")}">
-            <select class="form-select hero-change-type">${opts}</select>
-            <input type="text" class="form-input hero-change-summary" placeholder="Short summary" value="${escHtml(entry.summary || "")}">
-            <button type="button" class="btn btn-danger btn-sm hero-change-remove" data-tooltip="Remove change"><span class="material-symbols-outlined">delete</span></button>
-          </div>
-          <textarea class="form-input hero-change-notes" rows="2" placeholder="Optional details...">${escHtml(entry.notes || "")}</textarea>`;
-        row.querySelector(".hero-change-remove").onclick = () => row.remove();
-        container.appendChild(row);
+      // ---------------- CHANGE LOG PAGE ----------------
+      function getAllHeroChangeEntries() {
+        return getHeroes()
+          .flatMap((hero) => (hero.changeLog || []).map((entry, index) => ({ hero, entry, index })))
+          .sort((a, b) => parseLooseDate(b.entry.date) - parseLooseDate(a.entry.date));
       }
 
-      function collectHeroChangeLog() {
-        return [...document.querySelectorAll("#hero-changelog-container .hero-changelog-row")]
-          .map((row) => ({
-            date: row.querySelector(".hero-change-date")?.value.trim() || "",
-            type: row.querySelector(".hero-change-type")?.value || "Adjusted",
-            summary: row.querySelector(".hero-change-summary")?.value.trim() || "",
-            notes: row.querySelector(".hero-change-notes")?.value.trim() || "",
-          }))
-          .filter((entry) => entry.date || entry.summary || entry.notes)
-          .sort((a, b) => parseLooseDate(b.date) - parseLooseDate(a.date));
+      function populateChangeLogControls() {
+        const heroSelect = document.getElementById("changelog-hero");
+        const typeSelect = document.getElementById("changelog-type");
+        const filterType = document.getElementById("changelog-filter-type");
+        if (heroSelect) {
+          const current = heroSelect.value;
+          heroSelect.innerHTML = '<option value="">Select hero...</option>' + getHeroes()
+            .slice().sort((a,b) => a.name.localeCompare(b.name))
+            .map((hero) => `<option value="${escHtml(hero.id)}">${escHtml(hero.name)}</option>`).join("");
+          if ([...heroSelect.options].some((o) => o.value === current)) heroSelect.value = current;
+        }
+        const options = CHANGE_TYPES.map((type) => `<option value="${type}">${type}</option>`).join("");
+        if (typeSelect && !typeSelect.options.length) typeSelect.innerHTML = options;
+        if (filterType && filterType.options.length <= 1) filterType.insertAdjacentHTML("beforeend", options);
+      }
+
+      async function saveChangeLogEntry() {
+        const heroId = document.getElementById("changelog-hero")?.value || "";
+        const date = document.getElementById("changelog-date")?.value.trim() || "";
+        const type = document.getElementById("changelog-type")?.value || "Adjusted";
+        const summary = document.getElementById("changelog-summary")?.value.trim() || "";
+        const notes = document.getElementById("changelog-notes")?.value.trim() || "";
+        if (!heroId) return showToast("Choose a hero first.", "info");
+        if (!date && !summary && !notes) return showToast("Add at least a date, summary, or details.", "info");
+        const heroes = getHeroes();
+        const hero = heroes.find((item) => item.id === heroId);
+        if (!hero) return showToast("Hero not found.", "info");
+        hero.changeLog = [...(hero.changeLog || []), { date, type, summary, notes }].sort((a,b) => parseLooseDate(b.date)-parseLooseDate(a.date));
+        saveHeroes(heroes);
+        ["changelog-date","changelog-summary","changelog-notes"].forEach((id) => { const el=document.getElementById(id); if(el) el.value=""; });
+        renderChangeLogPage();
+        renderDashboardPage();
+        showToast("Change log entry added.", "success");
+      }
+
+      function deleteChangeLogEntry(heroId, index) {
+        const heroes = getHeroes();
+        const hero = heroes.find((item) => item.id === heroId);
+        if (!hero || !Array.isArray(hero.changeLog) || !hero.changeLog[index]) return;
+        hero.changeLog.splice(index, 1);
+        saveHeroes(heroes);
+        renderChangeLogPage();
+        renderDashboardPage();
+        showToast("Change log entry removed.", "success");
+      }
+
+      function renderChangeLogPage() {
+        populateChangeLogControls();
+        const feed = document.getElementById("changelog-feed");
+        if (!feed) return;
+        const q = (document.getElementById("changelog-search")?.value || "").trim().toLowerCase();
+        const typeFilter = document.getElementById("changelog-filter-type")?.value || "";
+        const entries = getAllHeroChangeEntries().filter(({hero,entry}) => {
+          if (typeFilter && entry.type !== typeFilter) return false;
+          if (!q) return true;
+          return [hero.name, entry.type, entry.date, entry.summary, entry.notes].some((v) => String(v || "").toLowerCase().includes(q));
+        });
+        feed.innerHTML = entries.length ? entries.map(({hero,entry,index}) => {
+          const badge = getHeroBadgeImageSources(hero);
+          return `<article class="changelog-entry-card ${changeTypeClass(entry.type)}">
+            <button class="changelog-hero-link" type="button" onclick="openModal('hero','${hero.id}')">
+              <img src="${badge.src}" data-fallback-src="${badge.fallback}" data-fallback-src2="${badge.fallback2}" alt="">
+              <span><strong>${escHtml(hero.name)}</strong><small>${escHtml(formatCompactDate(entry.date))}</small></span>
+            </button>
+            <div class="changelog-entry-main">
+              <div class="changelog-entry-heading"><span class="change-pill ${changeTypeClass(entry.type)}"><span class="material-symbols-outlined">${CHANGE_TYPE_ICONS[entry.type] || "notes"}</span>${escHtml(entry.type || "Other")}</span>${entry.summary ? `<strong>${escHtml(entry.summary)}</strong>` : ""}</div>
+              ${entry.notes ? `<p>${escHtml(entry.notes)}</p>` : ""}
+            </div>
+            <button type="button" class="icon-button changelog-delete" data-tooltip="Delete change" onclick="deleteChangeLogEntry('${hero.id}',${index})"><span class="material-symbols-outlined">delete</span></button>
+          </article>`;
+        }).join("") : `<div class="dashboard-empty">No change log entries match these filters.</div>`;
+        installCustomTooltipMigration(feed);
       }
 
       function buildHeroChangeLogHtml(hero) {
@@ -183,10 +231,11 @@
             .join("")}</div>`;
       }
 
-      function addHeroRelationshipInput(data = { heroId: "", type: "Companion", note: "" }) {
+      function addHeroRelationshipInput(data = { heroId: "", type: "Companion", note: "" }, options = {}) {
         const container = document.getElementById("hero-relationships-container");
         if (!container) return;
         const currentId = document.getElementById("hero-id")?.value || "";
+        const mirrored = !!options.mirrored;
         const choices = [
           ...getHeroes(),
           ...getUpcoming().filter((item) => item.itemType === "hero"),
@@ -194,22 +243,26 @@
           .filter((hero) => hero.id !== currentId)
           .sort((a, b) => a.name.localeCompare(b.name));
         const row = document.createElement("div");
-        row.className = "hero-relationship-editor-row";
+        row.className = `hero-relationship-editor-row${mirrored ? " mirrored" : ""}`;
+        row.dataset.mirrored = mirrored ? "true" : "false";
+        const mirroredHero = mirrored ? getRelationshipHero(data.heroId) : null;
         row.innerHTML = `
-          <select class="form-select hero-relationship-hero" aria-label="Related hero">
+          <select class="form-select hero-relationship-hero" aria-label="Related hero"${mirrored ? " disabled" : ""}>
             <option value="">Choose hero...</option>
             ${choices.map((hero) => `<option value="${hero.id}"${hero.id === data.heroId ? " selected" : ""}>${escHtml(hero.name)}</option>`).join("")}
           </select>
-          <select class="form-select hero-relationship-type" aria-label="Relationship type">
+          <select class="form-select hero-relationship-type" aria-label="Relationship type"${mirrored ? " disabled" : ""}>
             ${HERO_RELATIONSHIP_TYPES.map((type) => `<option value="${type.value}"${type.value === (data.type || "Companion") ? " selected" : ""}>${type.value}</option>`).join("")}
           </select>
-          <input type="text" class="form-input hero-relationship-note" placeholder="Optional context, e.g. childhood friend" value="${escHtml(data.note || "")}">
-          <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.hero-relationship-editor-row').remove()" title="Remove relationship" aria-label="Remove relationship"><span class="material-symbols-outlined">delete</span></button>`;
+          <input type="text" class="form-input hero-relationship-note" placeholder="Optional context, e.g. childhood friend" value="${escHtml(data.note || "")}"${mirrored ? " readonly" : ""}>
+          ${mirrored
+            ? `<span class="relationship-mirror-badge" data-tooltip="This inverse relationship comes from ${escHtml(mirroredHero?.name || "the other hero")}'s relationship entry"><span class="material-symbols-outlined">sync_alt</span>Mirrored</span>`
+            : `<button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.hero-relationship-editor-row').remove()" title="Remove relationship" aria-label="Remove relationship"><span class="material-symbols-outlined">delete</span></button>`}`;
         container.appendChild(row);
       }
 
       function collectHeroRelationships() {
-        const rows = [...document.querySelectorAll("#hero-relationships-container .hero-relationship-editor-row")];
+        const rows = [...document.querySelectorAll("#hero-relationships-container .hero-relationship-editor-row:not(.mirrored)")];
         const seen = new Set();
         return rows
           .map((row) => ({
@@ -302,7 +355,7 @@
                   return `<button class="dashboard-feed-item" onclick="openModal('hero','${hero.id}')"><img src="${badge.src}" data-fallback-src="${badge.fallback}" data-fallback-src2="${badge.fallback2}" alt=""><span class="dashboard-feed-copy"><span><strong>${escHtml(hero.name)}</strong><em class="change-pill ${changeTypeClass(entry.type)}">${escHtml(entry.type || "Other")}</em></span><small>${escHtml(entry.summary || entry.notes || "Hero update")} · ${escHtml(formatCompactDate(entry.date))}</small></span></button>`;
                 })
                 .join("")
-            : `<div class="dashboard-empty">No hero changes logged yet. Edit a hero and add a Change Log entry.</div>`;
+            : `<div class="dashboard-empty">No hero changes logged yet. Open Change Log to add one.</div>`;
         }
 
         const upcomingEl = document.getElementById("dashboard-upcoming");
@@ -410,6 +463,7 @@
 
         const pages = [
           ["Dashboard", "dashboard", "page-dashboard"],
+          ["Change Log", "history", "page-changelog"],
           ["Heroes", "person", "page-heroes"],
           ["Skins", "style", "page-skins"],
           ["Skin Count", "analytics", "page-skin-count"],
@@ -541,5 +595,12 @@
 
       function initV25Features() {
         setupGlobalSearch();
+        const search = document.getElementById("changelog-search");
+        const type = document.getElementById("changelog-filter-type");
+        if (search) search.addEventListener("input", debounce(() => renderChangeLogPage(), 180));
+        if (type) type.addEventListener("change", () => renderChangeLogPage());
         renderDashboardPage();
+        const activePage = document.querySelector(".page.active")?.id || "page-dashboard";
+        currentPageId = activePage;
+        document.querySelectorAll(".sidebar-button[data-page]").forEach((btn) => btn.classList.toggle("active", btn.dataset.page === activePage));
       }

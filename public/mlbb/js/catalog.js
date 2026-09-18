@@ -540,6 +540,7 @@
           scrollToTop();
         }
         if (pid === "page-dashboard" && typeof renderDashboardPage === "function") renderDashboardPage();
+        if (pid === "page-changelog" && typeof renderChangeLogPage === "function") renderChangeLogPage();
         if (pid === "page-heroes") renderHeroesPage();
         if (pid === "page-skins") renderSkinsPage();
         if (pid === "page-skin-count") renderSkinCountPage();
@@ -863,8 +864,6 @@
         showPage("page-hero-form");
         document.getElementById("hero-form").reset();
         document.getElementById("hero-skills-container").innerHTML = "";
-        const changeLogContainer = document.getElementById("hero-changelog-container");
-        if (changeLogContainer) changeLogContainer.innerHTML = "";
         const relationshipContainer = document.getElementById("hero-relationships-container");
         if (relationshipContainer) relationshipContainer.innerHTML = "";
         updateSkillHeaders();
@@ -923,9 +922,20 @@
             if (h.skills) h.skills.forEach((s) => addSkillInput(s));
             if (typeof addHeroRelationshipInput === "function") {
               (h.relationships || []).forEach((entry) => addHeroRelationshipInput(entry));
-            }
-            if (typeof addHeroChangeLogInput === "function") {
-              (h.changeLog || []).forEach((entry) => addHeroChangeLogInput(entry));
+              if (typeof getHeroLoreRelationships === "function") {
+                getHeroLoreRelationships(h)
+                  .filter((entry) => entry.source === "inverse")
+                  .forEach((entry) =>
+                    addHeroRelationshipInput(
+                      {
+                        heroId: entry.hero.id,
+                        type: entry.type,
+                        note: entry.note || "",
+                      },
+                      { mirrored: true },
+                    ),
+                  );
+              }
             }
             // sub-skills are restored inside addSkillInput
           }
@@ -1119,10 +1129,10 @@
             typeof collectHeroRelationships === "function"
               ? collectHeroRelationships()
               : [],
-          changeLog:
-            typeof collectHeroChangeLog === "function"
-              ? collectHeroChangeLog()
-              : [],
+          changeLog: (() => {
+            const existing = (ctx === "upcoming" ? getUpcoming() : getHeroes()).find((x) => x.id === id);
+            return existing?.changeLog || [];
+          })(),
           addedAt: (() => {
             const existing = (
               ctx === "upcoming" ? getUpcoming() : getHeroes()

@@ -574,6 +574,7 @@
           ["Dashboard", "dashboard", "page-dashboard"],
           ["Change Log", "history", "page-changelog"],
           ["Heroes", "person", "page-heroes"],
+          ["Hero Stats", "monitoring", "page-hero-stats"],
           ["Skins", "style", "page-skins"],
           ["Skin Count", "analytics", "page-skin-count"],
           ["Upcoming", "update", "page-upcoming"],

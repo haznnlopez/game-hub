@@ -145,6 +145,163 @@
         return `${stats ? `<div class="modal-section-header">Hero Stats</div>${stats}` : ""}${ratingSection}`;
       }
 
+      /* HERO STATS PAGE — ranked roster comparison */
+      const HERO_OVERALL_RATING_DEF = {
+        key: "overallRating",
+        label: "Overall Rating",
+        icon: "workspace_premium",
+        max: 10,
+        decimals: 2,
+        overall: true,
+      };
+      let heroStatsPageMode = "stats";
+      let heroStatsPageMetric = "hp";
+
+      function heroStatsEscape(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function getHeroStatsPageDefs() {
+        return heroStatsPageMode === "ratings"
+          ? [HERO_OVERALL_RATING_DEF, ...HERO_RATING_DEFS]
+          : HERO_STAT_DEFS;
+      }
+
+      function getHeroStatsPageMetricDef(key = heroStatsPageMetric) {
+        return getHeroStatsPageDefs().find((def) => def.key === key) || getHeroStatsPageDefs()[0];
+      }
+
+      function getHeroStatsPageMetricValue(hero, def = getHeroStatsPageMetricDef()) {
+        if (!hero || !def) return null;
+        if (def.overall) return getHeroOverallRating(hero);
+        const group = heroStatsPageMode === "ratings" ? "ratings" : "stats";
+        return heroMetricNumber(hero?.[group]?.[def.key]);
+      }
+
+      function getHeroStatsPageRank(hero, def = getHeroStatsPageMetricDef()) {
+        if (!hero || !def) return null;
+        if (def.overall) return getHeroOverallRatingRanking(hero);
+        return getHeroMetricRanking(hero, heroStatsPageMode === "ratings" ? "ratings" : "stats", def.key);
+      }
+
+      function formatHeroStatsPageValue(def, value) {
+        if (value === null || value === undefined) return "—";
+        if (def.overall) {
+          return `${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/10`;
+        }
+        return formatHeroMetricValue(def, value, heroStatsPageMode === "ratings");
+      }
+
+      function setHeroStatsMode(mode) {
+        heroStatsPageMode = mode === "ratings" ? "ratings" : "stats";
+        const defs = getHeroStatsPageDefs();
+        if (!defs.some((def) => def.key === heroStatsPageMetric)) {
+          heroStatsPageMetric = heroStatsPageMode === "ratings" ? "overallRating" : "hp";
+        }
+        renderHeroStatsPage();
+      }
+
+      function setHeroStatsMetric(key) {
+        if (!getHeroStatsPageDefs().some((def) => def.key === key)) return;
+        heroStatsPageMetric = key;
+        renderHeroStatsPage();
+      }
+
+      function heroStatsRankClass(rank) {
+        if (rank <= 3) return ` top-${rank}`;
+        if (rank <= 10) return " top-10";
+        return "";
+      }
+
+      function renderHeroStatsPage() {
+        const metricPills = document.getElementById("hero-stats-metric-pills");
+        const summary = document.getElementById("hero-stats-summary");
+        const leaderboard = document.getElementById("hero-stats-leaderboard");
+        const tableWrap = document.getElementById("hero-stats-table-wrap");
+        const title = document.getElementById("hero-stats-leaderboard-title");
+        const coverageLabel = document.getElementById("hero-stats-coverage");
+        if (!metricPills || !summary || !leaderboard || !tableWrap) return;
+
+        document.getElementById("hero-stats-tab-stats")?.classList.toggle("active", heroStatsPageMode === "stats");
+        document.getElementById("hero-stats-tab-ratings")?.classList.toggle("active", heroStatsPageMode === "ratings");
+
+        const defs = getHeroStatsPageDefs();
+        const selectedDef = getHeroStatsPageMetricDef();
+        if (!selectedDef) return;
+
+        metricPills.innerHTML = defs.map((def) => {
+          const active = def.key === selectedDef.key;
+          return `<button type="button" class="hero-stats-metric-pill${active ? " active" : ""}" aria-pressed="${active}" onclick="setHeroStatsMetric('${def.key}')"><span class="material-symbols-outlined">${def.icon}</span><span>${heroStatsEscape(def.label)}</span></button>`;
+        }).join("");
+
+        const query = (document.getElementById("hero-stats-page-search")?.value || "").trim().toLowerCase();
+        const heroes = getHeroes().filter((hero) => !query || String(hero.name || "").toLowerCase().includes(query));
+        const ranked = heroes
+          .map((hero) => ({ hero, value: getHeroStatsPageMetricValue(hero, selectedDef) }))
+          .filter((entry) => entry.value !== null)
+          .sort((a, b) => b.value - a.value || String(a.hero.name).localeCompare(String(b.hero.name)));
+        const missing = heroes
+          .filter((hero) => getHeroStatsPageMetricValue(hero, selectedDef) === null)
+          .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+        const ordered = [...ranked.map((entry) => entry.hero), ...missing];
+        const values = ranked.map((entry) => entry.value);
+        const average = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+        const leader = ranked[0] || null;
+        const coverage = heroes.length ? Math.round((ranked.length / heroes.length) * 100) : 0;
+
+        if (title) title.textContent = selectedDef.label;
+        if (coverageLabel) coverageLabel.textContent = `${ranked.length}/${heroes.length} with data`;
+
+        const leaderBadge = leader ? getHeroBadgeImageSources(leader.hero) : null;
+        summary.innerHTML = `
+          <div class="hero-stats-summary-card hero-stats-summary-leader">
+            <span class="hero-stats-summary-icon material-symbols-outlined">emoji_events</span>
+            <div class="hero-stats-summary-copy"><small>Highest ${heroStatsEscape(selectedDef.label)}</small><strong>${leader ? heroStatsEscape(leader.hero.name) : "No data yet"}</strong><span>${leader ? formatHeroStatsPageValue(selectedDef, leader.value) : "—"}</span></div>
+            ${leader ? `<img src="${leaderBadge.src}" data-fallback-src="${leaderBadge.fallback}" data-fallback-src2="${leaderBadge.fallback2}" alt="">` : ""}
+          </div>
+          <div class="hero-stats-summary-card"><span class="hero-stats-summary-icon material-symbols-outlined">functions</span><div class="hero-stats-summary-copy"><small>Roster Average</small><strong>${average === null ? "—" : formatHeroStatsPageValue(selectedDef, average)}</strong><span>${ranked.length} hero${ranked.length === 1 ? "" : "es"} included</span></div></div>
+          <div class="hero-stats-summary-card"><span class="hero-stats-summary-icon material-symbols-outlined">data_check</span><div class="hero-stats-summary-copy"><small>Data Coverage</small><strong>${coverage}%</strong><span>${ranked.length} of ${heroes.length} visible heroes</span></div></div>`;
+
+        leaderboard.innerHTML = ranked.length
+          ? ranked.slice(0, 12).map(({ hero, value }) => {
+              const ranking = getHeroStatsPageRank(hero, selectedDef);
+              const badge = getHeroBadgeImageSources(hero);
+              const rank = ranking?.rank ?? "—";
+              return `<button type="button" class="hero-stats-leader-row" onclick="openModal('hero','${hero.id}')">
+                <span class="hero-stats-leader-rank${typeof rank === "number" ? heroStatsRankClass(rank) : ""}">#${rank}</span>
+                <img src="${badge.src}" data-fallback-src="${badge.fallback}" data-fallback-src2="${badge.fallback2}" alt="">
+                <span class="hero-stats-leader-name"><strong>${heroStatsEscape(hero.name)}</strong><small>${heroStatsEscape((hero.roles || []).join(" · ") || hero.nation || "Hero")}</small></span>
+                <span class="hero-stats-leader-value">${formatHeroStatsPageValue(selectedDef, value)}</span>
+              </button>`;
+            }).join("")
+          : `<div class="hero-stats-empty"><span class="material-symbols-outlined">query_stats</span><strong>No ${heroStatsEscape(selectedDef.label)} data yet</strong><span>Add values in a Hero form to start ranking.</span></div>`;
+
+        const headerCells = defs.map((def) => `<th><button type="button" class="hero-stats-table-metric${def.key === selectedDef.key ? " active" : ""}" onclick="setHeroStatsMetric('${def.key}')"><span>${heroStatsEscape(def.label)}</span>${def.key === selectedDef.key ? '<span class="material-symbols-outlined">arrow_downward</span>' : ""}</button></th>`).join("");
+        const rows = ordered.map((hero) => {
+          const selectedValue = getHeroStatsPageMetricValue(hero, selectedDef);
+          const selectedRank = selectedValue === null ? null : getHeroStatsPageRank(hero, selectedDef);
+          const badge = getHeroBadgeImageSources(hero);
+          const metricCells = defs.map((def) => {
+            const value = getHeroStatsPageMetricValue(hero, def);
+            return `<td class="${def.key === selectedDef.key ? "selected-metric" : ""}${value === null ? " missing" : ""}">${formatHeroStatsPageValue(def, value)}</td>`;
+          }).join("");
+          return `<tr onclick="openModal('hero','${hero.id}')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openModal('hero','${hero.id}')}" aria-label="Open ${heroStatsEscape(hero.name)}">
+            <td class="hero-stats-rank-cell">${selectedRank ? heroMetricRankBadge(selectedRank, selectedDef.label) : '<span class="hero-stats-no-rank">—</span>'}</td>
+            <th scope="row" class="hero-stats-hero-cell"><img src="${badge.src}" data-fallback-src="${badge.fallback}" data-fallback-src2="${badge.fallback2}" alt=""><span><strong>${heroStatsEscape(hero.name)}</strong><small>${heroStatsEscape((hero.roles || []).join(" · ") || "—")}</small></span></th>
+            ${metricCells}
+          </tr>`;
+        }).join("");
+
+        tableWrap.innerHTML = ordered.length
+          ? `<table class="hero-stats-comparison-table"><thead><tr><th class="hero-stats-rank-head">Rank</th><th class="hero-stats-hero-head">Hero</th>${headerCells}</tr></thead><tbody>${rows}</tbody></table>`
+          : `<div class="hero-stats-empty"><span class="material-symbols-outlined">search_off</span><strong>No heroes found</strong><span>Try another search.</span></div>`;
+      }
+
       /* MATRIX PAGE — interactive cross-tab explorer */
       const MATRIX_CONFIG = {
         roles: {
@@ -689,6 +846,7 @@
         if (pid === "page-dashboard" && typeof renderDashboardPage === "function") renderDashboardPage();
         if (pid === "page-changelog" && typeof renderChangeLogPage === "function") renderChangeLogPage();
         if (pid === "page-heroes") renderHeroesPage();
+        if (pid === "page-hero-stats") renderHeroStatsPage();
         if (pid === "page-skins") renderSkinsPage();
         if (pid === "page-skin-count") renderSkinCountPage();
         if (pid === "page-upcoming") renderUpcomingPage();

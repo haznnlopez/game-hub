@@ -70,6 +70,10 @@
           <span class="material-symbols-outlined">person</span>
           <span>Heroes</span>
         </button>
+        <button class="sidebar-button" data-page="page-hero-stats">
+          <span class="material-symbols-outlined">monitoring</span>
+          <span>Hero Stats</span>
+        </button>
         <button class="sidebar-button" data-page="page-skins">
           <span class="material-symbols-outlined">magic_button</span>
           <span>Skins</span>
@@ -321,6 +325,52 @@
             </div>
           </div>
           <div id="hero-grid" class="item-grid"></div>
+        </div>
+
+        <div id="page-hero-stats" class="page">
+          <header class="page-header hero-stats-page-header">
+            <div>
+              <h1>Hero Stats</h1>
+              <p class="page-subtitle">Compare base stats and ratings across the full hero roster.</p>
+            </div>
+          </header>
+          <div class="hero-stats-page-shell">
+            <div class="hero-stats-page-toolbar">
+              <div class="hero-stats-view-tabs" role="tablist" aria-label="Hero stats view">
+                <button type="button" id="hero-stats-tab-stats" class="hero-stats-view-tab active" onclick="setHeroStatsMode('stats')">
+                  <span class="material-symbols-outlined">monitoring</span> Base Stats
+                </button>
+                <button type="button" id="hero-stats-tab-ratings" class="hero-stats-view-tab" onclick="setHeroStatsMode('ratings')">
+                  <span class="material-symbols-outlined">star_rate</span> Ratings
+                </button>
+              </div>
+              <label class="hero-stats-page-search">
+                <span class="material-symbols-outlined">search</span>
+                <input id="hero-stats-page-search" type="search" class="form-input" placeholder="Search heroes..." autocomplete="off" oninput="renderHeroStatsPage()" />
+              </label>
+            </div>
+            <section class="hero-stats-rank-picker">
+              <div class="hero-stats-section-label"><span>Rank by</span><small>Choose a metric to rank and sort the roster.</small></div>
+              <div id="hero-stats-metric-pills" class="hero-stats-metric-pills"></div>
+            </section>
+            <div id="hero-stats-summary" class="hero-stats-summary"></div>
+            <div class="hero-stats-page-layout">
+              <section class="hero-stats-leaderboard-panel">
+                <div class="hero-stats-panel-head">
+                  <div><span class="dashboard-eyebrow">Leaderboard</span><h2 id="hero-stats-leaderboard-title">Top Heroes</h2></div>
+                  <span id="hero-stats-coverage" class="hero-stats-coverage"></span>
+                </div>
+                <div id="hero-stats-leaderboard" class="hero-stats-leaderboard"></div>
+              </section>
+              <section class="hero-stats-table-panel">
+                <div class="hero-stats-panel-head">
+                  <div><span class="dashboard-eyebrow">Comparison</span><h2>Full Roster</h2></div>
+                  <small>Click a column heading to rank by it.</small>
+                </div>
+                <div id="hero-stats-table-wrap" class="hero-stats-table-wrap"></div>
+              </section>
+            </div>
+          </div>
         </div>
 
         <div id="page-skins" class="page">

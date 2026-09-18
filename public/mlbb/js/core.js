@@ -917,6 +917,7 @@
             }
           });
         });
+        if (typeof initV25Features === "function") initV25Features();
       });
 
       function showConfirm(msg, onConfirm) {

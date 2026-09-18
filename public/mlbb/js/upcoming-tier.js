@@ -252,7 +252,13 @@
           c.dataset.itemType = x.itemType;
           c.dataset.itemId = x.id;
           // Skill strip always goes inside image wrapper (absolute at bottom)
-          c.innerHTML = `<div class="card-image-wrapper">${heroIconHtml}${skillsHtml}<img src="${imgSrc}" class="card-image"${imgStyle}>${overlayActions}</div><div class="card-content"><h3 class="card-title">${skinTitleHtml}</h3><div class="card-subtitle">${sub}</div>${upcomingAttrHtml}${upcomingMetaHtml}</div><div class="card-action-area"><button class="btn btn-release" onclick="event.stopPropagation();releaseItem('${x.itemType}','${x.id}')">Release</button></div>`;
+          const readiness = typeof getRecordCompleteness === "function"
+            ? getRecordCompleteness(x, x.itemType === "hero" ? "hero" : "skin")
+            : null;
+          const readinessHtml = readiness
+            ? `<span class="upcoming-readiness ${readiness.percent === 100 ? "ready" : "incomplete"}" data-tooltip="${readiness.missing.length ? `Missing: ${readiness.missing.join(", ")}` : "Ready to release"}">${readiness.percent}%</span>`
+            : "";
+          c.innerHTML = `<div class="card-image-wrapper">${heroIconHtml}${skillsHtml}<img src="${imgSrc}" class="card-image"${imgStyle}>${readinessHtml}${overlayActions}</div><div class="card-content"><h3 class="card-title">${skinTitleHtml}</h3><div class="card-subtitle">${sub}</div>${upcomingAttrHtml}${upcomingMetaHtml}</div><div class="card-action-area"><button class="btn btn-release" onclick="event.stopPropagation();releaseItem('${x.itemType}','${x.id}')">Review & Release</button></div>`;
 
           c.onclick = (e) => {
             if (

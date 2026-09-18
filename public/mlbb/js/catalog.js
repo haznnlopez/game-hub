@@ -527,13 +527,19 @@
         document
           .querySelectorAll(".page")
           .forEach((p) => p.classList.remove("active"));
-        document.getElementById(pid).classList.add("active");
+        const targetPage = document.getElementById(pid);
+        if (!targetPage) return;
+        targetPage.classList.add("active");
+        document.querySelectorAll(".sidebar-button[data-page]").forEach((btn) =>
+          btn.classList.toggle("active", btn.dataset.page === pid),
+        );
         currentPageId = pid;
         if (restoreScroll) {
           restoreScrollPos(pid);
         } else {
           scrollToTop();
         }
+        if (pid === "page-dashboard" && typeof renderDashboardPage === "function") renderDashboardPage();
         if (pid === "page-heroes") renderHeroesPage();
         if (pid === "page-skins") renderSkinsPage();
         if (pid === "page-skin-count") renderSkinCountPage();
@@ -857,6 +863,10 @@
         showPage("page-hero-form");
         document.getElementById("hero-form").reset();
         document.getElementById("hero-skills-container").innerHTML = "";
+        const changeLogContainer = document.getElementById("hero-changelog-container");
+        if (changeLogContainer) changeLogContainer.innerHTML = "";
+        const relationshipContainer = document.getElementById("hero-relationships-container");
+        if (relationshipContainer) relationshipContainer.innerHTML = "";
         updateSkillHeaders();
         document.getElementById("hero-form-context").value = isUpcoming
           ? "upcoming"
@@ -911,6 +921,12 @@
               "nations",
             );
             if (h.skills) h.skills.forEach((s) => addSkillInput(s));
+            if (typeof addHeroRelationshipInput === "function") {
+              (h.relationships || []).forEach((entry) => addHeroRelationshipInput(entry));
+            }
+            if (typeof addHeroChangeLogInput === "function") {
+              (h.changeLog || []).forEach((entry) => addHeroChangeLogInput(entry));
+            }
             // sub-skills are restored inside addSkillInput
           }
         } else {
@@ -1099,6 +1115,14 @@
           priceBP: document.getElementById("hero-price-bp").value || "",
           priceDiamonds:
             document.getElementById("hero-price-diamonds").value || "",
+          relationships:
+            typeof collectHeroRelationships === "function"
+              ? collectHeroRelationships()
+              : [],
+          changeLog:
+            typeof collectHeroChangeLog === "function"
+              ? collectHeroChangeLog()
+              : [],
           addedAt: (() => {
             const existing = (
               ctx === "upcoming" ? getUpcoming() : getHeroes()
@@ -1941,8 +1965,16 @@
           detailMeta("paid", "Battle Points", h.priceBP),
           detailMeta("diamond", "Diamonds", h.priceDiamonds),
         ].join("");
+        const changeLogHtml =
+          typeof buildHeroChangeLogHtml === "function"
+            ? buildHeroChangeLogHtml(h)
+            : "";
+        const relationshipsHtml =
+          typeof buildHeroRelationshipsHtml === "function"
+            ? buildHeroRelationshipsHtml(h)
+            : "";
 
-        let html = `<div class="modal-detail-summary"><div class="detail-groups">${classification}</div>${meta ? `<div class="detail-meta-strip">${meta}</div>` : ""}</div>${skillsHtml}`;
+        let html = `<div class="modal-detail-summary"><div class="detail-groups">${classification}</div>${meta ? `<div class="detail-meta-strip">${meta}</div>` : ""}</div>${changeLogHtml}${skillsHtml}${relationshipsHtml}`;
         html += `<div class="modal-section-header">Skins <span class="section-count">${skins.length}</span></div><div class="mini-grid compact-gallery">${skins
           .map((skin) => {
             const ex = getSkinExtraInfo(skin);
@@ -2283,6 +2315,9 @@
         const h = getHeroes();
         tot.textContent = s.length;
         const att = getAttributes();
+        if (typeof renderSkinCountAnalytics === "function") {
+          renderSkinCountAnalytics(s, h, att);
+        }
         const grps = {};
 
         if (by === "hero") {

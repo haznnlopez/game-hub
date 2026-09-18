@@ -58,7 +58,11 @@
         <h2 class="sidebar-game-name">Mobile Legends: BB</h2>
       </div>
       <nav class="sidebar-nav">
-        <button class="sidebar-button active" data-page="page-heroes">
+        <button class="sidebar-button active" data-page="page-dashboard">
+          <span class="material-symbols-outlined">dashboard</span>
+          <span>Dashboard</span>
+        </button>
+        <button class="sidebar-button" data-page="page-heroes">
           <span class="material-symbols-outlined">person</span>
           <span>Heroes</span>
         </button>
@@ -136,8 +140,44 @@
     </aside>
 
     <main class="main-content">
+      <div class="global-topbar">
+        <div class="global-search-shell" id="global-search-shell">
+          <span class="material-symbols-outlined global-search-icon">search</span>
+          <input id="global-search-input" class="global-search-input" type="search" placeholder="Search heroes, skins, upcoming, pages..." aria-label="Global search" autocomplete="off" />
+          <kbd class="global-search-shortcut">Ctrl K</kbd>
+          <div id="global-search-results" class="global-search-results" hidden></div>
+        </div>
+      </div>
       <div class="content-wrapper">
-        <div id="page-heroes" class="page active">
+        <div id="page-dashboard" class="page active">
+          <header class="page-header dashboard-header">
+            <div>
+              <h1>Dashboard</h1>
+              <p class="page-subtitle">Collection health, upcoming releases, changes, and quick insights.</p>
+            </div>
+          </header>
+          <div id="dashboard-kpis" class="dashboard-kpis"></div>
+          <div class="dashboard-grid">
+            <section class="dashboard-panel dashboard-panel-wide">
+              <div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">Recent activity</span><h2>Change Log</h2></div><button class="btn btn-secondary btn-sm" onclick="showPage('page-heroes')">View Heroes</button></div>
+              <div id="dashboard-changelog" class="dashboard-feed"></div>
+            </section>
+            <section class="dashboard-panel">
+              <div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">Release queue</span><h2>Upcoming</h2></div><button class="btn btn-secondary btn-sm" onclick="showPage('page-upcoming')">Open</button></div>
+              <div id="dashboard-upcoming" class="dashboard-list"></div>
+            </section>
+            <section class="dashboard-panel">
+              <div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">Collection</span><h2>Newest Skins</h2></div><button class="btn btn-secondary btn-sm" onclick="showPage('page-skins')">Browse</button></div>
+              <div id="dashboard-newest-skins" class="dashboard-list"></div>
+            </section>
+            <section class="dashboard-panel dashboard-panel-wide">
+              <div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">Data quality</span><h2>Missing Inputs</h2></div><span id="dashboard-health-count" class="dashboard-health-badge"></span></div>
+              <div id="dashboard-data-health" class="dashboard-health"></div>
+            </section>
+          </div>
+        </div>
+
+        <div id="page-heroes" class="page">
           <header class="page-header">
             <h1>Heroes</h1>
             <button
@@ -425,6 +465,7 @@
               </div>
             </div>
           </div>
+          <div id="skin-count-analytics" class="skin-count-analytics" aria-live="polite"></div>
           <div class="filters-bar">
             <div class="filter-item">
               <label class="form-label">Group By</label
@@ -904,6 +945,18 @@
                 placeholder="https://..."
               />
             </div>
+            <h3 class="form-section-title">Relationships</h3>
+            <p class="form-section-help">Add lore relationships such as companions, lovers, family, rivals, mentors, or enemies. Parent/Child and Mentor/Student are mirrored automatically in the other hero's modal.</p>
+            <div id="hero-relationships-container" class="hero-relationship-editor"></div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addHeroRelationshipInput()">
+              <span class="material-symbols-outlined" style="font-size:15px">add</span> Add Relationship
+            </button>
+            <h3 class="form-section-title">Change Log</h3>
+            <p class="form-section-help">Track balance and visual changes for this hero. These entries appear in the hero modal and Dashboard.</p>
+            <div id="hero-changelog-container" class="hero-changelog-editor"></div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addHeroChangeLogInput()">
+              <span class="material-symbols-outlined" style="font-size:15px">add</span> Add Change
+            </button>
             <h3
               style="
                 border-bottom: 1px solid var(--accent);
@@ -1255,5 +1308,6 @@
     <script src="js/tier-list.js" defer></script>
     <script src="js/modals.js" defer></script>
     <script src="js/interactions.js" defer></script>
+    <script src="js/dashboard.js" defer></script>
   </body>
 </html>

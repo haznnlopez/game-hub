@@ -228,6 +228,32 @@
           openAdminLoginModal();
         }
       }
+
+      function changeGame(event) {
+        if (event) event.preventDefault();
+        const fallback =
+          event?.currentTarget?.getAttribute("href") || "../index.html";
+
+        // Prefer the page that actually opened MLBB (the game selector/hub).
+        // This keeps Change Game working even if the hub is not exactly ../index.html.
+        try {
+          if (document.referrer) {
+            const ref = new URL(document.referrer, window.location.href);
+            const here = new URL(window.location.href);
+            const isSameOrigin = ref.origin === here.origin;
+            const isDifferentPage =
+              ref.pathname !== here.pathname || ref.search !== here.search;
+            if (isSameOrigin && isDifferentPage) {
+              window.location.assign(ref.href);
+              return;
+            }
+          }
+        } catch (error) {
+          console.warn("Could not resolve game selector referrer:", error);
+        }
+
+        window.location.assign(fallback);
+      }
       let currentModalData = null,
         modalHistory = [],
         draggedHeroId = null,

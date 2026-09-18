@@ -321,8 +321,13 @@
           // Clicking navigates to the hero group in skin count and reveals the skin
           wrapper.onclick = () => {
             const by = document.getElementById("filter-count-sort").value;
-            if (by !== "hero")
+            if (by !== "hero") {
               document.getElementById("filter-count-sort").value = "hero";
+              if (typeof renderFilterPills === "function")
+                renderFilterPills("filter-count-sort", null, null, {
+                  multiple: false,
+                });
+            }
             renderSkinCountPage();
             setTimeout(() => {
               // Find the icon with matching skinId in the rendered list

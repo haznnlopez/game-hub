@@ -87,7 +87,8 @@
           <span>Tier List</span>
         </button>
         <a
-          href="index.html"
+          href="../index.html"
+          onclick="changeGame(event)"
           class="sidebar-button"
           style="text-decoration: none; margin-top: auto"
           ><span class="material-symbols-outlined">swap_horiz</span>
@@ -251,7 +252,7 @@
           <div
             id="skin-filter-panel"
             class="filter-panel collapsed"
-            data-filter-ids="filter-skin-hero,filter-skin-rarity,filter-skin-collectible"
+            data-filter-ids="filter-skin-hero,filter-skin-rarity,filter-skin-type,filter-skin-collectible"
           >
             <div class="filter-panel-toolbar">
               <div class="filter-quick-search">
@@ -287,7 +288,7 @@
                   onchange="renderSkinsPage()"
                 ></select>
               </div>
-              <div class="filter-item">
+              <div class="filter-item filter-item-wide">
                 <label class="form-label">Rarity</label
                 ><select
                   id="filter-skin-rarity"
@@ -297,10 +298,22 @@
                   aria-hidden="true"
                   tabindex="-1"
                 ></select>
-                <div id="pills-filter-skin-rarity" class="filter-pill-row" aria-label="Filter skins by rarity"></div>
+                <div id="pills-filter-skin-rarity" class="filter-pill-row filter-pill-row-wide" aria-label="Filter skins by rarity"></div>
               </div>
               <div class="filter-item">
-                <label class="form-label">Type / Tag</label
+                <label class="form-label">Type</label
+                ><select
+                  id="filter-skin-type"
+                  class="form-select filter-source-select"
+                  multiple
+                  onchange="renderSkinsPage()"
+                  aria-hidden="true"
+                  tabindex="-1"
+                ></select>
+                <div id="pills-filter-skin-type" class="filter-pill-row" aria-label="Filter skins by type"></div>
+              </div>
+              <div class="filter-item">
+                <label class="form-label">Collectible Rarity</label
                 ><select
                   id="filter-skin-collectible"
                   class="form-select filter-source-select"
@@ -309,7 +322,7 @@
                   aria-hidden="true"
                   tabindex="-1"
                 ></select>
-                <div id="pills-filter-skin-collectible" class="filter-pill-row filter-pill-row-wide" aria-label="Filter skins by type or collectible tag"></div>
+                <div id="pills-filter-skin-collectible" class="filter-pill-row" aria-label="Filter skins by collectible rarity"></div>
               </div>
             </div>
             <div class="filter-sort-bar">
@@ -672,7 +685,7 @@
           <header class="page-header">
             <h1>Tier List</h1>
             <div class="tier-header-actions">
-              <button class="btn btn-primary btn-sm" onclick="saveTierSnapshot()">
+              <button id="tier-save-version" class="btn btn-primary btn-sm" onclick="saveTierSnapshot()">
                 <span class="material-symbols-outlined" style="font-size:15px">bookmark_add</span> Save Version
               </button>
               <button class="btn btn-secondary btn-sm" onclick="addTier()">

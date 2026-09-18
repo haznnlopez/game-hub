@@ -666,30 +666,20 @@
         });
       }
 
-      function getSkinTagFilterImages() {
-        const images = {
-          ...(getAttributeImages().collectibleRarities || {}),
-        };
-        getSkins().forEach((skin) => {
-          if (skin.collectible && skin.skinTag && !images[skin.collectible]) {
-            images[skin.collectible] = cleanImageUrl(skin.skinTag);
-          }
-        });
-        return images;
-      }
-
       function refreshFilterPills() {
         renderFilterPills("filter-hero-role", "roles");
         renderFilterPills("filter-hero-lane", "lanes");
         renderFilterPills("filter-hero-specialty");
         renderFilterPills("filter-hero-nation", "nations");
-        renderFilterPills("filter-skin-rarity", "skinRarities");
-        renderFilterPills(
-          "filter-skin-collectible",
-          null,
-          getSkinTagFilterImages(),
-          { imageOnly: true, wideImages: true },
-        );
+        // Skin rarity artwork is usually a wide horizontal tag. Show the image
+        // itself when one is assigned; otherwise fall back to the rarity name.
+        renderFilterPills("filter-skin-rarity", "skinRarities", null, {
+          imageOnly: true,
+          wideImages: true,
+        });
+        // Type and collectible rarity are intentionally text-only pills.
+        renderFilterPills("filter-skin-type");
+        renderFilterPills("filter-skin-collectible");
         renderFilterPills("filter-count-sort", null, null, { multiple: false });
         if (typeof syncFilterPanelSummaries === "function") {
           syncFilterPanelSummaries();
@@ -721,32 +711,21 @@
         fill("filter-hero-specialty", attrs.specialties);
         fill("filter-hero-nation", attrs.nations);
         fill("filter-skin-rarity", attrs.skinRarities);
+        fill("filter-skin-collectible", attrs.collectibleRarities);
 
-        const collectibleSelect = document.getElementById(
-          "filter-skin-collectible",
-        );
-        if (collectibleSelect) {
-          const previous = getSelectedFilterValues("filter-skin-collectible");
-          collectibleSelect.innerHTML = '<option value="">All Standard Skins</option>';
+        const typeSelect = document.getElementById("filter-skin-type");
+        if (typeSelect) {
+          const previous = getSelectedFilterValues("filter-skin-type");
+          typeSelect.innerHTML = '<option value="">All</option>';
           ["Painted Skin", "Sacred Statue"].forEach((type) => {
             const option = document.createElement("option");
             option.value = type;
             option.textContent = type;
-            collectibleSelect.appendChild(option);
+            typeSelect.appendChild(option);
           });
-          (attrs.collectibleRarities || []).forEach((item) => {
-            const option = document.createElement("option");
-            option.value = item;
-            option.textContent = item;
-            collectibleSelect.appendChild(option);
-          });
-          const valid = new Set([
-            "Painted Skin",
-            "Sacred Statue",
-            ...(attrs.collectibleRarities || []),
-          ]);
+          const valid = new Set(["Painted Skin", "Sacred Statue"]);
           setSelectedFilterValues(
-            "filter-skin-collectible",
+            "filter-skin-type",
             previous.filter((value) => valid.has(value)),
           );
         }
@@ -2014,23 +1993,21 @@
         g.innerHTML = "";
         const fHero = document.getElementById("filter-skin-hero").value;
         const fRarities = getSelectedFilterValues("filter-skin-rarity");
+        const fTypes = getSelectedFilterValues("filter-skin-type");
         const fCollectibles = getSelectedFilterValues("filter-skin-collectible");
         const fSearch = document
           .getElementById("skin-search")
           .value.toLowerCase();
         const skins = getSkins();
-        const wantsPainted = fCollectibles.includes("Painted Skin");
-        const wantsStatues = fCollectibles.includes("Sacred Statue");
-        const tagFilters = fCollectibles.filter(
-          (value) => value !== "Painted Skin" && value !== "Sacred Statue",
-        );
+        const wantsPainted = fTypes.includes("Painted Skin");
+        const wantsStatues = fTypes.includes("Sacred Statue");
         const standardSkins = skins.filter(
           (skin) => !skin.isStatue && skin.type !== "statue",
         );
         let display = [];
 
-        if (fCollectibles.length === 0) {
-          // Default view remains standard skins only.
+        if (fTypes.length === 0) {
+          // "All" in Type keeps the normal/default skin catalogue view.
           display = [...standardSkins];
         } else {
           if (wantsPainted) {
@@ -2043,7 +2020,7 @@
                   heroId: baseSkin.heroId,
                   rarity: baseSkin.rarity,
                   type: "painted",
-                  collectible: null,
+                  collectible: baseSkin.collectible || null,
                   paintedSkinName: paintedSkin.name,
                   baseSkinName: baseSkin.name,
                 }),
@@ -2055,23 +2032,19 @@
               ...skins.filter((skin) => skin.isStatue || skin.type === "statue"),
             );
           }
-          if (tagFilters.length) {
-            display.push(
-              ...standardSkins.filter((skin) =>
-                tagFilters.includes(skin.collectible || ""),
-              ),
-            );
-          }
         }
 
-        if (fSearch || fRarities.length || fHero) {
+        if (fSearch || fRarities.length || fCollectibles.length || fHero) {
           display = display.filter((item) => {
             const baseSkin =
               item.type === "painted" ? item._baseSkin || getSkinById(item.id) : null;
             const rarity = item.rarity || baseSkin?.rarity || "";
+            const collectible = item.collectible || baseSkin?.collectible || "";
             if (fSearch && !String(item.name || "").toLowerCase().includes(fSearch))
               return false;
             if (fRarities.length && !fRarities.includes(rarity)) return false;
+            if (fCollectibles.length && !fCollectibles.includes(collectible))
+              return false;
             if (fHero && item.heroId !== fHero) return false;
             return true;
           });
@@ -2088,7 +2061,7 @@
         document.getElementById("no-skins-message").style.display = "none";
 
         const isSacredStatueView =
-          fCollectibles.length === 1 && wantsStatues;
+          fTypes.length === 1 && wantsStatues;
         g.classList.toggle("sacred-statue-view", isSacredStatueView);
 
         const frag = document.createDocumentFragment();

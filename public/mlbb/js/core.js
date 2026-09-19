@@ -1,4 +1,4 @@
-      const APP_VERSION = "2.11.2";
+      const APP_VERSION = "2.11.3";
 
       const KEYS = {
         HEROES: "game_hub_mlbb_heroes",

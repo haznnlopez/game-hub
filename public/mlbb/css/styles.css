@@ -7160,3 +7160,116 @@ body *::-webkit-scrollbar-corner {
   .section-subnav { justify-content: safe center; }
   .attr-tabs, .upcoming-tabs { top: 70px; }
 }
+
+
+/* ============================================================
+   V2.11.3 — unclipped Build Item cards + build picker
+   ============================================================ */
+
+/* Build Items in Attributes need room for multi-category badges.
+   Do not force these cards into the generic square aspect ratio. */
+.attr-square-item[data-attr-key="items"] {
+  aspect-ratio: auto !important;
+  min-height: 196px;
+  height: auto !important;
+  overflow: visible !important;
+  padding-bottom: 12px;
+}
+.attr-square-item[data-attr-key="items"] .attr-square-thumb {
+  flex: 0 0 112px;
+  min-height: 112px !important;
+}
+.attr-square-item[data-attr-key="items"] .attr-square-label {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.25;
+  min-height: 1.9em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.attr-square-item[data-attr-key="items"] .attr-meta-badges {
+  width: 100%;
+  padding: 0 .25rem .15rem;
+  gap: .32rem;
+  align-content: flex-start;
+  overflow: visible;
+}
+.attr-square-item[data-attr-key="items"] .attr-meta-badge {
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.15;
+  text-align: center;
+}
+
+/* Give the Hero Build editor a little more horizontal room. */
+#hero-form {
+  max-width: 1120px !important;
+}
+.hero-build-editor-card,
+.hero-build-choice-group,
+.build-category-stack,
+.build-item-category {
+  min-width: 0;
+  overflow: visible;
+}
+
+/* Category sections must not clip the first/last item pills. */
+.build-item-category {
+  overflow: visible !important;
+}
+.build-item-category > summary {
+  flex-wrap: wrap;
+  gap: .45rem .7rem;
+  min-width: 0;
+}
+.build-item-category > summary > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.build-item-category .build-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: .5rem;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: .62rem .68rem .72rem !important;
+}
+.build-item-category .build-choice-pill {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  justify-content: flex-start;
+  white-space: normal;
+  overflow: visible;
+  padding: .42rem .58rem;
+}
+.build-item-category .build-choice-pill > span:last-child {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+  text-align: left;
+}
+.build-item-category .build-choice-pill img {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+}
+
+/* Emblem/talent pickers can scroll, but add breathing room so edge pills aren't cut. */
+.build-emblem-section .build-choice-grid {
+  padding: .65rem .35rem .45rem;
+  scroll-padding: .5rem;
+}
+
+@media (max-width: 700px) {
+  #hero-form { max-width: 100% !important; }
+  .build-item-category .build-choice-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+  .attr-square-item[data-attr-key="items"] {
+    min-height: 186px;
+  }
+}

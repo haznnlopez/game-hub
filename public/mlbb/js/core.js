@@ -1,4 +1,4 @@
-      const APP_VERSION = "2.11.1";
+      const APP_VERSION = "2.11.2";
 
       const KEYS = {
         HEROES: "game_hub_mlbb_heroes",
@@ -1994,7 +1994,12 @@
           .replace(/"/g, "&quot;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");
-        const renderSquare = (v, renderKey = key) => {
+        const renderSquare = (v, renderKeyOverride = null) => {
+          // IMPORTANT: Array.prototype.map passes (value, index, array).
+          // Only treat the second argument as an attribute key when it is explicitly
+          // a string. Otherwise standard `.map(renderSquare)` calls would use 0/1/2
+          // as the attribute key and lose every image/color in the grid.
+          const renderKey = typeof renderKeyOverride === "string" ? renderKeyOverride : key;
           const safeValue = attrDataEscape(v);
           const safeKey = attrDataEscape(renderKey);
           const renderColMap = getAttributeColors()[renderKey] || {};

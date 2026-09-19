@@ -112,11 +112,6 @@
           <span class="material-symbols-outlined">lock</span>
           <span class="admin-auth-label">Admin Sign In</span>
         </button>
-        <div class="app-version-badge" title="Current app version">
-          <span class="material-symbols-outlined">deployed_code</span>
-          <span>MLBB Hub</span>
-          <strong id="app-version-label" data-app-version>v2.11.1</strong>
-        </div>
         <button
           id="backup-data-btn"
           class="sidebar-button"
@@ -133,15 +128,17 @@
 
     <main class="main-content">
       <div class="global-topbar">
-        <div class="global-search-shell" id="global-search-shell">
-          <span class="material-symbols-outlined global-search-icon">search</span>
-          <input id="global-search-input" class="global-search-input" type="search" placeholder="Search heroes, skins, upcoming, pages..." aria-label="Global search" autocomplete="off" />
-          <kbd class="global-search-shortcut">Ctrl K</kbd>
-          <div id="global-search-results" class="global-search-results" hidden></div>
-        </div>
-        <div class="topbar-version-chip" title="Current app version">
-          <span class="material-symbols-outlined">deployed_code</span>
-          <strong data-app-version>v2.11.1</strong>
+        <div class="global-topbar-row">
+          <div class="global-search-shell" id="global-search-shell">
+            <span class="material-symbols-outlined global-search-icon">search</span>
+            <input id="global-search-input" class="global-search-input" type="search" placeholder="Search heroes, skins, upcoming, pages..." aria-label="Global search" autocomplete="off" />
+            <kbd class="global-search-shortcut">Ctrl K</kbd>
+            <div id="global-search-results" class="global-search-results" hidden></div>
+          </div>
+          <div class="topbar-version-chip" title="Current app version" aria-label="Current app version">
+            <span class="material-symbols-outlined">deployed_code</span>
+            <strong data-app-version>v2.11.2</strong>
+          </div>
         </div>
       </div>
       <div id="section-subnav-host" class="section-subnav-host" hidden></div>

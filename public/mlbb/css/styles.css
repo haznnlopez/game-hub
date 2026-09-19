@@ -7074,3 +7074,89 @@ body *::-webkit-scrollbar-corner {
   background: var(--attr-peek-color);
   box-shadow: 0 12px 28px color-mix(in srgb, var(--attr-peek-color) 24%, transparent);
 }
+
+
+/* ============================================================
+   V2.11.2 — Attribute grid root fix + centered sticky tabs
+   ============================================================ */
+
+/* Keep the version genuinely beside the global search field. */
+.global-topbar-row {
+  width: min(100%, 900px);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+}
+.global-topbar-row .global-search-shell {
+  flex: 1 1 720px;
+  min-width: 0;
+  max-width: 760px;
+  margin: 0;
+}
+.topbar-version-chip {
+  flex: 0 0 auto;
+  align-self: stretch;
+  justify-content: center;
+}
+
+/* Search stays outline-only. Focusing/clicking it must not add a second rectangle/ring. */
+.global-search-shell:focus-within,
+.global-search-shell:focus,
+.global-search-shell:active {
+  background: transparent !important;
+  border-color: rgba(255,255,255,.18) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.global-search-input:focus,
+.global-search-input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Center the section-level tabs while retaining horizontal scrolling when needed. */
+.section-subnav {
+  justify-content: safe center;
+}
+.section-subnav-host {
+  position: sticky !important;
+  top: 70px !important;
+  z-index: 72 !important;
+}
+
+/* Page-local tab bars are centered and stay available while scrolling their page. */
+.attr-tabs,
+.upcoming-tabs {
+  justify-content: safe center;
+  position: sticky;
+  top: 76px;
+  z-index: 55;
+  width: max-content;
+  max-width: 100%;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  backdrop-filter: blur(14px);
+}
+.hero-stats-view-tabs {
+  justify-content: center;
+}
+
+/* Attribute artwork is intentionally visible, with color accents left peeking around it. */
+.attr-grid-visual.has-image {
+  background-color: rgba(15,23,42,.52);
+}
+.attr-grid-visual.has-image .attr-grid-image {
+  padding: 4px;
+}
+.attr-grid-visual.has-image.has-color {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--attr-peek-color) 34%, transparent);
+}
+
+@media (max-width: 700px) {
+  .global-topbar-row { gap: .4rem; }
+  .topbar-version-chip { min-height: 42px; padding-inline: .5rem; }
+  .section-subnav { justify-content: safe center; }
+  .attr-tabs, .upcoming-tabs { top: 70px; }
+}

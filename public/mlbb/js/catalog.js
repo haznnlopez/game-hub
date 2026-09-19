@@ -515,14 +515,16 @@
       }
 
       function editAttributeFull(key, oldVal) {
+        const section = ensureAttributeSection(key, oldVal);
+        const editKey = section.key || key;
         // Attribute Edit must stay predictable: every attribute gets an image field.
         // Extra controls are additive (Skin Series, item categories, color/background).
-        const hasColor = ATTR_COLOR_KEYS.includes(key);
-        const hasBg = ATTR_BG_KEYS.includes(key);
-        const existingRaw = getAttrImage(key, oldVal);
+        const hasColor = ATTR_COLOR_KEYS.includes(editKey);
+        const hasBg = ATTR_BG_KEYS.includes(editKey);
+        const existingRaw = getAttrImage(editKey, oldVal);
         const existing = typeof existingRaw === "string" ? existingRaw : "";
-        const existingColor = getAttrColor(key, oldVal) || "#fbbf24";
-        const existingBgRaw = getAttrBg(key, oldVal);
+        const existingColor = getAttrColor(editKey, oldVal) || "#fbbf24";
+        const existingBgRaw = getAttrBg(editKey, oldVal);
         const existingBg = typeof existingBgRaw === "string" ? existingBgRaw : "";
         const existingGroupId = hasColor ? getTagGroupId(oldVal) : "";
         const groupOptsHtml = hasColor
@@ -536,10 +538,10 @@
         const overlay = document.createElement("div");
         overlay.className = "confirm-modal-overlay";
 
-        const rarityOptions = key === "skinRarities"
+        const rarityOptions = editKey === "skinRarities"
           ? `<div class="attr-edit-options"><span class="form-label">Skin Rarity Options</span><label class="attr-inline-check" for="attr-edit-series"><input type="checkbox" id="attr-edit-series" ${isSkinSeriesRarity(oldVal) ? "checked" : ""}><span><strong>Skin Series</strong><small>Enable when this rarity also represents a named skin series/collection.</small></span></label></div>`
           : "";
-        const itemOptions = key === "items"
+        const itemOptions = editKey === "items"
           ? `<div class="attr-category-editor attr-edit-meta"><span class="form-label">Equipment Categories <span class="form-label-note">Choose all that apply</span></span><div class="attr-category-pills">${BUILD_ITEM_CATEGORIES.map((cat) => `<label class="attr-category-pill"><input type="checkbox" name="attr-edit-item-category" value="${cat}" ${getItemCategories(oldVal).includes(cat) ? "checked" : ""}><span>${cat}</span></label>`).join("")}</div></div>`
           : "";
 
@@ -602,69 +604,71 @@
             showToast("Attribute name is required", "info");
             return;
           }
-          const a = getAttributes();
-          if (!Array.isArray(a[key])) {
-            showToast("This attribute section is unavailable.", "info");
+          const liveSection = ensureAttributeSection(editKey, oldVal);
+          const a = liveSection.attrs;
+          const values = liveSection.values;
+          if (!liveSection.key || !Array.isArray(values)) {
+            showToast("Attribute editor could not resolve this item. Refresh and try again.", "info");
             return;
           }
-          const idx = a[key].indexOf(oldVal);
+          const idx = values.indexOf(oldVal);
           if (idx === -1) {
             showToast("Attribute could not be found.", "info");
             return;
           }
-          if (newName !== oldVal && a[key].includes(newName)) {
+          if (newName !== oldVal && values.includes(newName)) {
             showToast("Name already exists", "info");
             return;
           }
 
-          a[key][idx] = newName;
+          values[idx] = newName;
           saveAttributes(a);
           if (newName !== oldVal) {
-            renameAttributeReferences(key, oldVal, newName);
-            renameAttributeMetaReference(key, oldVal, newName);
+            renameAttributeReferences(editKey, oldVal, newName);
+            renameAttributeMetaReference(editKey, oldVal, newName);
           }
 
           // Image is unconditional for Edit: preserve, replace, or explicitly clear it.
           const newImg = cleanImageUrl(imgInp.value.trim());
           const images = getAttributeImages();
-          if (!images[key] || typeof images[key] !== "object") images[key] = {};
-          if (oldVal !== newName && Object.prototype.hasOwnProperty.call(images[key], oldVal)) {
-            images[key][newName] = images[key][oldVal];
-            delete images[key][oldVal];
+          if (!images[editKey] || typeof images[editKey] !== "object") images[editKey] = {};
+          if (oldVal !== newName && Object.prototype.hasOwnProperty.call(images[editKey], oldVal)) {
+            images[editKey][newName] = images[editKey][oldVal];
+            delete images[editKey][oldVal];
           }
-          if (newImg) images[key][newName] = newImg;
-          else delete images[key][newName];
+          if (newImg) images[editKey][newName] = newImg;
+          else delete images[editKey][newName];
           saveAttributeImages(images);
 
           if (hasBg) {
             const newBg = cleanImageUrl(document.getElementById("attr-edit-bg").value.trim());
             const bgs = getAttributeBackgrounds();
-            if (!bgs[key]) bgs[key] = {};
-            if (oldVal !== newName && bgs[key][oldVal]) {
-              bgs[key][newName] = bgs[key][oldVal];
-              delete bgs[key][oldVal];
+            if (!bgs[editKey]) bgs[editKey] = {};
+            if (oldVal !== newName && bgs[editKey][oldVal]) {
+              bgs[editKey][newName] = bgs[editKey][oldVal];
+              delete bgs[editKey][oldVal];
             }
-            if (newBg) bgs[key][newName] = newBg;
-            else delete bgs[key][newName];
+            if (newBg) bgs[editKey][newName] = newBg;
+            else delete bgs[editKey][newName];
             saveAttributeBackgrounds(bgs);
           }
           if (hasColor) {
             const colors = getAttributeColors();
-            if (!colors[key]) colors[key] = {};
-            if (oldVal !== newName && colors[key][oldVal]) {
-              colors[key][newName] = colors[key][oldVal];
-              delete colors[key][oldVal];
+            if (!colors[editKey]) colors[editKey] = {};
+            if (oldVal !== newName && colors[editKey][oldVal]) {
+              colors[editKey][newName] = colors[editKey][oldVal];
+              delete colors[editKey][oldVal];
             }
-            colors[key][newName] = document.getElementById("attr-edit-color").value;
+            colors[editKey][newName] = document.getElementById("attr-edit-color").value;
             saveAttributeColors(colors);
             const newGroupId = document.getElementById("attr-edit-group").value || "";
             if (oldVal !== newName) setTagGroupId(oldVal, "");
             setTagGroupId(newName, newGroupId);
           }
-          if (key === "skinRarities") {
+          if (editKey === "skinRarities") {
             setSkinSeriesRarity(newName, document.getElementById("attr-edit-series").checked);
           }
-          if (key === "items") {
+          if (editKey === "items") {
             const categories = [...document.querySelectorAll('input[name="attr-edit-item-category"]:checked')].map((el) => el.value);
             setItemCategories(newName, categories);
           }
@@ -709,12 +713,19 @@
         };
       }
       function addAttribute(key) {
-        const v = document.getElementById(`input-${key}`).value.trim();
+        const input = document.getElementById(`input-${key}`);
+        const v = input?.value.trim() || "";
         if (!v) return;
-        const a = getAttributes();
-        if (!a[key]) a[key] = [];
-        if (!a[key].includes(v)) {
-          a[key].push(v);
+        const section = ensureAttributeSection(key);
+        if (!section.key || !Array.isArray(section.values)) {
+          showToast("Attribute section could not be opened. Refresh and try again.", "info");
+          return;
+        }
+        const a = section.attrs;
+        const values = section.values;
+        key = section.key;
+        if (!values.includes(v)) {
+          values.push(v);
           saveAttributes(a);
           // Save image if provided
           const imgInput = document.getElementById(`input-img-${key}`);

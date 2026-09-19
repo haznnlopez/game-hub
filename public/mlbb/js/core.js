@@ -1280,6 +1280,24 @@
         });
         return next;
       }
+      function resolveAttributeSectionKey(key, value = "") {
+        if (ATTRIBUTE_SCHEMA_KEYS.includes(key)) return key;
+        const attrs = getAttributes();
+        if (value) {
+          const matches = ATTRIBUTE_SCHEMA_KEYS.filter((candidate) =>
+            Array.isArray(attrs[candidate]) && attrs[candidate].includes(value),
+          );
+          if (matches.length === 1) return matches[0];
+        }
+        return "";
+      }
+      function ensureAttributeSection(key, value = "") {
+        const resolvedKey = resolveAttributeSectionKey(key, value);
+        if (!resolvedKey) return { key: "", attrs: getAttributes(), values: null };
+        const attrs = getAttributes();
+        if (!Array.isArray(attrs[resolvedKey])) attrs[resolvedKey] = [];
+        return { key: resolvedKey, attrs, values: attrs[resolvedKey] };
+      }
       function saveAttributes(d) {
         const storedCurrent = normalizeAttributesPayload(getData(KEYS.ATTRIBUTES, {}), {});
         const runtimeCurrent = normalizeAttributesPayload(getAttributes(), storedCurrent);
@@ -1924,6 +1942,8 @@
 
         // Active panel
         const key = currentAttrTab;
+        if (!Array.isArray(attrs[key])) attrs[key] = [];
+        if (key === "emblems" && !Array.isArray(attrs.emblemTalents)) attrs.emblemTalents = [];
         const hasColor = (k) => ATTR_COLOR_KEYS.includes(k);
         const imgMap = imgs[key] || {};
         const colMap = getAttributeColors()[key] || {};

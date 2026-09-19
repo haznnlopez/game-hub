@@ -6855,3 +6855,64 @@ body *::-webkit-scrollbar-corner {
   flex:0 0 auto;
   accent-color:var(--accent);
 }
+
+
+/* ============================================================
+   V2.10.4 — regression repair: attribute editor + image visibility
+   ============================================================ */
+.attr-edit-modal {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(780px, calc(100vh - 40px));
+  overflow: auto;
+}
+.attr-edit-modal > h3 { margin: 0 0 .25rem; }
+.attr-edit-current { color: var(--text-med); font-size: .72rem; margin-bottom: 1rem; }
+.attr-edit-modal > .form-input,
+.attr-edit-modal > .form-select { margin-bottom: 1rem; }
+.attr-edit-options {
+  margin: 0 0 1rem;
+  padding: .8rem;
+  border-radius: 12px;
+  border: 1px solid rgba(251,191,36,.25);
+  background: rgba(251,191,36,.055);
+}
+.attr-edit-options .attr-inline-check { margin: .25rem 0 0; }
+.attr-edit-image-section {
+  display: block !important;
+  visibility: visible !important;
+  margin: 0 0 1rem;
+}
+#attr-edit-img { display: block !important; visibility: visible !important; width: 100%; }
+.attr-edit-image-preview small { font-size: .65rem; color: var(--text-med); }
+.attr-edit-bg-preview {
+  width: 100%; height: 80px; border-radius: 10px; background: var(--bg-light);
+  margin: -.3rem 0 1rem; overflow: hidden; background-size: cover; background-position: center;
+}
+.attr-edit-color-row { display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; }
+.attr-edit-color-row input[type="color"] { width:52px; padding:2px; flex-shrink:0; }
+/* Desktop stays like the pre-regression UI: actions appear only when the card is engaged. */
+@media (hover: hover) {
+  .attr-square-item .card-overlay-actions { display: none !important; }
+  .attr-square-item:hover .card-overlay-actions,
+  .attr-square-item:focus-within .card-overlay-actions { display: flex !important; }
+}
+
+
+/* V2.10.5 — Attribute image inputs are first-class on every Add/Edit form */
+.attr-add-row input[id^="input-img-"],
+.attr-special-add input[id^="input-img-"],
+.attr-edit-image-section #attr-edit-img {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  min-height: 40px;
+}
+.attr-edit-image-label {
+  display: flex;
+  align-items: baseline;
+  gap: .4rem;
+}
+.attr-edit-image-section {
+  border-color: rgba(251,191,36,.28) !important;
+  background: rgba(251,191,36,.035) !important;
+}

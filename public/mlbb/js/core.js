@@ -1460,16 +1460,33 @@
       function recoverWipedAttributeImages() {
         const current = parseStoredJson(DB.getItem(ATTR_IMAGES_KEY), {});
         const backup = parseStoredJson(DB.getItem(ATTR_IMAGES_BACKUP_KEY), {});
-        const currentCount = countAttributeImageUrls(current);
-        const backupCount = countAttributeImageUrls(backup);
-        if (currentCount === 0 && backupCount > 0) {
-          _attributeImagesData = typeof structuredClone === "function" ? structuredClone(backup) : JSON.parse(JSON.stringify(backup));
-          if (ADMIN.isAdmin) safeLocalStorageSet(ATTR_IMAGES_KEY, JSON.stringify(_attributeImagesData));
-          showToast(`Recovered ${backupCount} attribute image${backupCount === 1 ? "" : "s"} from the automatic backup.`, "success");
-          return true;
-        }
-        return false;
+        if (!backup || typeof backup !== "object" || Array.isArray(backup)) return false;
+
+        const attrs = getAttributes();
+        const merged = current && typeof current === "object" && !Array.isArray(current)
+          ? (typeof structuredClone === "function" ? structuredClone(current) : JSON.parse(JSON.stringify(current)))
+          : {};
+        let recovered = 0;
+        Object.entries(backup).forEach(([key, group]) => {
+          if (!group || typeof group !== "object" || Array.isArray(group)) return;
+          if (!merged[key] || typeof merged[key] !== "object" || Array.isArray(merged[key])) merged[key] = {};
+          Object.entries(group).forEach(([value, url]) => {
+            if (typeof url !== "string" || !url.trim()) return;
+            // Restore only images for attributes that still exist (or legacy family data kept for migration).
+            const stillExists = key === "skinFamilies" || (Array.isArray(attrs[key]) && attrs[key].includes(value));
+            if (!stillExists) return;
+            if (!merged[key][value]) {
+              merged[key][value] = url;
+              recovered++;
+            }
+          });
+        });
+        _attributeImagesData = merged;
+        if (recovered > 0 && ADMIN.isAdmin) safeLocalStorageSet(ATTR_IMAGES_KEY, JSON.stringify(merged));
+        if (recovered > 0) showToast(`Recovered ${recovered} missing attribute image${recovered === 1 ? "" : "s"} from backup.`, "success");
+        return recovered > 0;
       }
+
       function restoreAttributeImageBackup() {
         const backup = parseStoredJson(DB.getItem(ATTR_IMAGES_BACKUP_KEY), null);
         if (!backup || typeof backup !== "object" || Array.isArray(backup) || !Object.keys(backup).length) {
@@ -1927,13 +1944,13 @@
           const color = renderColMap[v] || "";
           const renderHasColor = ATTR_COLOR_KEYS.includes(renderKey);
           const renderHasImg = ATTR_IMAGE_KEYS.includes(renderKey);
-          const thumbHtml = renderHasColor
-            ? `<div style="width:100%;height:100%;border-radius:8px;background:${color || "var(--bg-light)"};display:flex;align-items:center;justify-content:center;">${color ? "" : `<span class="material-symbols-outlined" style="opacity:0.5;">palette</span>`}</div>`
-            : renderHasImg
-              ? imgUrl
-                ? `<img src="${imgUrl}" data-fallback-src="${IMAGE_PLACEHOLDER}">`
-                : `<img src="${IMAGE_PLACEHOLDER}" alt="Image unavailable">`
-              : `<span class="material-symbols-outlined">label</span>`;
+          const thumbHtml = imgUrl
+            ? `<img src="${imgUrl}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="${safeValue}">`
+            : renderHasColor
+              ? `<div style="width:100%;height:100%;border-radius:8px;background:${color || "var(--bg-light)"};display:flex;align-items:center;justify-content:center;">${color ? "" : `<span class="material-symbols-outlined" style="opacity:0.5;">palette</span>`}</div>`
+              : renderHasImg
+                ? `<img src="${IMAGE_PLACEHOLDER}" alt="Image unavailable">`
+                : `<span class="material-symbols-outlined">label</span>`;
           return `<div class="attr-square-item attr-reorderable" draggable="true" data-attr-key="${safeKey}" data-attr-value="${safeValue}" ondragstart="startAttributeDragFromCard(event,this)" ondragend="endAttributeDrag(event)" ondragover="attributeDragOver(event)" ondragleave="attributeDragLeave(event)" ondrop="dropAttributeFromCard(event,this)">
               <div class="attr-reorder-controls">
                 <button type="button" class="attr-order-btn" title="Move earlier" onclick="event.stopPropagation();moveAttributeFromCard(this,-1)"><span class="material-symbols-outlined">chevron_left</span></button>
@@ -1990,15 +2007,15 @@
         const groupOptions = groups
           .map((g) => `<option value="${g.id}">${g.name}</option>`)
           .join("");
-        const standardImageAddRow = (addKey, label = "Name") => `<div class="attr-add-row"><input type="text" id="input-${addKey}" class="form-input" placeholder="${label}..." style="flex:2"><input type="url" id="input-img-${addKey}" class="form-input" placeholder="Image URL (optional)" style="flex:3"><button class="btn btn-primary btn-sm" onclick="addAttribute('${addKey}')">Add</button></div>`;
+        const standardImageAddRow = (addKey, label = "Name") => `<div class="attr-add-row"><input type="text" id="input-${addKey}" class="form-input" placeholder="${label}..." style="flex:2"><input type="url" id="input-img-${addKey}" class="form-input" placeholder="Image URL (optional)" aria-label="Image URL" style="flex:3"><button class="btn btn-primary btn-sm" onclick="addAttribute('${addKey}')">Add</button></div>`;
+        // V2.10.5: every attribute type supports an optional image.
+        // Do not gate the image input behind ATTR_IMAGE_KEYS; this keeps Add/Edit consistent.
         let addRow = hasColor(key)
-          ? `<div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;"><input type="text" id="input-${key}" class="form-input" placeholder="Add..." style="flex:1;min-width:120px;"><input type="url" id="input-img-${key}" class="form-input" placeholder="Image URL (optional)" style="flex:1.4;min-width:180px;"><select id="input-group-${key}" class="form-select" style="width:170px;" onchange="onGroupSelectChange('${key}')"><option value="">Custom color</option>${groupOptions}</select><input type="color" id="input-color-${key}" class="form-input" value="#fbbf24" title="Tag color" style="width:52px;padding:2px;flex-shrink:0;"><button class="btn btn-primary btn-sm" onclick="addAttribute('${key}')">Add</button></div>`
-          : hasImg(key)
-            ? standardImageAddRow(key)
-            : `<div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;"><input type="text" id="input-${key}" class="form-input" placeholder="Add..."><button class="btn btn-primary btn-sm" onclick="addAttribute('${key}')">Add</button></div>`;
+          ? `<div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;"><input type="text" id="input-${key}" class="form-input" placeholder="Add..." style="flex:1;min-width:120px;"><input type="url" id="input-img-${key}" class="form-input" placeholder="Image URL (optional)" aria-label="Image URL" style="flex:1.4;min-width:180px;"><select id="input-group-${key}" class="form-select" style="width:170px;" onchange="onGroupSelectChange('${key}')"><option value="">Custom color</option>${groupOptions}</select><input type="color" id="input-color-${key}" class="form-input" value="#fbbf24" title="Tag color" style="width:52px;padding:2px;flex-shrink:0;"><button class="btn btn-primary btn-sm" onclick="addAttribute('${key}')">Add</button></div>`
+          : standardImageAddRow(key);
 
         if (key === "skinRarities") {
-          addRow = `<div class="attr-special-add"><div class="attr-add-row"><input type="text" id="input-skinRarities" class="form-input" placeholder="Rarity / series name..." style="flex:2"><input type="url" id="input-img-skinRarities" class="form-input" placeholder="Image URL (optional)" style="flex:3"><button class="btn btn-primary btn-sm" onclick="addAttribute('skinRarities')">Add</button></div><label class="attr-inline-check"><input type="checkbox" id="input-series-skinRarities"><span><strong>Skin Series</strong><small>Mark this rarity as a named series/collection so it appears in Skin Series.</small></span></label></div>`;
+          addRow = `<div class="attr-special-add"><div class="attr-add-row"><input type="text" id="input-skinRarities" class="form-input" placeholder="Rarity / series name..." style="flex:2"><input type="url" id="input-img-skinRarities" class="form-input" placeholder="Image URL (optional)" aria-label="Image URL" style="flex:3"><button class="btn btn-primary btn-sm" onclick="addAttribute('skinRarities')">Add</button></div><label class="attr-inline-check"><input type="checkbox" id="input-series-skinRarities"><span><strong>Skin Series</strong><small>Mark this rarity as a named series/collection so it appears in Skin Series.</small></span></label></div>`;
         } else if (key === "items") {
           addRow = `<div class="attr-special-add">${standardImageAddRow("items", "Equipment name")}<div class="attr-category-editor"><span class="form-label">Equipment Categories <span class="form-label-note">Choose all that apply</span></span><div class="attr-category-pills">${BUILD_ITEM_CATEGORIES.map((cat) => `<label class="attr-category-pill"><input type="checkbox" name="input-item-category" value="${cat}"><span>${cat}</span></label>`).join("")}</div></div></div>`;
         } else if (key === "emblems") {

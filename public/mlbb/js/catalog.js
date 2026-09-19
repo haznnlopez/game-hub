@@ -515,9 +515,8 @@
       }
 
       function editAttributeFull(key, oldVal) {
-        // Every attribute can carry an optional image. Keep Edit consistent with Add
-        // and never hide the image field because of a category whitelist.
-        const hasImg = ATTRIBUTE_SCHEMA_KEYS.includes(key);
+        // Attribute Edit must stay predictable: every attribute gets an image field.
+        // Extra controls are additive (Skin Series, item categories, color/background).
         const hasColor = ATTR_COLOR_KEYS.includes(key);
         const hasBg = ATTR_BG_KEYS.includes(key);
         const existingRaw = getAttrImage(key, oldVal);
@@ -528,49 +527,64 @@
         const existingGroupId = hasColor ? getTagGroupId(oldVal) : "";
         const groupOptsHtml = hasColor
           ? getSkillCatGroups()
-              .map(
-                (g) =>
-                  `<option value="${g.id}"${g.id === existingGroupId ? " selected" : ""}>${g.name}</option>`,
-              )
+              .map((g) => `<option value="${g.id}"${g.id === existingGroupId ? " selected" : ""}>${g.name}</option>`)
               .join("")
           : "";
-        const existingOverlay = document.querySelector(
-          ".confirm-modal-overlay",
-        );
+
+        const existingOverlay = document.querySelector(".confirm-modal-overlay");
         if (existingOverlay) existingOverlay.remove();
         const overlay = document.createElement("div");
         overlay.className = "confirm-modal-overlay";
-        const metaControls = key === "skinRarities"
-          ? `<div class="attr-edit-series-box"><span class="form-label">Rarity Options</span><label class="attr-inline-check attr-edit-meta" for="attr-edit-series"><input type="checkbox" id="attr-edit-series" ${isSkinSeriesRarity(oldVal) ? "checked" : ""}><span><strong>Skin Series</strong><small>This checkbox is saved with this Skin Rarity. Enable it when the rarity is also a named skin series/collection.</small></span></label></div>`
-          : key === "items"
-            ? `<div class="attr-category-editor attr-edit-meta"><span class="form-label">Equipment Categories <span class="form-label-note">Choose all that apply</span></span><div class="attr-category-pills">${BUILD_ITEM_CATEGORIES.map((cat) => `<label class="attr-category-pill"><input type="checkbox" name="attr-edit-item-category" value="${cat}" ${getItemCategories(oldVal).includes(cat) ? "checked" : ""}><span>${cat}</span></label>`).join("")}</div></div>`
-            : "";
-        overlay.innerHTML = `<div class="confirm-modal" style="min-width:340px;"><h3 style="margin-top:0;">Edit "${oldVal}"</h3><label class="form-label">Name</label><input type="text" id="attr-edit-name" class="form-input" value="${oldVal.replace(/"/g, "&quot;")}" style="margin-bottom:1rem;">${key === "skinRarities" ? metaControls : ""}${hasImg ? `<div class="attr-edit-image-section"><label class="form-label" for="attr-edit-img">Image URL</label><input type="url" id="attr-edit-img" class="form-input" value="${existing.replace(/"/g, "&quot;")}" placeholder="https://..." autocomplete="off"><div class="attr-edit-image-preview" id="attr-edit-preview">${existing ? `<img src="${existing}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="${oldVal.replace(/"/g, "&quot;")}">` : `<span class="material-symbols-outlined">image</span>`}</div></div>` : ""}${hasBg ? `<label class="form-label">Background Image URL</label><input type="url" id="attr-edit-bg" class="form-input" value="${existingBg.replace(/"/g, "&quot;")}" placeholder="https://... (hero modal background)" style="margin-bottom:0.75rem;"><div id="attr-edit-bg-preview" style="width:100%;height:80px;border-radius:10px;background:var(--bg-light);margin:0 auto 1rem;overflow:hidden;background-size:cover;background-position:center;${existingBg ? `background-image:url('${existingBg}');` : ""}"></div>` : ""}${hasColor ? `<label class="form-label">Color Group</label><select id="attr-edit-group" class="form-select" style="margin-bottom:0.75rem;" onchange="onEditGroupChange()"><option value="">Custom color</option>${groupOptsHtml}</select><label class="form-label">Tag Color</label><div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;"><input type="color" id="attr-edit-color" class="form-input" value="${existingColor}" ${existingGroupId ? "disabled" : ""} style="width:52px;padding:2px;flex-shrink:0;"></div>` : ""}${key === "items" ? metaControls : ""}<div class="confirm-actions"><button class="btn btn-secondary" id="attr-edit-cancel">Cancel</button><button class="btn btn-primary" id="attr-edit-save">Save</button></div></div>`;
+
+        const rarityOptions = key === "skinRarities"
+          ? `<div class="attr-edit-options"><span class="form-label">Skin Rarity Options</span><label class="attr-inline-check" for="attr-edit-series"><input type="checkbox" id="attr-edit-series" ${isSkinSeriesRarity(oldVal) ? "checked" : ""}><span><strong>Skin Series</strong><small>Enable when this rarity also represents a named skin series/collection.</small></span></label></div>`
+          : "";
+        const itemOptions = key === "items"
+          ? `<div class="attr-category-editor attr-edit-meta"><span class="form-label">Equipment Categories <span class="form-label-note">Choose all that apply</span></span><div class="attr-category-pills">${BUILD_ITEM_CATEGORIES.map((cat) => `<label class="attr-category-pill"><input type="checkbox" name="attr-edit-item-category" value="${cat}" ${getItemCategories(oldVal).includes(cat) ? "checked" : ""}><span>${cat}</span></label>`).join("")}</div></div>`
+          : "";
+
+        overlay.innerHTML = `<div class="confirm-modal attr-edit-modal">
+          <h3>Edit Attribute</h3>
+          <div class="attr-edit-current">${oldVal}</div>
+          <label class="form-label" for="attr-edit-name">Name</label>
+          <input type="text" id="attr-edit-name" class="form-input" value="${oldVal.replace(/"/g, "&quot;")}">
+          ${rarityOptions}
+          <div class="attr-edit-image-section">
+            <label class="form-label attr-edit-image-label" for="attr-edit-img">Image URL <span class="form-label-note">Optional</span></label>
+            <input type="url" id="attr-edit-img" class="form-input" value="${existing.replace(/"/g, "&quot;")}" placeholder="Paste image URL here..." autocomplete="off" inputmode="url">
+            <div class="attr-edit-image-preview" id="attr-edit-preview">${existing ? `<img src="${existing}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="${oldVal.replace(/"/g, "&quot;")}">` : `<span class="material-symbols-outlined">image</span><small>No image assigned</small>`}</div>
+          </div>
+          ${hasBg ? `<label class="form-label" for="attr-edit-bg">Background Image URL</label><input type="url" id="attr-edit-bg" class="form-input" value="${existingBg.replace(/"/g, "&quot;")}" placeholder="https://... (hero modal background)"><div id="attr-edit-bg-preview" class="attr-edit-bg-preview" style="${existingBg ? `background-image:url('${existingBg}');` : ""}"></div>` : ""}
+          ${hasColor ? `<label class="form-label" for="attr-edit-group">Color Group</label><select id="attr-edit-group" class="form-select"><option value="">Custom color</option>${groupOptsHtml}</select><label class="form-label" for="attr-edit-color">Tag Color</label><div class="attr-edit-color-row"><input type="color" id="attr-edit-color" class="form-input" value="${existingColor}" ${existingGroupId ? "disabled" : ""}></div>` : ""}
+          ${itemOptions}
+          <div class="confirm-actions"><button class="btn btn-secondary" id="attr-edit-cancel">Cancel</button><button class="btn btn-primary" id="attr-edit-save">Save</button></div>
+        </div>`;
         document.body.appendChild(overlay);
+
+        const imgInp = document.getElementById("attr-edit-img");
+        const imgPrev = document.getElementById("attr-edit-preview");
+        imgInp.oninput = () => {
+          const v = imgInp.value.trim();
+          imgPrev.innerHTML = v
+            ? `<img src="${v}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="Preview">`
+            : `<span class="material-symbols-outlined">image</span><small>No image assigned</small>`;
+        };
+
         if (hasColor) {
-          window.onEditGroupChange = () => {
-            const gid = document.getElementById("attr-edit-group").value;
-            const colorInp = document.getElementById("attr-edit-color");
+          const groupSel = document.getElementById("attr-edit-group");
+          const colorInp = document.getElementById("attr-edit-color");
+          const syncColorGroup = () => {
+            const gid = groupSel.value;
             if (gid) {
               const g = findSkillCatGroup(gid);
-              if (g) {
-                colorInp.value = g.color;
-                colorInp.disabled = true;
-              }
+              if (g) colorInp.value = g.color;
+              colorInp.disabled = true;
             } else {
               colorInp.disabled = false;
             }
           };
-        }
-        if (hasImg) {
-          const imgInp = document.getElementById("attr-edit-img");
-          const prev = document.getElementById("attr-edit-preview");
-          imgInp.oninput = () => {
-            const v = imgInp.value.trim();
-            prev.innerHTML = v
-              ? `<img src="${v}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="Preview">`
-              : `<span class="material-symbols-outlined">image</span>`;
-          };
+          groupSel.onchange = syncColorGroup;
+          syncColorGroup();
         }
         if (hasBg) {
           const bgInp = document.getElementById("attr-edit-bg");
@@ -580,50 +594,50 @@
             bgPrev.style.backgroundImage = v ? `url('${v}')` : "";
           };
         }
-        document.getElementById("attr-edit-cancel").onclick = () =>
-          overlay.remove();
+
+        document.getElementById("attr-edit-cancel").onclick = () => overlay.remove();
         document.getElementById("attr-edit-save").onclick = () => {
-          const newName = document
-            .getElementById("attr-edit-name")
-            .value.trim();
+          const newName = document.getElementById("attr-edit-name").value.trim();
           if (!newName) {
-            overlay.remove();
+            showToast("Attribute name is required", "info");
             return;
           }
           const a = getAttributes();
+          if (!Array.isArray(a[key])) {
+            showToast("This attribute section is unavailable.", "info");
+            return;
+          }
           const idx = a[key].indexOf(oldVal);
           if (idx === -1) {
-            overlay.remove();
+            showToast("Attribute could not be found.", "info");
             return;
           }
           if (newName !== oldVal && a[key].includes(newName)) {
             showToast("Name already exists", "info");
             return;
           }
+
           a[key][idx] = newName;
           saveAttributes(a);
           if (newName !== oldVal) {
             renameAttributeReferences(key, oldVal, newName);
             renameAttributeMetaReference(key, oldVal, newName);
           }
-          if (hasImg) {
-            const newImg = cleanImageUrl(
-              document.getElementById("attr-edit-img").value.trim(),
-            );
-            const images = getAttributeImages();
-            if (!images[key]) images[key] = {};
-            if (oldVal !== newName && images[key][oldVal]) {
-              images[key][newName] = images[key][oldVal];
-              delete images[key][oldVal];
-            }
-            if (newImg) images[key][newName] = newImg;
-            else delete images[key][newName];
-            saveAttributeImages(images);
+
+          // Image is unconditional for Edit: preserve, replace, or explicitly clear it.
+          const newImg = cleanImageUrl(imgInp.value.trim());
+          const images = getAttributeImages();
+          if (!images[key] || typeof images[key] !== "object") images[key] = {};
+          if (oldVal !== newName && Object.prototype.hasOwnProperty.call(images[key], oldVal)) {
+            images[key][newName] = images[key][oldVal];
+            delete images[key][oldVal];
           }
+          if (newImg) images[key][newName] = newImg;
+          else delete images[key][newName];
+          saveAttributeImages(images);
+
           if (hasBg) {
-            const newBg = cleanImageUrl(
-              document.getElementById("attr-edit-bg").value.trim(),
-            );
+            const newBg = cleanImageUrl(document.getElementById("attr-edit-bg").value.trim());
             const bgs = getAttributeBackgrounds();
             if (!bgs[key]) bgs[key] = {};
             if (oldVal !== newName && bgs[key][oldVal]) {
@@ -635,23 +649,20 @@
             saveAttributeBackgrounds(bgs);
           }
           if (hasColor) {
-            const newColor = document.getElementById("attr-edit-color").value;
             const colors = getAttributeColors();
             if (!colors[key]) colors[key] = {};
             if (oldVal !== newName && colors[key][oldVal]) {
               colors[key][newName] = colors[key][oldVal];
               delete colors[key][oldVal];
             }
-            colors[key][newName] = newColor;
+            colors[key][newName] = document.getElementById("attr-edit-color").value;
             saveAttributeColors(colors);
-            const newGroupId = document.getElementById("attr-edit-group")
-              ? document.getElementById("attr-edit-group").value
-              : "";
+            const newGroupId = document.getElementById("attr-edit-group").value || "";
             if (oldVal !== newName) setTagGroupId(oldVal, "");
             setTagGroupId(newName, newGroupId);
           }
           if (key === "skinRarities") {
-            setSkinSeriesRarity(newName, !!document.getElementById("attr-edit-series")?.checked);
+            setSkinSeriesRarity(newName, document.getElementById("attr-edit-series").checked);
           }
           if (key === "items") {
             const categories = [...document.querySelectorAll('input[name="attr-edit-item-category"]:checked')].map((el) => el.value);
@@ -659,7 +670,7 @@
           }
           renderAttributesPage();
           populateFilters();
-          showToast("Updated", "success");
+          showToast("Attribute updated", "success");
           overlay.remove();
         };
       }
@@ -2982,7 +2993,7 @@
           }
         }
 
-        if (fSearch || fRarities.length || fCollectibles.length || fFamilies.length || fHero) {
+        if (fSearch || fRarities.length || fCollectibles.length || fHero) {
           display = display.filter((item) => {
             const baseSkin =
               item.type === "painted" ? item._baseSkin || getSkinById(item.id) : null;

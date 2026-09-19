@@ -6968,3 +6968,44 @@ body *::-webkit-scrollbar-corner {
   visibility: visible !important;
 }
 .attr-grid-image-frame.empty { opacity: .58; }
+
+/* V2.11 — visible build number */
+.app-version-badge {
+  margin: .35rem .75rem .2rem;
+  padding: .42rem .65rem;
+  border: 1px solid rgba(251,191,36,.22);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: .42rem;
+  color: var(--text-med);
+  font-size: .68rem;
+  background: rgba(15,23,42,.42);
+}
+.app-version-badge .material-symbols-outlined { font-size: 14px; color: var(--accent); }
+.app-version-badge strong { margin-left: auto; color: var(--accent); font-size: .7rem; letter-spacing: .02em; }
+.sidebar.collapsed .app-version-badge { justify-content: center; margin-inline: .42rem; padding-inline: .35rem; }
+.sidebar.collapsed .app-version-badge > span:not(.material-symbols-outlined),
+.sidebar.collapsed .app-version-badge strong { display: none; }
+@media (max-width: 768px) { .app-version-badge { display:none; } }
+
+.topbar-version-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-height: 34px;
+  padding: .35rem .58rem;
+  border: 1px solid rgba(251,191,36,.24);
+  border-radius: 10px;
+  color: var(--accent);
+  background: rgba(15,23,42,.52);
+  font-size: .7rem;
+  white-space: nowrap;
+}
+.topbar-version-chip .material-symbols-outlined { font-size: 15px; }
+.topbar-version-chip strong { font-size: .7rem; }
+@media (max-width: 560px) {
+  .topbar-version-chip { padding-inline: .45rem; }
+  .topbar-version-chip .material-symbols-outlined { display:none; }
+}

@@ -894,6 +894,7 @@
         if (loadingEl) loadingEl.remove();
 
         loadDefaults();
+        recoverWipedAttributeImages();
         seedAttributeImageBackup();
         migrateLegacySkinFamiliesToSeries();
         repairAttributesFromRecords(ADMIN.isAdmin);
@@ -1449,6 +1450,26 @@
           safeLocalStorageSet(ATTR_IMAGES_BACKUP_KEY, JSON.stringify(current));
         }
       }
+      function countAttributeImageUrls(map) {
+        if (!map || typeof map !== "object" || Array.isArray(map)) return 0;
+        return Object.values(map).reduce((total, group) => {
+          if (!group || typeof group !== "object" || Array.isArray(group)) return total;
+          return total + Object.values(group).filter((value) => typeof value === "string" && value.trim()).length;
+        }, 0);
+      }
+      function recoverWipedAttributeImages() {
+        const current = parseStoredJson(DB.getItem(ATTR_IMAGES_KEY), {});
+        const backup = parseStoredJson(DB.getItem(ATTR_IMAGES_BACKUP_KEY), {});
+        const currentCount = countAttributeImageUrls(current);
+        const backupCount = countAttributeImageUrls(backup);
+        if (currentCount === 0 && backupCount > 0) {
+          _attributeImagesData = typeof structuredClone === "function" ? structuredClone(backup) : JSON.parse(JSON.stringify(backup));
+          if (ADMIN.isAdmin) safeLocalStorageSet(ATTR_IMAGES_KEY, JSON.stringify(_attributeImagesData));
+          showToast(`Recovered ${backupCount} attribute image${backupCount === 1 ? "" : "s"} from the automatic backup.`, "success");
+          return true;
+        }
+        return false;
+      }
       function restoreAttributeImageBackup() {
         const backup = parseStoredJson(DB.getItem(ATTR_IMAGES_BACKUP_KEY), null);
         if (!backup || typeof backup !== "object" || Array.isArray(backup) || !Object.keys(backup).length) {
@@ -1820,10 +1841,12 @@
       // Keys that support an icon image
       const ATTR_IMAGE_KEYS = [
         "roles",
+        "specialties",
         "lanes",
         "nations",
         "skinRarities",
         "collectibleRarities",
+        "skillCategories",
         "skinFamilies",
         "items",
         "emblems",
@@ -1969,7 +1992,7 @@
           .join("");
         const standardImageAddRow = (addKey, label = "Name") => `<div class="attr-add-row"><input type="text" id="input-${addKey}" class="form-input" placeholder="${label}..." style="flex:2"><input type="url" id="input-img-${addKey}" class="form-input" placeholder="Image URL (optional)" style="flex:3"><button class="btn btn-primary btn-sm" onclick="addAttribute('${addKey}')">Add</button></div>`;
         let addRow = hasColor(key)
-          ? `<div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;"><input type="text" id="input-${key}" class="form-input" placeholder="Add..." style="flex:1;min-width:120px;"><select id="input-group-${key}" class="form-select" style="width:170px;" onchange="onGroupSelectChange('${key}')"><option value="">Custom color</option>${groupOptions}</select><input type="color" id="input-color-${key}" class="form-input" value="#fbbf24" title="Tag color" style="width:52px;padding:2px;flex-shrink:0;"><button class="btn btn-primary btn-sm" onclick="addAttribute('${key}')">Add</button></div>`
+          ? `<div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;"><input type="text" id="input-${key}" class="form-input" placeholder="Add..." style="flex:1;min-width:120px;"><input type="url" id="input-img-${key}" class="form-input" placeholder="Image URL (optional)" style="flex:1.4;min-width:180px;"><select id="input-group-${key}" class="form-select" style="width:170px;" onchange="onGroupSelectChange('${key}')"><option value="">Custom color</option>${groupOptions}</select><input type="color" id="input-color-${key}" class="form-input" value="#fbbf24" title="Tag color" style="width:52px;padding:2px;flex-shrink:0;"><button class="btn btn-primary btn-sm" onclick="addAttribute('${key}')">Add</button></div>`
           : hasImg(key)
             ? standardImageAddRow(key)
             : `<div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;"><input type="text" id="input-${key}" class="form-input" placeholder="Add..."><button class="btn btn-primary btn-sm" onclick="addAttribute('${key}')">Add</button></div>`;

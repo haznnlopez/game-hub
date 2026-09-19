@@ -6834,3 +6834,24 @@ body *::-webkit-scrollbar-corner {
   .relationship-graph-solo { min-height: 490px; }
   .skin-series-skin { flex-basis: 116px; min-width: 116px; }
 }
+
+/* V2.10.3 — make Skin Rarity edit metadata unmistakably part of the edit form */
+.attr-edit-series-box > .form-label {
+  display:block;
+  margin:0 0 .55rem;
+  font-size:.72rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--text-med);
+}
+.attr-edit-series-box .attr-inline-check {
+  display:flex;
+  width:100%;
+  cursor:pointer;
+}
+.attr-edit-series-box .attr-inline-check input[type="checkbox"] {
+  width:18px;
+  height:18px;
+  flex:0 0 auto;
+  accent-color:var(--accent);
+}

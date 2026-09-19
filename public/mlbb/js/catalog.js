@@ -515,7 +515,9 @@
       }
 
       function editAttributeFull(key, oldVal) {
-        const hasImg = ATTR_IMAGE_KEYS.includes(key);
+        // Every attribute can carry an optional image. Keep Edit consistent with Add
+        // and never hide the image field because of a category whitelist.
+        const hasImg = ATTRIBUTE_SCHEMA_KEYS.includes(key);
         const hasColor = ATTR_COLOR_KEYS.includes(key);
         const hasBg = ATTR_BG_KEYS.includes(key);
         const existingRaw = getAttrImage(key, oldVal);
@@ -539,7 +541,7 @@
         const overlay = document.createElement("div");
         overlay.className = "confirm-modal-overlay";
         const metaControls = key === "skinRarities"
-          ? `<div class="attr-edit-series-box"><label class="attr-inline-check attr-edit-meta"><input type="checkbox" id="attr-edit-series" ${isSkinSeriesRarity(oldVal) ? "checked" : ""}><span><strong>Skin Series</strong><small>Check this when this rarity is also a named skin series/collection. Uncheck it for normal rarity tiers.</small></span></label></div>`
+          ? `<div class="attr-edit-series-box"><span class="form-label">Rarity Options</span><label class="attr-inline-check attr-edit-meta" for="attr-edit-series"><input type="checkbox" id="attr-edit-series" ${isSkinSeriesRarity(oldVal) ? "checked" : ""}><span><strong>Skin Series</strong><small>This checkbox is saved with this Skin Rarity. Enable it when the rarity is also a named skin series/collection.</small></span></label></div>`
           : key === "items"
             ? `<div class="attr-category-editor attr-edit-meta"><span class="form-label">Equipment Categories <span class="form-label-note">Choose all that apply</span></span><div class="attr-category-pills">${BUILD_ITEM_CATEGORIES.map((cat) => `<label class="attr-category-pill"><input type="checkbox" name="attr-edit-item-category" value="${cat}" ${getItemCategories(oldVal).includes(cat) ? "checked" : ""}><span>${cat}</span></label>`).join("")}</div></div>`
             : "";

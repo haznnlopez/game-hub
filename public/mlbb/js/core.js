@@ -1528,20 +1528,39 @@
         }
         return "";
       }
-      function getAttrImage(key, val) {
-        const imgs = getAttributeImages();
-        const group = imgs && imgs[key] && typeof imgs[key] === "object" && !Array.isArray(imgs[key]) ? imgs[key] : {};
+      function findAttributeImageInMap(map, key, val) {
+        if (!map || typeof map !== "object" || Array.isArray(map)) return "";
         const rawName = String(val ?? "");
-        const exact = normalizeAttributeImageValue(group[rawName]);
-        if (exact) return exact;
         const trimmed = rawName.trim();
-        if (trimmed !== rawName) {
-          const trimmedMatch = normalizeAttributeImageValue(group[trimmed]);
-          if (trimmedMatch) return trimmedMatch;
-        }
         const folded = trimmed.toLocaleLowerCase();
+        const group = map[key] && typeof map[key] === "object" && !Array.isArray(map[key]) ? map[key] : {};
+
+        // Keep the original pre-V2.10 direct lookup first. This is the storage
+        // shape the Attributes grid historically used when images worked.
+        for (const candidate of [rawName, trimmed]) {
+          const hit = normalizeAttributeImageValue(group[candidate]);
+          if (hit) return hit;
+        }
         const matchingKey = Object.keys(group).find((candidate) => String(candidate).trim().toLocaleLowerCase() === folded);
-        return matchingKey ? normalizeAttributeImageValue(group[matchingKey]) : "";
+        if (matchingKey) {
+          const hit = normalizeAttributeImageValue(group[matchingKey]);
+          if (hit) return hit;
+        }
+        return "";
+      }
+      function getAttrImage(key, val) {
+        const current = getAttributeImages();
+        const live = findAttributeImageInMap(current, key, val);
+        if (live) return live;
+
+        // Read-through fallback: if a previous regression removed only the
+        // live entry, the grid can still render the last backed-up URL without
+        // requiring the user to restore the entire image map first.
+        const backup = parseStoredJson(DB.getItem(ATTR_IMAGES_BACKUP_KEY), {});
+        const backedUp = findAttributeImageInMap(backup, key, val);
+        if (backedUp) return backedUp;
+
+        return "";
       }
       function setAttrImage(key, val, url) {
         const imgs = getAttributeImages();
@@ -1979,18 +1998,19 @@
           const safeValue = attrDataEscape(v);
           const safeKey = attrDataEscape(renderKey);
           const renderColMap = getAttributeColors()[renderKey] || {};
+          // Attribute cards intentionally use the same direct image storage
+          // path as the original working Attributes grid. getAttrImage also
+          // falls back to the automatic image backup when the live entry was
+          // lost by an older regression.
           const imgUrl = getAttrImage(renderKey, v);
           const color = renderColMap[v] || "";
           const renderHasColor = ATTR_COLOR_KEYS.includes(renderKey);
-          const renderHasImg = ATTR_IMAGE_KEYS.includes(renderKey);
           const safeImgUrl = attrDataEscape(imgUrl);
           const thumbHtml = imgUrl
-            ? `<img class="attr-grid-image" src="${safeImgUrl}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="${safeValue}" loading="lazy">`
+            ? `<div class="attr-grid-image-frame"><img class="attr-grid-image" src="${safeImgUrl}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="${safeValue}" referrerpolicy="no-referrer"></div>`
             : renderHasColor
               ? `<div style="width:100%;height:100%;border-radius:8px;background:${color || "var(--bg-light)"};display:flex;align-items:center;justify-content:center;">${color ? "" : `<span class="material-symbols-outlined" style="opacity:0.5;">palette</span>`}</div>`
-              : renderHasImg
-                ? `<img src="${IMAGE_PLACEHOLDER}" alt="Image unavailable">`
-                : `<span class="material-symbols-outlined">label</span>`;
+              : `<div class="attr-grid-image-frame empty"><img class="attr-grid-image image-fallback" src="${IMAGE_PLACEHOLDER}" alt="Image unavailable"></div>`;
           return `<div class="attr-square-item attr-reorderable" draggable="true" data-attr-key="${safeKey}" data-attr-value="${safeValue}" ondragstart="startAttributeDragFromCard(event,this)" ondragend="endAttributeDrag(event)" ondragover="attributeDragOver(event)" ondragleave="attributeDragLeave(event)" ondrop="dropAttributeFromCard(event,this)">
               <div class="attr-reorder-controls">
                 <button type="button" class="attr-order-btn" title="Move earlier" onclick="event.stopPropagation();moveAttributeFromCard(this,-1)"><span class="material-symbols-outlined">chevron_left</span></button>

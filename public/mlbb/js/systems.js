@@ -29,7 +29,7 @@
 
         const heroes = getAllHeroRecords().sort((a, b) => a.name.localeCompare(b.name));
         if (!heroes.length) {
-          stage.innerHTML = `<div class="relationship-graph-empty">Add heroes and lore relationships to build the graph.</div>`;
+          stage.innerHTML = `<div class="relationship-graph-empty">Add a hero to begin.</div>`;
           return;
         }
 
@@ -69,42 +69,40 @@
         }
 
         summary.innerHTML = `<strong>${relationships.length}</strong><span>visible relationship${relationships.length === 1 ? "" : "s"}</span>`;
+        const centerBadge = getHeroBadgeImageSources(hero);
         if (!relationships.length) {
-          stage.innerHTML = `<div class="relationship-graph-empty"><span class="material-symbols-outlined">hub</span><strong>No relationships to display</strong><span>Add lore relationships in the Hero form${relationshipGraphFilters.size ? " or clear the current filter" : ""}.</span></div>`;
+          stage.innerHTML = `<div class="relationship-graph-solo"><button type="button" class="relationship-solo-hero" onclick="openModal('hero','${hero.id}')" data-tooltip="Open ${escHtml(hero.name)}"><img src="${centerBadge.src}" data-fallback-src="${centerBadge.fallback}" data-fallback-src2="${centerBadge.fallback2}" alt="${escHtml(hero.name)}"></button></div>`;
           return;
         }
 
-        const width = Math.max(900, Math.min(1320, 760 + relationships.length * 42));
-        const height = Math.max(580, relationships.length > 12 ? 720 : 600);
+        const width = Math.min(1080, Math.max(760, 650 + relationships.length * 34));
+        const height = relationships.length > 12 ? 680 : 590;
         const cx = width / 2;
         const cy = height / 2;
-        const radius = relationships.length > 10 ? Math.min(270, width * 0.29) : Math.min(235, width * 0.27);
+        const radius = relationships.length > 10 ? Math.min(250, width * 0.31) : Math.min(220, width * 0.29);
         const nodePositions = relationships.map((rel, index) => {
           const angle = -Math.PI / 2 + (Math.PI * 2 * index) / relationships.length;
-          const ring = relationships.length > 14 && index % 2 ? radius * 1.15 : radius;
-          return {
-            rel,
-            x: cx + Math.cos(angle) * ring,
-            y: cy + Math.sin(angle) * ring,
-          };
+          const ring = relationships.length > 14 && index % 2 ? radius * 1.12 : radius;
+          return { rel, x: cx + Math.cos(angle) * ring, y: cy + Math.sin(angle) * ring };
         });
-        const edges = nodePositions
-          .map(({ rel, x, y }) => {
-            const mx = (cx + x) / 2;
-            const my = (cy + y) / 2;
-            return `<g class="relationship-graph-edge"><line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}"></line><text x="${mx}" y="${my - 7}" text-anchor="middle">${escHtml(rel.type)}</text></g>`;
-          })
-          .join("");
-        const centerBadge = getHeroBadgeImageSources(hero);
-        const relatedNodes = nodePositions
-          .map(({ rel, x, y }) => {
-            const badge = getHeroBadgeImageSources(rel.hero);
-            return `<button type="button" class="relationship-graph-node" style="left:${x}px;top:${y}px" onclick="focusRelationshipGraphHero(event,'${rel.hero.id}')" data-tooltip="Click to center · Shift-click to open hero"><img src="${badge.src}" data-fallback-src="${badge.fallback}" data-fallback-src2="${badge.fallback2}" alt=""><strong>${escHtml(rel.hero.name)}</strong><small>${escHtml(rel.type)}</small></button>`;
-          })
-          .join("");
-        stage.style.setProperty("--graph-width", `${width}px`);
-        stage.style.setProperty("--graph-height", `${height}px`);
-        stage.innerHTML = `<div class="relationship-graph-canvas" style="width:${width}px;height:${height}px"><svg class="relationship-graph-lines" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">${edges}</svg><button type="button" class="relationship-graph-node center" style="left:${cx}px;top:${cy}px" onclick="openModal('hero','${hero.id}')" data-tooltip="Open ${escHtml(hero.name)}"><img src="${centerBadge.src}" data-fallback-src="${centerBadge.fallback}" data-fallback-src2="${centerBadge.fallback2}" alt=""><strong>${escHtml(hero.name)}</strong><small>Selected Hero</small></button>${relatedNodes}</div>`;
+        const edges = nodePositions.map(({ rel, x, y }) => {
+          const mx = (cx + x) / 2;
+          const my = (cy + y) / 2;
+          return `<g class="relationship-graph-edge"><line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}"></line><text x="${mx}" y="${my - 7}" text-anchor="middle">${escHtml(rel.type)}</text></g>`;
+        }).join("");
+
+        const relatedNodes = nodePositions.map(({ rel, x, y }) => {
+          const badge = getHeroBadgeImageSources(rel.hero);
+          const secondary = (typeof getHeroLoreRelationships === "function" ? getHeroLoreRelationships(rel.hero) : [])
+            .filter((item) => item.hero && item.hero.id !== hero.id);
+          const visiblePreview = secondary.slice(0, 3);
+          const previewHtml = visiblePreview.length
+            ? `<div class="relationship-node-preview" data-tooltip="${escHtml(secondary.slice(0, 5).map((item) => `${item.hero.name} · ${item.type}`).join(" • "))}">${visiblePreview.map((item) => { const mini = getHeroBadgeImageSources(item.hero); return `<img src="${mini.src}" data-fallback-src="${mini.fallback}" data-fallback-src2="${mini.fallback2}" alt="${escHtml(item.hero.name)}">`; }).join("")}${secondary.length > 3 ? `<span>+${secondary.length - 3}</span>` : ""}</div>`
+            : `<div class="relationship-node-preview empty" data-tooltip="No other recorded relationships"><span class="material-symbols-outlined">remove</span></div>`;
+          return `<button type="button" class="relationship-graph-node" style="left:${x}px;top:${y}px" onclick="focusRelationshipGraphHero(event,'${rel.hero.id}')" data-tooltip="Click to center · Shift-click to open hero"><img class="relationship-node-main-image" src="${badge.src}" data-fallback-src="${badge.fallback}" data-fallback-src2="${badge.fallback2}" alt=""><strong>${escHtml(rel.hero.name)}</strong><small>${escHtml(rel.type)}</small>${previewHtml}</button>`;
+        }).join("");
+
+        stage.innerHTML = `<div class="relationship-graph-canvas" style="width:${width}px;height:${height}px"><svg class="relationship-graph-lines" viewBox="0 0 ${width} ${height}">${edges}</svg><button type="button" class="relationship-graph-node center" style="left:${cx}px;top:${cy}px" onclick="openModal('hero','${hero.id}')" data-tooltip="Open ${escHtml(hero.name)}"><img class="relationship-node-main-image" src="${centerBadge.src}" data-fallback-src="${centerBadge.fallback}" data-fallback-src2="${centerBadge.fallback2}" alt=""><strong>${escHtml(hero.name)}</strong><small>Selected Hero</small></button>${relatedNodes}</div>`;
       }
 
       function focusRelationshipGraphHero(event, heroId) {
@@ -135,7 +133,7 @@
         const skins = getSkins().filter((skin) => skin.type !== "statue" && !skin.isStatue);
         const series = (getAttributes().skinRarities || []).filter((value) => isSkinSeriesRarity(value));
         const assigned = skins.filter((skin) => getSkinSeriesName(skin)).length;
-        summary.innerHTML = `<div class="skin-family-kpi"><span class="material-symbols-outlined">collections</span><strong>${series.length}</strong><small>Series</small></div><div class="skin-family-kpi"><span class="material-symbols-outlined">style</span><strong>${assigned}</strong><small>Series Skins</small></div><div class="skin-family-kpi"><span class="material-symbols-outlined">category</span><strong>${skins.length - assigned}</strong><small>Non-Series</small></div>`;
+        summary.innerHTML = `<div class="skin-series-summary-line"><span><strong>${series.length}</strong> Series</span><span><strong>${assigned}</strong> Series Skins</span><span><strong>${skins.length - assigned}</strong> Non-Series</span></div>`;
         const groups = series
           .map((name) => ({ family: name, skins: skins.filter((skin) => getSkinSeriesName(skin) === name) }))
           .filter(({ family, skins: seriesSkins }) => !q || family.toLowerCase().includes(q) || seriesSkins.some((skin) => skin.name.toLowerCase().includes(q)))
@@ -144,9 +142,13 @@
           host.innerHTML = `<div class="empty-state-card"><span class="material-symbols-outlined">collections</span><strong>No Skin Series marked yet</strong><span>Open Attributes → Skin Rarity and mark the appropriate rarity as a Skin Series.</span><button class="btn btn-secondary btn-sm" onclick="showPage('page-attributes');switchAttrTab('skinRarities')">Open Skin Rarity</button></div>`;
           return;
         }
-        host.innerHTML = groups.map(({ family, skins: seriesSkins }) => {
+        if (!groups.length) {
+          host.innerHTML = `<div class="empty-state-card"><span class="material-symbols-outlined">search_off</span><strong>No matching series</strong><span>Try another series or skin name.</span></div>`;
+          return;
+        }
+        host.innerHTML = groups.map(({ family, skins: seriesSkins }, index) => {
           const image = getAttrImage("skinRarities", family);
-          return `<section class="skin-family-card"><div class="skin-family-card-head">${image ? `<img src="${image}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="">` : `<span class="material-symbols-outlined skin-family-placeholder">collections</span>`}<div><span class="dashboard-eyebrow">Skin Series</span><h2>${escHtml(family)}</h2><small>${seriesSkins.length} skin${seriesSkins.length === 1 ? "" : "s"}</small></div></div><div class="skin-family-skin-grid">${seriesSkins.length ? seriesSkins.map((skin) => `<button type="button" class="skin-family-skin" onclick="openModal('skin','${skin.id}')"><img src="${skin.splashArt || skin.imageUrl || skin.portrait || IMAGE_PLACEHOLDER}" data-fallback-src="${skin.portrait || skin.icon || IMAGE_PLACEHOLDER}" alt=""><span>${escHtml(skin.name)}</span></button>`).join("") : `<div class="skin-family-empty">No released skins use this series yet.</div>`}</div></section>`;
+          return `<details class="skin-series-row" ${q || index === 0 ? "open" : ""}><summary><span class="skin-series-identity">${image ? `<img src="${image}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="">` : `<span class="material-symbols-outlined skin-family-placeholder">collections</span>`}<span><strong>${escHtml(family)}</strong><small>${seriesSkins.length} skin${seriesSkins.length === 1 ? "" : "s"}</small></span></span><span class="material-symbols-outlined skin-series-chevron">expand_more</span></summary><div class="skin-series-rail">${seriesSkins.length ? seriesSkins.map((skin) => `<button type="button" class="skin-series-skin" onclick="openModal('skin','${skin.id}')"><img src="${skin.splashArt || skin.imageUrl || skin.portrait || IMAGE_PLACEHOLDER}" data-fallback-src="${skin.portrait || skin.icon || IMAGE_PLACEHOLDER}" alt=""><span>${escHtml(skin.name)}</span></button>`).join("") : `<div class="skin-family-empty">No released skins use this series yet.</div>`}</div></details>`;
         }).join("");
       }
 

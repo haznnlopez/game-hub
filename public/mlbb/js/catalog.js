@@ -518,9 +518,11 @@
         const hasImg = ATTR_IMAGE_KEYS.includes(key);
         const hasColor = ATTR_COLOR_KEYS.includes(key);
         const hasBg = ATTR_BG_KEYS.includes(key);
-        const existing = getAttrImage(key, oldVal);
+        const existingRaw = getAttrImage(key, oldVal);
+        const existing = typeof existingRaw === "string" ? existingRaw : "";
         const existingColor = getAttrColor(key, oldVal) || "#fbbf24";
-        const existingBg = getAttrBg(key, oldVal);
+        const existingBgRaw = getAttrBg(key, oldVal);
+        const existingBg = typeof existingBgRaw === "string" ? existingBgRaw : "";
         const existingGroupId = hasColor ? getTagGroupId(oldVal) : "";
         const groupOptsHtml = hasColor
           ? getSkillCatGroups()
@@ -541,7 +543,7 @@
           : key === "items"
             ? `<div class="attr-category-editor attr-edit-meta"><span class="form-label">Equipment Categories <span class="form-label-note">Choose all that apply</span></span><div class="attr-category-pills">${BUILD_ITEM_CATEGORIES.map((cat) => `<label class="attr-category-pill"><input type="checkbox" name="attr-edit-item-category" value="${cat}" ${getItemCategories(oldVal).includes(cat) ? "checked" : ""}><span>${cat}</span></label>`).join("")}</div></div>`
             : "";
-        overlay.innerHTML = `<div class="confirm-modal" style="min-width:340px;"><h3 style="margin-top:0;">Edit "${oldVal}"</h3><label class="form-label">Name</label><input type="text" id="attr-edit-name" class="form-input" value="${oldVal.replace(/"/g, "&quot;")}" style="margin-bottom:1rem;">${key === "skinRarities" ? metaControls : ""}${hasImg ? `<label class="form-label">Image URL</label><input type="url" id="attr-edit-img" class="form-input" value="${existing.replace(/"/g, "&quot;")}" placeholder="https://..." style="margin-bottom:0.75rem;"><div id="attr-edit-preview" style="width:56px;height:56px;border-radius:10px;background:var(--bg-light);margin:0 auto 1rem;overflow:hidden;display:flex;align-items:center;justify-content:center;">${existing ? `<img src="${existing}" style="width:100%;height:100%;object-fit:contain;">` : ""}</div>` : ""}${hasBg ? `<label class="form-label">Background Image URL</label><input type="url" id="attr-edit-bg" class="form-input" value="${existingBg.replace(/"/g, "&quot;")}" placeholder="https://... (hero modal background)" style="margin-bottom:0.75rem;"><div id="attr-edit-bg-preview" style="width:100%;height:80px;border-radius:10px;background:var(--bg-light);margin:0 auto 1rem;overflow:hidden;background-size:cover;background-position:center;${existingBg ? `background-image:url('${existingBg}');` : ""}"></div>` : ""}${hasColor ? `<label class="form-label">Color Group</label><select id="attr-edit-group" class="form-select" style="margin-bottom:0.75rem;" onchange="onEditGroupChange()"><option value="">Custom color</option>${groupOptsHtml}</select><label class="form-label">Tag Color</label><div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;"><input type="color" id="attr-edit-color" class="form-input" value="${existingColor}" ${existingGroupId ? "disabled" : ""} style="width:52px;padding:2px;flex-shrink:0;"></div>` : ""}${key === "items" ? metaControls : ""}<div class="confirm-actions"><button class="btn btn-secondary" id="attr-edit-cancel">Cancel</button><button class="btn btn-primary" id="attr-edit-save">Save</button></div></div>`;
+        overlay.innerHTML = `<div class="confirm-modal" style="min-width:340px;"><h3 style="margin-top:0;">Edit "${oldVal}"</h3><label class="form-label">Name</label><input type="text" id="attr-edit-name" class="form-input" value="${oldVal.replace(/"/g, "&quot;")}" style="margin-bottom:1rem;">${key === "skinRarities" ? metaControls : ""}${hasImg ? `<div class="attr-edit-image-section"><label class="form-label" for="attr-edit-img">Image URL</label><input type="url" id="attr-edit-img" class="form-input" value="${existing.replace(/"/g, "&quot;")}" placeholder="https://..." autocomplete="off"><div class="attr-edit-image-preview" id="attr-edit-preview">${existing ? `<img src="${existing}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="${oldVal.replace(/"/g, "&quot;")}">` : `<span class="material-symbols-outlined">image</span>`}</div></div>` : ""}${hasBg ? `<label class="form-label">Background Image URL</label><input type="url" id="attr-edit-bg" class="form-input" value="${existingBg.replace(/"/g, "&quot;")}" placeholder="https://... (hero modal background)" style="margin-bottom:0.75rem;"><div id="attr-edit-bg-preview" style="width:100%;height:80px;border-radius:10px;background:var(--bg-light);margin:0 auto 1rem;overflow:hidden;background-size:cover;background-position:center;${existingBg ? `background-image:url('${existingBg}');` : ""}"></div>` : ""}${hasColor ? `<label class="form-label">Color Group</label><select id="attr-edit-group" class="form-select" style="margin-bottom:0.75rem;" onchange="onEditGroupChange()"><option value="">Custom color</option>${groupOptsHtml}</select><label class="form-label">Tag Color</label><div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;"><input type="color" id="attr-edit-color" class="form-input" value="${existingColor}" ${existingGroupId ? "disabled" : ""} style="width:52px;padding:2px;flex-shrink:0;"></div>` : ""}${key === "items" ? metaControls : ""}<div class="confirm-actions"><button class="btn btn-secondary" id="attr-edit-cancel">Cancel</button><button class="btn btn-primary" id="attr-edit-save">Save</button></div></div>`;
         document.body.appendChild(overlay);
         if (hasColor) {
           window.onEditGroupChange = () => {
@@ -564,8 +566,8 @@
           imgInp.oninput = () => {
             const v = imgInp.value.trim();
             prev.innerHTML = v
-              ? `<img src="${v}" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'">`
-              : "";
+              ? `<img src="${v}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="Preview">`
+              : `<span class="material-symbols-outlined">image</span>`;
           };
         }
         if (hasBg) {

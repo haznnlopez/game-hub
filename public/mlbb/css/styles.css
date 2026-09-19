@@ -6624,3 +6624,213 @@ body *::-webkit-scrollbar-corner {
   background: rgba(251,191,36,0.055);
 }
 .attr-edit-series-box .attr-inline-check { margin: 0; }
+
+/* ============================================================
+   V2.10.2 — attribute restore, centered relationship graph, compact series
+   ============================================================ */
+
+/* Attribute actions: restore the original hover/focus behavior on pointer devices. */
+.attr-square-item .card-overlay-actions {
+  display: none !important;
+  opacity: 1;
+  z-index: 20;
+}
+.attr-square-item:hover .card-overlay-actions,
+.attr-square-item:focus-within .card-overlay-actions {
+  display: flex !important;
+}
+.attr-square-item .card-overlay-actions .overlay-btn {
+  border: 0;
+  background: rgba(0,0,0,.72);
+}
+@media (hover: none) {
+  .attr-square-item .card-overlay-actions { display: flex !important; }
+}
+
+.attr-edit-image-section {
+  margin: 0 0 1rem;
+  padding: .8rem;
+  border: 1px solid rgba(148,163,184,.16);
+  border-radius: 12px;
+  background: rgba(255,255,255,.018);
+}
+.attr-edit-image-section .form-input { margin-bottom: .65rem; }
+.attr-edit-image-preview {
+  width: 100%;
+  min-height: 92px;
+  max-height: 150px;
+  border-radius: 10px;
+  border: 1px dashed rgba(148,163,184,.2);
+  background: var(--bg-light);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: var(--text-med);
+}
+.attr-edit-image-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 148px;
+  object-fit: contain;
+}
+.attr-edit-image-preview .material-symbols-outlined { font-size: 30px; opacity: .55; }
+
+/* Relationship graph: cap and center it so ultrawide layouts do not stretch the graph. */
+.relationship-graph-stage {
+  max-width: 1180px;
+  min-height: 590px;
+  margin: 0 auto;
+  overflow: auto;
+  padding: 18px;
+}
+.relationship-graph-canvas {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  margin: 0 auto;
+  flex: 0 0 auto;
+}
+.relationship-graph-lines { preserveAspectRatio: xMidYMid meet; }
+.relationship-graph-solo {
+  min-height: 550px;
+  display: grid;
+  place-items: center;
+}
+.relationship-solo-hero {
+  width: 112px;
+  height: 112px;
+  padding: 0;
+  border: 2px solid rgba(251,191,36,.55);
+  border-radius: 28px;
+  background: rgba(15,23,42,.92);
+  box-shadow: 0 18px 42px rgba(0,0,0,.3);
+  overflow: hidden;
+  cursor: pointer;
+}
+.relationship-solo-hero img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.relationship-graph-node { min-height: 116px; padding-bottom: .5rem; }
+.relationship-graph-node.center { min-height: 126px; }
+.relationship-node-main-image { flex: 0 0 auto; }
+.relationship-node-preview {
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: .15rem;
+  padding-left: 5px;
+}
+.relationship-node-preview img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: var(--bg-light);
+  border: 2px solid rgba(15,23,42,.95);
+  margin-left: -5px;
+}
+.relationship-node-preview > span:not(.material-symbols-outlined) {
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  margin-left: -4px;
+  padding: 0 4px;
+  border-radius: 999px;
+  border: 2px solid rgba(15,23,42,.95);
+  background: rgba(251,191,36,.18);
+  color: var(--accent-light);
+  font-size: .55rem;
+  font-weight: 800;
+}
+.relationship-node-preview.empty { color: var(--text-dark); }
+.relationship-node-preview.empty .material-symbols-outlined { font-size: 15px; }
+
+/* Skin Series: compact accordion + horizontal skin rail. */
+.skin-family-summary {
+  display: block;
+  margin-bottom: .7rem;
+}
+.skin-series-summary-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+.skin-series-summary-line > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .3rem;
+  padding: .42rem .65rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255,255,255,.02);
+  color: var(--text-med);
+  font-size: .7rem;
+}
+.skin-series-summary-line strong { color: var(--accent-light); font-size: .82rem; }
+.skin-family-toolbar { margin-bottom: .8rem; max-width: 460px; }
+.skin-family-groups { display: grid; gap: .55rem; }
+.skin-series-row {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+.skin-series-row > summary {
+  min-height: 68px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .65rem .8rem;
+  cursor: pointer;
+  background: linear-gradient(90deg, rgba(251,191,36,.045), transparent 42%);
+}
+.skin-series-row > summary::-webkit-details-marker { display: none; }
+.skin-series-identity { display: flex; align-items: center; gap: .75rem; min-width: 0; }
+.skin-series-identity > img,
+.skin-series-identity > .skin-family-placeholder {
+  width: 70px;
+  height: 42px;
+  flex: 0 0 70px;
+  object-fit: contain;
+  border-radius: 9px;
+  border: 1px solid rgba(255,255,255,.055);
+  background: rgba(255,255,255,.03);
+}
+.skin-series-identity > span:last-child { min-width: 0; display: grid; gap: .08rem; }
+.skin-series-identity strong { color: var(--text-light); font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.skin-series-identity small { color: var(--text-med); font-size: .65rem; }
+.skin-series-chevron { color: var(--text-med); transition: transform .18s ease; }
+.skin-series-row[open] .skin-series-chevron { transform: rotate(180deg); }
+.skin-series-rail {
+  display: flex;
+  gap: .55rem;
+  overflow-x: auto;
+  padding: .7rem .8rem .8rem;
+  border-top: 1px solid rgba(148,163,184,.1);
+}
+.skin-series-skin {
+  flex: 0 0 132px;
+  min-width: 132px;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-light);
+  color: var(--text-light);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .16s ease, transform .16s ease;
+}
+.skin-series-skin:hover { border-color: var(--accent); transform: translateY(-2px); }
+.skin-series-skin img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
+.skin-series-skin span { display: block; padding: .42rem .5rem; font-size: .64rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+@media (max-width: 720px) {
+  .relationship-graph-stage { min-height: 520px; padding: 10px; }
+  .relationship-graph-solo { min-height: 490px; }
+  .skin-series-skin { flex-basis: 116px; min-width: 116px; }
+}

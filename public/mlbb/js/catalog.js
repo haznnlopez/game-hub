@@ -275,7 +275,7 @@
               return `<button type="button" class="hero-stats-leader-row" onclick="openModal('hero','${hero.id}')">
                 <span class="hero-stats-leader-rank${typeof rank === "number" ? heroStatsRankClass(rank) : ""}">#${rank}</span>
                 <img src="${badge.src}" data-fallback-src="${badge.fallback}" data-fallback-src2="${badge.fallback2}" alt="">
-                <span class="hero-stats-leader-name"><strong>${heroStatsEscape(hero.name)}</strong><small>${heroStatsEscape((hero.roles || []).join(" · ") || hero.nation || "Hero")}</small></span>
+                <span class="hero-stats-leader-name"><strong>${heroStatsEscape(hero.name)}</strong><small>${heroStatsEscape((hero.roles || []).join(" · ") || getHeroNations(hero).join(" · ") || "Hero")}</small></span>
                 <span class="hero-stats-leader-value">${formatHeroStatsPageValue(selectedDef, value)}</span>
               </button>`;
             }).join("")
@@ -314,7 +314,7 @@
           title: "Nations",
           singular: "Nation",
           icon: "public",
-          values: (hero) => (hero.nation ? [hero.nation] : []),
+          values: (hero) => getHeroNations(hero),
         },
         lanes: {
           title: "Lanes",
@@ -730,7 +730,29 @@
           showToast("Updated", "success");
         });
       }
+      function getAttributeUsageCount(key, val) {
+        let count = 0;
+        const heroes = [...getHeroes(), ...getUpcoming().filter((item) => item.itemType === "hero")];
+        const skins = [...getSkins(), ...getUpcoming().filter((item) => item.itemType === "skin")];
+        heroes.forEach((hero) => {
+          if (key === "roles" && (hero.roles || []).includes(val)) count++;
+          if (key === "specialties" && (hero.specialties || []).includes(val)) count++;
+          if (key === "lanes" && (hero.lanes || []).includes(val)) count++;
+          if (key === "nations" && getHeroNations(hero).includes(val)) count++;
+          if (key === "skillCategories" && (hero.skills || []).some((skill) => (skill.categories || []).includes(val))) count++;
+        });
+        skins.forEach((skin) => {
+          if (key === "skinRarities" && skin.rarity === val) count++;
+          if (key === "collectibleRarities" && skin.collectible === val) count++;
+        });
+        return count;
+      }
       function deleteAttribute(key, val) {
+        const usage = getAttributeUsageCount(key, val);
+        if (usage > 0) {
+          showToast(`"${val}" is still used by ${usage} record${usage === 1 ? "" : "s"}. Remove or replace it there first.`, "info");
+          return;
+        }
         showConfirm(`Delete "${val}"?`, () => {
           const a = getAttributes();
           a[key] = a[key].filter((v) => v !== val);
@@ -776,7 +798,7 @@
         if (mode === "role") return Array.isArray(hero.roles) && hero.roles.length ? hero.roles : ["Unspecified"];
         if (mode === "lane") return Array.isArray(hero.lanes) && hero.lanes.length ? hero.lanes : ["Unspecified"];
         if (mode === "specialty") return Array.isArray(hero.specialties) && hero.specialties.length ? hero.specialties : ["Unspecified"];
-        if (mode === "nation") return hero.nation ? [hero.nation] : ["Unspecified"];
+        if (mode === "nation") return getHeroNations(hero).length ? getHeroNations(hero) : ["Unspecified"];
         return ["Unspecified"];
       }
 
@@ -811,17 +833,36 @@
         root.innerHTML = Object.entries(HERO_COUNT_GROUPS).map(([key, meta]) => `<button type="button" class="filter-pill${selected === key ? " active" : ""}" onclick="setHeroCountGroupBy('${key}')"><span class="material-symbols-outlined">${meta.icon}</span><span>${meta.label}</span></button>`).join("");
       }
 
+      const HERO_COUNT_STATE_KEY = "game_hub_mlbb_hero_count_state";
+
+      function getHeroCountState() {
+        try { return JSON.parse(localStorage.getItem(HERO_COUNT_STATE_KEY) || "{}") || {}; }
+        catch (_) { return {}; }
+      }
+
+      function saveHeroCountState(state) {
+        try { localStorage.setItem(HERO_COUNT_STATE_KEY, JSON.stringify(state || {})); }
+        catch (_) {}
+      }
+
+      function getHeroCountGroupHeaderIcon(mode, value) {
+        const attrKey = mode === "role" ? "roles" : mode === "lane" ? "lanes" : mode === "specialty" ? "specialties" : mode === "nation" ? "nations" : "";
+        const image = attrKey ? getAttrImage(attrKey, value) : "";
+        if (image) return `<img src="${image}" class="group-header-icon" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="">`;
+        return `<span class="material-symbols-outlined hero-count-fallback-group-icon">${HERO_COUNT_GROUPS[mode]?.icon || "group"}</span>`;
+      }
+
       function renderHeroCountPage() {
         const list = document.getElementById("hero-count-list");
         if (!list) return;
         const heroes = getHeroes();
         const mode = document.getElementById("hero-count-group-by")?.value || "role";
-        const groups = getHeroCountData();
+        const groups = getHeroCountData().sort((a,b) => a.name.localeCompare(b.name));
         const total = document.getElementById("total-heroes-number");
         if (total) total.textContent = heroes.length;
         renderHeroCountPills();
 
-        const largest = groups[0] || null;
+        const largest = groups.reduce((best, group) => !best || group.heroes.length > best.heroes.length ? group : best, null);
         const assigned = heroes.filter((hero) => !getHeroCountValues(hero, mode).includes("Unspecified")).length;
         const membershipTotal = groups.reduce((sum, group) => sum + group.heroes.length, 0);
         const avgMembership = heroes.length ? membershipTotal / heroes.length : 0;
@@ -833,28 +874,72 @@
           <div class="skin-analytics-kpi"><span class="material-symbols-outlined">join_inner</span><div><small>Avg Memberships</small><strong>${avgMembership.toFixed(2)}</strong><em>per hero</em></div></div>
         </div>`;
 
-        list.innerHTML = groups.length ? groups.map((group, index) => {
-          const avatars = group.heroes.slice(0, 8).map((hero) => {
-            const src = getHeroBadgeImageSources(hero);
-            return `<button class="hero-count-avatar" type="button" onclick="event.stopPropagation();openModal('hero','${hero.id}')" data-tooltip="${heroCountEscape(hero.name)}"><img src="${src.src}" data-fallback-src="${src.fallback}" data-fallback-src2="${src.fallback2}" alt=""></button>`;
-          }).join("");
-          return `<details class="skin-group-details hero-count-group" open>
-            <summary class="hero-count-group-summary"><span class="hero-count-group-name"><span class="material-symbols-outlined">${HERO_COUNT_GROUPS[mode]?.icon || "group"}</span><strong>${heroCountEscape(group.name)}</strong></span><span class="hero-count-group-preview">${avatars}</span><span class="hero-count-group-count">${group.heroes.length}</span><span class="material-symbols-outlined hero-count-chevron">expand_more</span></summary>
-            <div class="hero-count-group-body">${group.heroes.map((hero) => {
-              const src = getHeroBadgeImageSources(hero);
-              return `<button type="button" class="hero-count-row" onclick="openModal('hero','${hero.id}')"><img src="${src.src}" data-fallback-src="${src.fallback}" data-fallback-src2="${src.fallback2}" alt=""><span><strong>${heroCountEscape(hero.name)}</strong><small>${heroCountEscape((hero.roles || []).join(" · ") || hero.nation || "Hero")}</small></span><span class="material-symbols-outlined">chevron_right</span></button>`;
-            }).join("")}</div>
-          </details>`;
-        }).join("") : `<div class="hero-stats-empty"><span class="material-symbols-outlined">group_off</span><strong>No matching groups</strong><span>Try another search or grouping.</span></div>`;
+        const state = getHeroCountState();
+        list.innerHTML = "";
+        if (!groups.length) {
+          list.innerHTML = `<div class="hero-stats-empty"><span class="material-symbols-outlined">group_off</span><strong>No matching groups</strong><span>Try another search or grouping.</span></div>`;
+          updateHeroCountGroupStatus();
+          if (heroCountChartVisible) renderHeroCountChart(groups);
+          return;
+        }
 
-        list.querySelectorAll("details").forEach((el) => el.addEventListener("toggle", updateHeroCountGroupStatus));
+        const frag = document.createDocumentFragment();
+        groups.forEach((group) => {
+          const stateKey = `${mode}:${group.name}`;
+          const isClosed = !!state[stateKey];
+          const wrapper = document.createElement("div");
+          wrapper.className = "skin-group-details hero-count-group";
+          wrapper.dataset.groupKey = stateKey;
+          wrapper.classList.toggle("is-collapsed", isClosed);
+
+          const summary = document.createElement("div");
+          summary.className = "skin-group-summary";
+          summary.innerHTML = `<span class="group-title" style="display:flex;align-items:center;gap:8px;">${getHeroCountGroupHeaderIcon(mode, group.name)}${heroCountEscape(group.name)} <span class="group-count" style="font-size:.9em;opacity:.7;">(${group.heroes.length})</span></span><span class="material-symbols-outlined group-expand-arrow" style="transform:${isClosed ? "rotate(0deg)" : "rotate(180deg)"}">expand_more</span>`;
+
+          const content = document.createElement("div");
+          content.className = "skin-group-content";
+          content.hidden = isClosed;
+
+          const miniGrid = document.createElement("div");
+          miniGrid.className = "mini-grid hero-count-mini-grid";
+          miniGrid.style.justifyContent = "flex-start";
+
+          group.heroes.forEach((hero) => {
+            const image = getHeroBadgeImageSources(hero);
+            const icon = document.createElement("div");
+            icon.className = "icon-item hero-count-icon-item";
+            icon.dataset.tooltip = hero.name || "Hero";
+            icon.onclick = () => openModal("hero", hero.id);
+            const img = document.createElement("img");
+            img.className = "item-bg";
+            img.src = image.src || IMAGE_PLACEHOLDER;
+            img.alt = hero.name || "Hero";
+            if (image.fallback) img.dataset.fallbackSrc = image.fallback;
+            if (image.fallback2) img.dataset.fallbackSrc2 = image.fallback2;
+            icon.appendChild(img);
+            miniGrid.appendChild(icon);
+          });
+
+          content.appendChild(miniGrid);
+          summary.onclick = () => {
+            const shouldOpen = wrapper.classList.contains("is-collapsed");
+            setHeroCountGroupOpen(wrapper, shouldOpen, true);
+            const nextState = getHeroCountState();
+            nextState[stateKey] = !shouldOpen;
+            saveHeroCountState(nextState);
+          };
+          wrapper.appendChild(summary);
+          wrapper.appendChild(content);
+          frag.appendChild(wrapper);
+        });
+        list.appendChild(frag);
         updateHeroCountGroupStatus();
         if (heroCountChartVisible) renderHeroCountChart(groups);
       }
 
       function updateHeroCountGroupStatus() {
-        const groups = [...document.querySelectorAll("#hero-count-list details.hero-count-group")];
-        const open = groups.filter((group) => group.open).length;
+        const groups = [...document.querySelectorAll("#hero-count-list .hero-count-group")];
+        const open = groups.filter((group) => !group.classList.contains("is-collapsed")).length;
         const status = document.getElementById("hero-count-group-status");
         if (status) status.textContent = `${open}/${groups.length} groups open`;
         const collapse = document.getElementById("hero-count-collapse-all");
@@ -863,45 +948,164 @@
         if (expand) expand.disabled = open === groups.length || groups.length === 0;
       }
 
+      function setHeroCountGroupOpen(group, open, animate = true) {
+        if (!group) return;
+        const content = group.querySelector(".skin-group-content");
+        const arrow = group.querySelector(".group-expand-arrow");
+        if (!content) return;
+        const currentlyOpen = !group.classList.contains("is-collapsed");
+        if (currentlyOpen === open) return;
+        group.classList.toggle("is-collapsed", !open);
+        if (arrow) arrow.style.transform = open ? "rotate(180deg)" : "rotate(0deg)";
+        if (!animate || !content.animate) {
+          content.hidden = !open;
+          updateHeroCountGroupStatus();
+          return;
+        }
+        content.hidden = false;
+        const full = content.scrollHeight;
+        const animation = content.animate(
+          open ? [{ height:"0px", opacity:0 }, { height:`${full}px`, opacity:1 }] : [{ height:`${full}px`, opacity:1 }, { height:"0px", opacity:0 }],
+          { duration:220, easing:"cubic-bezier(.2,.8,.2,1)" }
+        );
+        animation.onfinish = () => {
+          content.hidden = !open;
+          content.style.height = "";
+          content.style.opacity = "";
+          updateHeroCountGroupStatus();
+        };
+      }
+
       function collapseAllHeroCountGroups() {
-        document.querySelectorAll("#hero-count-list details.hero-count-group").forEach((group) => { group.open = false; });
-        updateHeroCountGroupStatus();
+        const state = getHeroCountState();
+        document.querySelectorAll("#hero-count-list .hero-count-group").forEach((group) => {
+          setHeroCountGroupOpen(group, false, true);
+          if (group.dataset.groupKey) state[group.dataset.groupKey] = true;
+        });
+        saveHeroCountState(state);
+        setTimeout(updateHeroCountGroupStatus, 240);
       }
 
       function expandAllHeroCountGroups() {
-        document.querySelectorAll("#hero-count-list details.hero-count-group").forEach((group) => { group.open = true; });
-        updateHeroCountGroupStatus();
+        const state = getHeroCountState();
+        document.querySelectorAll("#hero-count-list .hero-count-group").forEach((group) => {
+          setHeroCountGroupOpen(group, true, true);
+          if (group.dataset.groupKey) state[group.dataset.groupKey] = false;
+        });
+        saveHeroCountState(state);
+        setTimeout(updateHeroCountGroupStatus, 240);
       }
 
       function heroCountPalette(count) {
-        const colors = [];
-        for (let i = 0; i < count; i += 1) colors.push(`hsl(${(42 + i * 47) % 360} 72% ${52 + (i % 3) * 5}% / .88)`);
-        return colors;
+        const palette = ["#fbbf24", "#60a5fa", "#34d399", "#c084fc", "#fb7185", "#22d3ee", "#fb923c", "#a3e635", "#818cf8", "#f472b6", "#2dd4bf", "#facc15"];
+        return Array.from({ length: count }, (_, i) => palette[i % palette.length]);
       }
 
       function renderHeroCountChart(groups = getHeroCountData()) {
         const canvas = document.getElementById("hero-count-chart");
         const legend = document.getElementById("hero-count-chart-legend");
         if (!canvas || typeof Chart === "undefined") return;
+        const items = groups.filter((group) => group.heroes.length > 0).sort((a,b) => b.heroes.length - a.heroes.length);
+        if (!items.length) {
+          if (legend) legend.innerHTML = '<div class="chart-empty">No data to chart.</div>';
+          return;
+        }
         if (heroCountChart) heroCountChart.destroy();
-        const labels = groups.map((group) => group.name);
-        const values = groups.map((group) => group.heroes.length);
-        const colors = heroCountPalette(groups.length);
+        const total = items.reduce((sum, group) => sum + group.heroes.length, 0);
+        const colors = heroCountPalette(items.length);
+        const state = { activeIndex: -1 };
+
+        if (legend) {
+          legend.innerHTML = items.map((group, index) => {
+            const pct = total ? ((group.heroes.length / total) * 100).toFixed(1) : "0.0";
+            return `<button type="button" class="skin-chart-legend-item" data-hero-chart-index="${index}"><span class="skin-chart-swatch" style="background:${colors[index]}"></span><span class="skin-chart-legend-copy"><strong>${heroCountEscape(group.name)}</strong><small>${group.heroes.length} heroes · ${pct}%</small></span></button>`;
+          }).join("");
+        }
+
+        const centerPlugin = {
+          id: "heroCountCenter",
+          afterDraw(chart) {
+            const meta = chart.getDatasetMeta(0);
+            if (!meta?.data?.[0]) return;
+            const { x, y } = meta.data[0];
+            const ctx = chart.ctx;
+            const idx = state.activeIndex;
+            const main = idx >= 0 ? String(items[idx].heroes.length) : String(total);
+            const sub = idx >= 0 ? items[idx].name : "Total memberships";
+            ctx.save();
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "#f8fafc";
+            ctx.font = '800 28px Montserrat, sans-serif';
+            ctx.fillText(main, x, y - 7);
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = '600 11px Montserrat, sans-serif';
+            const label = sub.length > 22 ? sub.slice(0, 21) + "…" : sub;
+            ctx.fillText(label, x, y + 20);
+            ctx.restore();
+          }
+        };
+
         heroCountChart = new Chart(canvas, {
           type: "doughnut",
-          data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0, hoverOffset: 7 }] },
-          options: { responsive: true, maintainAspectRatio: false, cutout: "66%", plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} heroes` } } } },
+          data: { labels: items.map((group) => group.name), datasets: [{
+            data: items.map((group) => group.heroes.length),
+            backgroundColor: colors,
+            borderColor: "#111827",
+            borderWidth: 4,
+            hoverBorderColor: "#f8fafc",
+            hoverBorderWidth: 3,
+            hoverOffset: 8,
+            borderRadius: 5,
+            spacing: 2
+          }]},
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "68%",
+            layout: { padding: 10 },
+            animation: { duration: 520, easing: "easeOutQuart" },
+            onHover(event, elements) {
+              state.activeIndex = elements?.length ? elements[0].index : -1;
+              if (event.native?.target) event.native.target.style.cursor = elements?.length ? "pointer" : "default";
+              heroCountChart?.draw();
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: "rgba(15,23,42,.97)",
+                borderColor: "rgba(251,191,36,.28)",
+                borderWidth: 1,
+                padding: 11,
+                cornerRadius: 10,
+                displayColors: true,
+                callbacks: { label(context) { const count = context.parsed; const pct = total ? ((count / total) * 100).toFixed(1) : "0.0"; return `${count} heroes (${pct}%)`; } }
+              }
+            }
+          },
+          plugins: [centerPlugin]
         });
-        if (legend) legend.innerHTML = groups.map((group, index) => `<div class="skin-count-chart-legend-row"><span class="skin-count-chart-legend-swatch" style="background:${colors[index]}"></span><span>${heroCountEscape(group.name)}</span><strong>${group.heroes.length}</strong></div>`).join("");
+
+        if (legend) {
+          legend.querySelectorAll(".skin-chart-legend-item").forEach((button) => {
+            const idx = Number(button.dataset.heroChartIndex);
+            button.addEventListener("mouseenter", () => { state.activeIndex = idx; heroCountChart.setActiveElements([{ datasetIndex:0, index:idx }]); heroCountChart.update("none"); });
+            button.addEventListener("mouseleave", () => { state.activeIndex = -1; heroCountChart.setActiveElements([]); heroCountChart.update("none"); });
+          });
+        }
       }
 
       function toggleHeroCountChart() {
         heroCountChartVisible = !heroCountChartVisible;
         const container = document.getElementById("hero-count-chart-container");
         const label = document.getElementById("hero-count-view-stats-label");
+        const btn = document.getElementById("hero-count-view-stats-btn");
         if (container) container.style.display = heroCountChartVisible ? "block" : "none";
         if (label) label.textContent = heroCountChartVisible ? "Hide Stats" : "View Stats";
+        const icon = btn?.querySelector(".material-symbols-outlined");
+        if (icon) icon.textContent = heroCountChartVisible ? "close" : "pie_chart";
         if (heroCountChartVisible) renderHeroCountChart();
+        else if (heroCountChart) { heroCountChart.destroy(); heroCountChart = null; }
       }
 
       // ---------------- SETTINGS ----------------
@@ -1424,6 +1628,34 @@
         showToast("Removed", "success");
       }
 
+      function renderHeroFormChoicePills(fieldId, values, imageKey = null) {
+        const host = document.getElementById(`form-pills-${fieldId}`);
+        if (!host) return;
+        const selected = formTags[fieldId] || [];
+        host.innerHTML = (values || []).map((value) => {
+          const active = selected.includes(value);
+          const img = imageKey ? getAttrImage(imageKey, value) : "";
+          const safeValue = String(value).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          return `<button type="button" class="form-choice-pill${active ? " active" : ""}" aria-pressed="${active}" onclick="toggleHeroFormChoice('${fieldId}','${safeValue}')">${img ? `<img src="${img}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="">` : ""}<span>${value}</span>${active ? '<span class="material-symbols-outlined form-choice-check">check</span>' : ""}</button>`;
+        }).join("") || `<span class="form-choice-empty">No attributes configured yet.</span>`;
+      }
+
+      function refreshHeroFormChoicePills() {
+        const attrs = getAttributes();
+        renderHeroFormChoicePills("hero-roles", attrs.roles, "roles");
+        renderHeroFormChoicePills("hero-specialties", attrs.specialties);
+        renderHeroFormChoicePills("hero-lanes", attrs.lanes, "lanes");
+        renderHeroFormChoicePills("hero-nations", attrs.nations, "nations");
+      }
+
+      function toggleHeroFormChoice(fieldId, value) {
+        const current = formTags[fieldId] || [];
+        formTags[fieldId] = current.includes(value)
+          ? current.filter((item) => item !== value)
+          : [...current, value];
+        refreshHeroFormChoicePills();
+      }
+
       /* FORM LOGIC */
       function renderHeroFormPage(id = null, isUpcoming = false, returnContext = null) {
         const src = currentPageId;
@@ -1442,21 +1674,8 @@
         formTags["hero-roles"] = [];
         formTags["hero-specialties"] = [];
         formTags["hero-lanes"] = [];
-        populateSelect("sel-hero-roles", attrs.roles);
-        populateSelect("sel-hero-specialties", attrs.specialties);
-        populateSelect("sel-hero-lanes", attrs.lanes);
-        renderTags("hero-roles");
-        renderTags("hero-specialties");
-        renderTags("hero-lanes");
-        decorateImageSelect(document.getElementById("sel-hero-roles"), "roles");
-        decorateImageSelect(document.getElementById("sel-hero-lanes"), "lanes");
-        const natSel = document.getElementById("hero-nation");
-        natSel.innerHTML =
-          '<option value="">— None —</option>' +
-          (attrs.nations || [])
-            .map((n) => `<option value="${n}">${n}</option>`)
-            .join("");
-        decorateImageSelect(natSel, "nations");
+        formTags["hero-nations"] = [];
+        refreshHeroFormChoicePills();
         document.getElementById("hero-form-title").textContent =
           `${id ? "Edit" : "Add"} Hero${isUpcoming ? " (Upcoming)" : ""}`;
         if (id) {
@@ -1479,14 +1698,8 @@
             formTags["hero-roles"] = h.roles || [];
             formTags["hero-specialties"] = h.specialties || [];
             formTags["hero-lanes"] = h.lanes || [];
-            renderTags("hero-roles");
-            renderTags("hero-specialties");
-            renderTags("hero-lanes");
-            document.getElementById("hero-nation").value = h.nation || "";
-            decorateImageSelect(
-              document.getElementById("hero-nation"),
-              "nations",
-            );
+            formTags["hero-nations"] = getHeroNations(h);
+            refreshHeroFormChoicePills();
             if (h.skills) h.skills.forEach((s) => addSkillInput(s));
             if (typeof addHeroRelationshipInput === "function") {
               (h.relationships || []).forEach((entry) => addHeroRelationshipInput(entry));
@@ -1530,12 +1743,13 @@
               <span class="material-symbols-outlined" style="font-size:14px;">delete</span>
             </button>
           </div>
-          <div class="skill-category-row" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem;">
-            <span class="material-symbols-outlined" style="font-size:14px;color:var(--text-dark);flex-shrink:0;" title="Skill Category">sell</span>
-            <div class="skill-category-tags tag-list" style="flex:1;min-height:32px;padding:0.3rem 0.5rem;gap:0.35rem;"></div>
-            <select class="form-select skill-category-select" style="flex-shrink:0;width:170px;" onchange="addSkillCategoryTag(this)">
-              <option value="">+ Category</option>
-            </select>
+          <div class="skill-category-picker">
+            <button type="button" class="skill-category-toggle" onclick="toggleSkillCategoryPicker(this)" aria-expanded="false">
+              <span class="material-symbols-outlined">sell</span>
+              <span class="skill-category-toggle-copy"><strong>Skill Categories</strong><span class="skill-category-tags"></span></span>
+              <span class="material-symbols-outlined skill-category-chevron">expand_more</span>
+            </button>
+            <div class="skill-category-options" hidden></div>
           </div>
           <div class="skill-sub-container"></div>`;
         container.appendChild(wrap);
@@ -1543,78 +1757,69 @@
         // Restore sub-skills if editing
         if (d.subSkills && d.subSkills.length) {
           d.subSkills.forEach((ss) =>
-            addSubSkillInput(wrap.querySelector(".skill-main-row button"), ss),
+            addSubSkillInput(wrap.querySelector("button[onclick*='addSubSkillInput']"), ss),
           );
         }
       }
 
+      function toggleSkillCategoryPicker(button) {
+        const picker = button.closest(".skill-category-picker");
+        const options = picker?.querySelector(".skill-category-options");
+        if (!options) return;
+        const willOpen = options.hidden;
+        options.hidden = !willOpen;
+        button.setAttribute("aria-expanded", String(willOpen));
+        picker.classList.toggle("open", willOpen);
+      }
+
       function renderSkillCategoryTags(row) {
         const tagsEl = row.querySelector(".skill-category-tags");
+        const optionsEl = row.querySelector(".skill-category-options");
         const categories = JSON.parse(row.dataset.categories || "[]");
-        tagsEl.innerHTML = categories.length
-          ? categories
-              .map((c) => {
-                const esc = c.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+        if (tagsEl) {
+          tagsEl.innerHTML = categories.length
+            ? categories.map((c) => {
                 const color = getAttrColor("skillCategories", c);
-                const style = color
-                  ? ` style="background:${color};color:#fff;"`
-                  : "";
-                return `<span class="tag-item"${style}>${c}<span class="tag-remove" onclick="removeSkillCategoryTag(this,'${esc}')">&times;</span></span>`;
-              })
-              .join("")
-          : `<span style="color:var(--text-dark);font-size:0.78rem;">No categories</span>`;
-        populateSkillCategorySelect(
-          row.querySelector(".skill-category-select"),
-          categories,
-        );
-      }
-
-      function populateSkillCategorySelect(select, categories) {
-        const attrs = getAttributes();
-        const options = (attrs.skillCategories || []).filter(
-          (c) => !categories.includes(c),
-        );
-        const groups = getSkillCatGroups();
-        const tagGroupMap = getTagGroupMap();
-        const grouped = {};
-        const ungrouped = [];
-        options.forEach((c) => {
-          const gid = tagGroupMap[c];
-          const g = gid && groups.find((x) => x.id === gid);
-          if (g) {
-            if (!grouped[g.id]) grouped[g.id] = { name: g.name, tags: [] };
-            grouped[g.id].tags.push(c);
-          } else {
-            ungrouped.push(c);
-          }
-        });
-        let html = `<option value="">+ Category</option>`;
-        groups.forEach((g) => {
-          const bucket = grouped[g.id];
-          if (!bucket || !bucket.tags.length) return;
-          const label = g.name.replace(/"/g, "&quot;");
-          html += `<optgroup label="${label}" style="background-color:#020617;color:${g.color};">`;
-          html += bucket.tags
-            .map((c) => `<option value="${c}">${c}</option>`)
-            .join("");
-          html += `</optgroup>`;
-        });
-        if (ungrouped.length) {
-          html += `<optgroup label="Ungrouped">`;
-          html += ungrouped
-            .map((c) => `<option value="${c}">${c}</option>`)
-            .join("");
-          html += `</optgroup>`;
+                return `<span class="skill-category-mini-pill"${color ? ` style="--skill-pill:${color}"` : ""}>${c}</span>`;
+              }).join("")
+            : `<span class="skill-category-none">None selected</span>`;
         }
-        select.innerHTML = html;
+        if (!optionsEl) return;
+        const attrs = getAttributes();
+        const groups = getSkillCatGroups();
+        const groupMap = getTagGroupMap();
+        const byGroup = new Map();
+        const ungrouped = [];
+        (attrs.skillCategories || []).forEach((cat) => {
+          const gid = groupMap[cat];
+          const group = gid && groups.find((item) => item.id === gid);
+          if (group) {
+            if (!byGroup.has(group.id)) byGroup.set(group.id, { group, cats: [] });
+            byGroup.get(group.id).cats.push(cat);
+          } else ungrouped.push(cat);
+        });
+        const pill = (cat) => {
+          const active = categories.includes(cat);
+          const color = getAttrColor("skillCategories", cat);
+          const safe = String(cat).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          return `<button type="button" class="skill-category-choice${active ? " active" : ""}"${color ? ` style="--skill-pill:${color}"` : ""} onclick="toggleSkillCategoryChoice(this,'${safe}')"><span>${cat}</span>${active ? '<span class="material-symbols-outlined">check</span>' : ""}</button>`;
+        };
+        let html = "";
+        groups.forEach((group) => {
+          const bucket = byGroup.get(group.id);
+          if (!bucket?.cats.length) return;
+          html += `<div class="skill-category-option-group"><div class="skill-category-option-label"><span style="background:${group.color}"></span>${group.name}</div><div class="skill-category-pill-grid">${bucket.cats.map(pill).join("")}</div></div>`;
+        });
+        if (ungrouped.length) html += `<div class="skill-category-option-group"><div class="skill-category-option-label">Other</div><div class="skill-category-pill-grid">${ungrouped.map(pill).join("")}</div></div>`;
+        optionsEl.innerHTML = html || `<span class="skill-category-none">No skill categories configured.</span>`;
       }
 
-      function addSkillCategoryTag(select) {
-        const val = select.value;
-        if (!val) return;
-        const row = select.closest(".skill-main-row");
+      function toggleSkillCategoryChoice(button, cat) {
+        const row = button.closest(".skill-main-row");
         let categories = JSON.parse(row.dataset.categories || "[]");
-        if (!categories.includes(val)) categories.push(val);
+        categories = categories.includes(cat)
+          ? categories.filter((value) => value !== cat)
+          : [...categories, cat];
         row.dataset.categories = JSON.stringify(categories);
         renderSkillCategoryTags(row);
       }
@@ -1680,7 +1885,8 @@
           roles: formTags["hero-roles"],
           specialties: formTags["hero-specialties"],
           lanes: formTags["hero-lanes"],
-          nation: document.getElementById("hero-nation").value,
+          nations: formTags["hero-nations"] || [],
+          nation: (formTags["hero-nations"] || [])[0] || "",
           portrait: cleanImageUrl(
             document.getElementById("hero-portrait").value,
           ),
@@ -1731,8 +1937,25 @@
         goBackFromForm("hero-return-page");
       });
 
+      function syncSkinTypeSelector() {
+        const isStatue = !!document.getElementById("is-sacred-statue")?.checked;
+        document.querySelectorAll(".skin-type-option").forEach((button) => {
+          const active = String(button.dataset.statue) === String(isStatue);
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-pressed", String(active));
+        });
+      }
+      function setSkinFormType(isStatue) {
+        const checkbox = document.getElementById("is-sacred-statue");
+        if (!checkbox) return;
+        checkbox.checked = !!isStatue;
+        syncSkinTypeSelector();
+        toggleSkinType();
+      }
+
       function toggleSkinType() {
         const isStatue = document.getElementById("is-sacred-statue").checked;
+        syncSkinTypeSelector();
         document.getElementById("skin-only-fields").style.display = isStatue
           ? "none"
           : "block";
@@ -2282,7 +2505,7 @@
               return false;
             if (fSpecs.length && !fSpecs.some((spec) => (x.specialties || []).includes(spec)))
               return false;
-            if (fNations.length && !fNations.includes(x.nation || "")) return false;
+            if (fNations.length && !fNations.some((nation) => getHeroNations(x).includes(nation))) return false;
             if (fSearch && !x.name.toLowerCase().includes(fSearch)) return false;
             return true;
           });
@@ -2538,7 +2761,7 @@
           ),
           detailGroup("Lane", h.lanes || []),
           detailGroup("Specialty", h.specialties || []),
-          detailGroup("Nation", h.nation ? [h.nation] : []),
+          detailGroup("Nation", getHeroNations(h)),
         ].join("");
         const meta = [
           detailMeta("calendar_month", "Released", h.releaseDate),

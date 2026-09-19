@@ -2,6 +2,7 @@
         HEROES: "game_hub_mlbb_heroes",
         SKINS: "game_hub_mlbb_skins",
         ATTRIBUTES: "game_hub_mlbb_attributes",
+        ATTRIBUTES_BACKUP: "game_hub_mlbb_attributes_backup",
         TIER_LIST: "game_hub_mlbb_tier_list",
         TIER_SNAPSHOTS: "game_hub_mlbb_tier_snapshots",
         SIDEBAR: "game_hub_mlbb_sidebar_collapsed",
@@ -278,6 +279,7 @@
         "hero-roles": [],
         "hero-specialties": [],
         "hero-lanes": [],
+        "hero-nations": [],
       };
 
       const IMAGE_PLACEHOLDER = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
@@ -891,6 +893,7 @@
         if (loadingEl) loadingEl.remove();
 
         loadDefaults();
+        repairAttributesFromRecords(ADMIN.isAdmin);
         setupSidebar();
         setupNavigation();
         installImageFallbacks();
@@ -980,6 +983,7 @@
         { key: "game_hub_mlbb_heroes", label: "Heroes" },
         { key: "game_hub_mlbb_skins", label: "Skins" },
         { key: "game_hub_mlbb_attributes", label: "Attributes" },
+        { key: "game_hub_mlbb_attributes_backup", label: "Attributes Auto-Backup" },
         { key: "game_hub_mlbb_tier_list", label: "Tier List" },
         { key: "game_hub_mlbb_tier_snapshots", label: "Tier List Versions" },
         { key: "game_hub_mlbb_upcoming", label: "Upcoming" },
@@ -1229,23 +1233,127 @@
         }
         return _skinById.get(id);
       }
+      const ATTRIBUTE_SCHEMA_KEYS = [
+        "roles",
+        "specialties",
+        "lanes",
+        "nations",
+        "skinRarities",
+        "collectibleRarities",
+        "skillCategories",
+      ];
       function getAttributes() {
         if (!_attributesData) {
-          const def = {
-            roles: [],
-            specialties: [],
-            lanes: [],
-            nations: [],
-            skinRarities: [],
-            collectibleRarities: [],
-            skillCategories: [],
-          };
-          _attributesData = { ...def, ...getData(KEYS.ATTRIBUTES, def) };
+          const def = Object.fromEntries(ATTRIBUTE_SCHEMA_KEYS.map((key) => [key, []]));
+          const stored = getData(KEYS.ATTRIBUTES, def) || {};
+          _attributesData = { ...def };
+          ATTRIBUTE_SCHEMA_KEYS.forEach((key) => {
+            _attributesData[key] = Array.isArray(stored[key]) ? stored[key] : [];
+          });
         }
         return _attributesData;
       }
+      function normalizeAttributesPayload(input, base = getAttributes()) {
+        const next = {};
+        ATTRIBUTE_SCHEMA_KEYS.forEach((key) => {
+          const source = Array.isArray(input?.[key]) ? input[key] : base?.[key];
+          const seen = new Set();
+          next[key] = (Array.isArray(source) ? source : [])
+            .map((value) => String(value ?? "").trim())
+            .filter((value) => value && !seen.has(value) && seen.add(value));
+        });
+        return next;
+      }
       function saveAttributes(d) {
-        saveData(KEYS.ATTRIBUTES, d);
+        const storedCurrent = normalizeAttributesPayload(getData(KEYS.ATTRIBUTES, {}), {});
+        const runtimeCurrent = normalizeAttributesPayload(getAttributes(), storedCurrent);
+        const next = normalizeAttributesPayload(d, runtimeCurrent);
+        const prevJson = JSON.stringify(storedCurrent);
+        const nextJson = JSON.stringify(next);
+        if (prevJson !== nextJson && ADMIN.isAdmin && prevJson !== JSON.stringify(normalizeAttributesPayload({}, {}))) {
+          DB.setItem(KEYS.ATTRIBUTES_BACKUP, prevJson);
+        }
+        return saveData(KEYS.ATTRIBUTES, next);
+      }
+      function getHeroNations(hero) {
+        const values = Array.isArray(hero?.nations) && hero.nations.length
+          ? hero.nations
+          : hero?.nation
+            ? [hero.nation]
+            : [];
+        return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
+      }
+      function repairAttributesFromRecords(persist = false) {
+        const attrs = getAttributes();
+        let changed = false;
+        const add = (key, value) => {
+          const clean = String(value ?? "").trim();
+          if (!clean) return;
+          if (!Array.isArray(attrs[key])) attrs[key] = [];
+          if (!attrs[key].includes(clean)) {
+            attrs[key].push(clean);
+            changed = true;
+          }
+        };
+        const scanHero = (hero) => {
+          (hero?.roles || []).forEach((value) => add("roles", value));
+          (hero?.specialties || []).forEach((value) => add("specialties", value));
+          (hero?.lanes || []).forEach((value) => add("lanes", value));
+          getHeroNations(hero).forEach((value) => add("nations", value));
+          (hero?.skills || []).forEach((skill) => {
+            (skill?.categories || []).forEach((value) => add("skillCategories", value));
+          });
+        };
+        const scanSkin = (skin) => {
+          add("skinRarities", skin?.rarity);
+          add("collectibleRarities", skin?.collectible);
+        };
+        getHeroes().forEach(scanHero);
+        getSkins().forEach(scanSkin);
+        getUpcoming().forEach((item) => item?.itemType === "hero" ? scanHero(item) : scanSkin(item));
+        const imageMaps = getAttributeImages();
+        const bgMaps = getAttributeBackgrounds();
+        const colorMaps = getAttributeColors();
+        ATTRIBUTE_SCHEMA_KEYS.forEach((key) => {
+          Object.keys(imageMaps?.[key] || {}).forEach((value) => add(key, value));
+          Object.keys(bgMaps?.[key] || {}).forEach((value) => add(key, value));
+          Object.keys(colorMaps?.[key] || {}).forEach((value) => add(key, value));
+        });
+        try {
+          Object.keys(getTagGroupMap() || {}).forEach((value) => add("skillCategories", value));
+        } catch (e) {}
+        if (persist) {
+          const stored = normalizeAttributesPayload(getData(KEYS.ATTRIBUTES, {}), {});
+          const runtime = normalizeAttributesPayload(attrs, {});
+          const needsPersist = JSON.stringify(stored) !== JSON.stringify(runtime);
+          if (needsPersist) {
+            if (!ADMIN.isAdmin) {
+              showToast("Sign in as admin to save repaired attributes.", "info");
+            } else {
+              saveAttributes(runtime);
+              populateFilters();
+              if (typeof renderAttributesPage === "function") renderAttributesPage();
+              showToast("Recovered missing attributes from existing records and metadata.", "success");
+            }
+          } else if (ADMIN.isAdmin) {
+            showToast("No missing attributes were found in existing records.", "success");
+          }
+        }
+        return changed;
+      }
+      function restoreAttributeBackup() {
+        const backup = getData(KEYS.ATTRIBUTES_BACKUP, null);
+        if (!backup || typeof backup !== "object") {
+          showToast("No attribute backup is available yet.", "info");
+          return;
+        }
+        showConfirm("Restore the last automatic attribute backup? This will replace the current attribute lists.", () => {
+          saveAttributes(backup);
+          _attributesData = normalizeAttributesPayload(backup, {});
+          populateFilters();
+          renderAttributesPage();
+          showToast("Attribute backup restored.", "success");
+        });
       }
       function getAttributeImages() {
         if (_attributeImagesData) return _attributeImagesData;

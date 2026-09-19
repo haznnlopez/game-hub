@@ -72,7 +72,7 @@
         </button>
         <button class="sidebar-button" data-page="page-changelog">
           <span class="material-symbols-outlined">update</span>
-          <span>Change Log &amp; Upcoming</span>
+          <span>Updates</span>
         </button>
         <button class="sidebar-button" data-page="page-tier-list">
           <span class="material-symbols-outlined">leaderboard</span>
@@ -145,6 +145,12 @@
             </div>
           </header>
           <div id="dashboard-kpis" class="dashboard-kpis"></div>
+          <div class="dashboard-quick-actions" aria-label="Quick actions">
+            <button type="button" onclick="renderHeroFormPage(null,false)"><span class="material-symbols-outlined">person_add</span><span><strong>Add Hero</strong><small>Create a roster entry</small></span></button>
+            <button type="button" onclick="renderSkinForm(null,false)"><span class="material-symbols-outlined">add_photo_alternate</span><span><strong>Add Skin</strong><small>Add to the collection</small></span></button>
+            <button type="button" onclick="showPage('page-changelog')"><span class="material-symbols-outlined">playlist_add</span><span><strong>Log Change</strong><small>Buff, nerf, adjust…</small></span></button>
+            <button type="button" onclick="showPage('page-upcoming')"><span class="material-symbols-outlined">event_upcoming</span><span><strong>Upcoming</strong><small>Review release queue</small></span></button>
+          </div>
           <div class="dashboard-grid">
             <section class="dashboard-panel dashboard-panel-wide">
               <div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">Recent activity</span><h2>Change Log</h2></div><button class="btn btn-secondary btn-sm" onclick="showPage('page-changelog')">Open Change Log</button></div>
@@ -157,6 +163,14 @@
             <section class="dashboard-panel">
               <div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">Collection</span><h2>Newest Skins</h2></div><button class="btn btn-secondary btn-sm" onclick="showPage('page-skins')">Browse</button></div>
               <div id="dashboard-newest-skins" class="dashboard-list"></div>
+            </section>
+            <section class="dashboard-panel">
+              <div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">At a glance</span><h2>Roster Leaders</h2></div><button class="btn btn-secondary btn-sm" onclick="showPage('page-hero-stats')">Stats</button></div>
+              <div id="dashboard-leaders" class="dashboard-list"></div>
+            </section>
+            <section class="dashboard-panel">
+              <div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">Work queue</span><h2>Revamping</h2></div><span id="dashboard-revamping-count" class="dashboard-health-badge"></span></div>
+              <div id="dashboard-revamping" class="dashboard-list"></div>
             </section>
             <section class="dashboard-panel dashboard-panel-wide">
               <div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">Data quality</span><h2>Missing Inputs</h2></div><span id="dashboard-health-count" class="dashboard-health-badge"></span></div>
@@ -464,11 +478,8 @@
 
         <div id="page-hero-count" class="page">
           <header class="page-header">
-            <div>
-              <h1>Hero Count</h1>
-              <p class="page-subtitle">See how the hero roster is distributed across roles, lanes, specialties, and nations.</p>
-            </div>
-            <div class="hero-count-group-toolbar">
+            <h1>Hero Count</h1>
+            <div class="skin-count-group-toolbar">
               <span id="hero-count-group-status" class="skin-count-group-status">0/0 groups open</span>
               <div class="skin-count-group-actions">
                 <button id="hero-count-collapse-all" class="btn btn-secondary btn-sm" type="button" onclick="collapseAllHeroCountGroups()" data-tooltip="Collapse every visible group">
@@ -480,16 +491,16 @@
               </div>
             </div>
           </header>
-          <div id="hero-count-widget" class="hero-count-widget unified-card">
-            <div class="hero-count-total-block">
-              <strong id="total-heroes-number">0</strong>
-              <span>Heroes</span>
+          <div id="hero-count-widget" class="unified-card hero-count-widget-matched">
+            <div class="hero-count-total-stack">
+              <div id="total-heroes-number" class="hero-count-total-number">0</div>
+              <div class="hero-count-total-label">Heroes</div>
               <button id="hero-count-view-stats-btn" class="btn btn-secondary btn-sm" type="button" onclick="toggleHeroCountChart()">
-                <span class="material-symbols-outlined">donut_large</span>
+                <span class="material-symbols-outlined" style="font-size:16px">pie_chart</span>
                 <span id="hero-count-view-stats-label">View Stats</span>
               </button>
             </div>
-            <div id="hero-count-chart-container" class="skin-count-chart-container hero-count-chart-container" style="display:none">
+            <div id="hero-count-chart-container" class="skin-count-chart-container" style="display:none">
               <div class="skin-count-chart-layout">
                 <div class="skin-count-chart-canvas-wrap"><canvas id="hero-count-chart"></canvas></div>
                 <div id="hero-count-chart-legend" class="skin-count-chart-legend" aria-label="Hero count chart legend"></div>
@@ -497,7 +508,7 @@
             </div>
           </div>
           <div id="hero-count-analytics" class="skin-count-analytics" aria-live="polite"></div>
-          <div class="filters-bar hero-count-filters">
+          <div class="filters-bar">
             <div class="filter-item">
               <label class="form-label">Group By</label>
               <input id="hero-count-group-by" type="hidden" value="role">
@@ -505,7 +516,7 @@
             </div>
             <div class="filter-item">
               <label class="form-label">Search</label>
-              <input id="hero-count-search" class="form-input" type="search" placeholder="Search groups or heroes..." autocomplete="off" oninput="renderHeroCountPage()">
+              <input id="hero-count-search" class="form-input" type="search" placeholder="Search..." autocomplete="off" oninput="renderHeroCountPage()">
             </div>
           </div>
           <div id="hero-count-list"></div>
@@ -800,7 +811,7 @@
         </div>
 
         <div id="page-attributes" class="page">
-          <header class="page-header"><h1>Attributes</h1></header>
+          <header class="page-header"><h1>Attributes</h1><div class="page-header-actions"><button type="button" class="btn btn-secondary btn-sm" onclick="repairAttributesFromRecords(true)"><span class="material-symbols-outlined">healing</span> Repair from Records</button><button type="button" class="btn btn-secondary btn-sm" onclick="restoreAttributeBackup()"><span class="material-symbols-outlined">history</span> Last Backup</button></div></header>
           <div class="attr-tabs" id="attr-tabs"></div>
           <div class="attr-panel" id="attributes-container"></div>
         </div>
@@ -936,7 +947,7 @@
                   <option value="page-dashboard">Dashboard</option>
                   <option value="page-heroes">Heroes &amp; Skins</option>
                   <option value="page-hero-stats">Stats</option>
-                  <option value="page-changelog">Change Log &amp; Upcoming</option>
+                  <option value="page-changelog">Updates</option>
                   <option value="page-tier-list">Tier List</option>
                   <option value="page-attributes">Attributes</option>
                   <option value="page-settings">Settings</option>
@@ -990,55 +1001,25 @@
               <label class="form-label">Hero Name</label
               ><input type="text" id="hero-name" class="form-input" required />
             </div>
-            <div class="form-grid">
+            <div class="form-grid hero-classification-grid">
               <div class="form-group">
-                <label class="form-label">Roles</label>
-                <div class="tag-input-container">
-                  <select id="sel-hero-roles" class="form-select"></select
-                  ><button
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    onclick="addTag('hero-roles', 'sel-hero-roles')"
-                  >
-                    Add
-                  </button>
-                </div>
-                <div id="tags-hero-roles" class="tag-list"></div>
+                <label class="form-label">Roles <span class="form-label-note">Choose all that apply</span></label>
+                <div id="form-pills-hero-roles" class="form-choice-pills" aria-label="Hero roles"></div>
               </div>
               <div class="form-group">
-                <label class="form-label">Specialties</label>
-                <div class="tag-input-container">
-                  <select id="sel-hero-specialties" class="form-select"></select
-                  ><button
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    onclick="addTag('hero-specialties', 'sel-hero-specialties')"
-                  >
-                    Add
-                  </button>
-                </div>
-                <div id="tags-hero-specialties" class="tag-list"></div>
+                <label class="form-label">Specialties <span class="form-label-note">Choose all that apply</span></label>
+                <div id="form-pills-hero-specialties" class="form-choice-pills" aria-label="Hero specialties"></div>
               </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Lanes</label>
-              <div class="tag-input-container">
-                <select id="sel-hero-lanes" class="form-select"></select
-                ><button
-                  type="button"
-                  class="btn btn-primary btn-sm"
-                  onclick="addTag('hero-lanes', 'sel-hero-lanes')"
-                >
-                  Add
-                </button>
+            <div class="form-grid hero-classification-grid">
+              <div class="form-group">
+                <label class="form-label">Lanes <span class="form-label-note">Choose all that apply</span></label>
+                <div id="form-pills-hero-lanes" class="form-choice-pills" aria-label="Hero lanes"></div>
               </div>
-              <div id="tags-hero-lanes" class="tag-list"></div>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Nation</label>
-              <select id="hero-nation" class="form-select">
-                <option value="">— None —</option>
-              </select>
+              <div class="form-group">
+                <label class="form-label">Nation <span class="form-label-note">Multiple allowed</span></label>
+                <div id="form-pills-hero-nations" class="form-choice-pills" aria-label="Hero nations"></div>
+              </div>
             </div>
             <h3
               style="
@@ -1211,30 +1192,6 @@
               id="skin-form-context"
               value="official"
             /><input type="hidden" id="skin-return-page" value="" />
-            <div
-              class="form-checkbox-group"
-              style="
-                margin-bottom: 1.5rem;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-              "
-            >
-              <input
-                type="checkbox"
-                id="is-sacred-statue"
-                style="width: 20px; height: 20px; accent-color: var(--accent)"
-                onchange="toggleSkinType()"
-              /><label
-                for="is-sacred-statue"
-                style="
-                  font-weight: 600;
-                  font-size: 1.1rem;
-                  color: var(--text-light);
-                "
-                >Is Sacred Statue?</label
-              >
-            </div>
             <div class="form-group">
               <label class="form-label">Select Hero</label
               ><select
@@ -1248,6 +1205,14 @@
               <label class="form-label">Name</label
               ><input type="text" id="skin-name" class="form-input" required />
             </div>
+            <section class="skin-type-selector" aria-labelledby="skin-type-heading">
+              <div class="skin-type-selector-copy"><span class="form-label" id="skin-type-heading">Item Type</span><small>Choose whether this entry is a wearable skin or a Sacred Statue.</small></div>
+              <input type="checkbox" id="is-sacred-statue" hidden onchange="syncSkinTypeSelector();toggleSkinType()" />
+              <div class="skin-type-options">
+                <button type="button" class="skin-type-option" data-statue="false" onclick="setSkinFormType(false)"><span class="material-symbols-outlined">style</span><span><strong>Skin</strong><small>Rarity, collectible tag, skill overrides &amp; painted variants</small></span></button>
+                <button type="button" class="skin-type-option sacred" data-statue="true" onclick="setSkinFormType(true)"><span class="material-symbols-outlined">account_balance</span><span><strong>Sacred Statue</strong><small>Hero statue entry with its own release, price and artwork</small></span></button>
+              </div>
+            </section>
             <div id="skin-only-fields">
               <div class="form-grid">
                 <div class="form-group">
@@ -1471,21 +1436,7 @@
               <img id="modal-img" class="modal-main-image" alt="Selected artwork" />
             </div>
             <div class="modal-gallery" id="modal-gallery-view"></div>
-            <div class="image-toggles" id="modal-toggles">
-              <button class="toggle-btn" data-type="portrait" title="Portrait">
-                <span class="material-symbols-outlined">person</span></button
-              ><button
-                class="toggle-btn active"
-                data-type="splash"
-                title="Splash Art"
-              >
-                <span class="material-symbols-outlined">wallpaper</span></button
-              ><button class="toggle-btn" data-type="icon" title="Icon">
-                <span class="material-symbols-outlined">face</span></button
-              ><button class="toggle-btn" data-type="all" title="Gallery">
-                <span class="material-symbols-outlined">grid_view</span>
-              </button>
-            </div>
+            <div class="image-toggles" id="modal-toggles" hidden></div>
           </div>
           <div id="modal-content" class="modal-details"></div>
         </div>

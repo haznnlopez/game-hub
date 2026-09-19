@@ -90,14 +90,8 @@
               : options.restoreState.paintedSkinIndex,
         };
 
-        document.querySelectorAll("#modal-toggles .toggle-btn").forEach((b) => {
-          b.classList.remove("active");
-          if (b.dataset.type === currentModalData.activeImg) b.classList.add("active");
-        });
-        const allBtn = document.querySelector('.toggle-btn[data-type="all"]');
-        if (allBtn) allBtn.style.display = type === "skin" ? "none" : "inline-flex";
-        document.getElementById("modal-single-view").style.display = "flex";
-        document.getElementById("modal-gallery-view").classList.remove("active");
+        document.getElementById("modal-single-view").style.display = "none";
+        document.getElementById("modal-gallery-view").classList.add("active");
 
         let data;
         const modalContainer = document.querySelector("#universal-modal .modal-container");
@@ -110,7 +104,8 @@
               closeModal(false);
               renderHeroFormPage(id, data.itemType ? true : false, returnContext);
             };
-            const bgUrl = data.nation ? getAttrBg("nations", data.nation) : "";
+            const primaryNation = getHeroNations(data)[0] || "";
+            const bgUrl = primaryNation ? getAttrBg("nations", primaryNation) : "";
             if (modalContainer) {
               modalContainer.style.backgroundImage = bgUrl
                 ? `linear-gradient(rgba(2,6,23,0.82), rgba(2,6,23,0.94)), url('${bgUrl}')`
@@ -134,11 +129,7 @@
 
         if (!data) return;
         document.getElementById("modal-title").textContent = data.name;
-        if (currentModalData.activeImg === "all" && type === "hero") {
-          renderGalleryView(data);
-        } else {
-          updateModalImage(data, currentModalData.activeImg);
-        }
+        renderGalleryView(data);
         modal.classList.add("open");
         updateModalBackButton();
 
@@ -150,19 +141,6 @@
           requestAnimationFrame(() => { modalBody.scrollTop = 0; });
         }
 
-        document.querySelectorAll("#modal-toggles .toggle-btn").forEach((btn) => {
-          btn.onclick = () => {
-            document.querySelectorAll("#modal-toggles .toggle-btn").forEach((b) => b.classList.remove("active"));
-            btn.classList.add("active");
-            currentModalData.activeImg = btn.dataset.type;
-            if (btn.dataset.type === "all") renderGalleryView(data);
-            else {
-              document.getElementById("modal-single-view").style.display = "flex";
-              document.getElementById("modal-gallery-view").classList.remove("active");
-              updateModalImage(data, btn.dataset.type);
-            }
-          };
-        });
       }
 
       function closeModal(clearHistory = true) {
@@ -205,61 +183,66 @@
       }
 
       function togglePaintedSkin(idx, el) {
-        el.parentNode.querySelectorAll(".landscape-item").forEach((i) => i.classList.remove("active"));
-        el.classList.add("active");
-        currentModalData.paintedSkinIndex = idx;
         const s = getSkinById(currentModalData.id) || getUpcoming().find((x) => x.id === currentModalData.id && x.itemType === "skin");
-        const active = document.querySelector("#modal-toggles .toggle-btn.active");
-        updateModalImage(s, active ? active.dataset.type : "splash");
+        if (!s) return;
+        const same = currentModalData.paintedSkinIndex === idx;
+        currentModalData.paintedSkinIndex = same ? null : idx;
+        el.parentNode.querySelectorAll(".landscape-item").forEach((item) => item.classList.remove("active"));
+        if (!same) el.classList.add("active");
+        renderGalleryView(s);
         const titleEl = document.getElementById("modal-title");
-        if (titleEl && s) {
-          const paintedName = idx != null && s.paintedSkins?.[idx] ? s.paintedSkins[idx].name : "";
-          titleEl.textContent = paintedName || s.name;
-        }
+        const paintedName = !same && s.paintedSkins?.[idx] ? s.paintedSkins[idx].name : "";
+        if (titleEl) titleEl.textContent = paintedName || s.name;
       }
 
       function renderGalleryView(d) {
         const g = document.getElementById("modal-gallery-view");
-        document.getElementById("modal-single-view").style.display = "none";
+        const single = document.getElementById("modal-single-view");
+        if (single) single.style.display = "none";
         g.classList.add("active");
-        g.innerHTML = "";
         const hero = getHeroById(d.heroId);
-        const isHeroGallery = currentModalData?.type === "hero";
-        const imgs = [
-          { key: "splash", l: "Splash Art", s: d.splashArt || d.imageUrl, fallback: hero ? hero.splashArt || hero.imageUrl : "" },
-          { key: "portrait", l: "Portrait", s: d.portrait, fallback: hero ? hero.portrait || hero.imageUrl : "" },
-          { key: "icon", l: "Head Icon", s: d.icon || d.headIconUrl, fallback: hero ? hero.icon || hero.headIconUrl : "" },
-        ].map((item) => ({
-          ...item,
-          src: item.s || item.fallback || IMAGE_PLACEHOLDER,
-          fallbackSrc: item.fallback || IMAGE_PLACEHOLDER,
-          fallbackOnly: !item.s && !!item.fallback,
-        }));
-
-        if (isHeroGallery) {
-          const splash = imgs.find((item) => item.key === "splash");
-          const portrait = imgs.find((item) => item.key === "portrait");
-          const icon = imgs.find((item) => item.key === "icon");
-          const mediaCard = (item, cls, iconName) => `
-            <figure class="hero-gallery-media ${cls}">
-              <div class="hero-gallery-media-frame">
-                <img src="${item.src}" data-fallback-src="${item.fallbackSrc}" alt="${d.name} ${item.l}"${item.fallbackOnly ? ' style="filter:grayscale(100%) opacity(0.62)"' : ""}>
-                <figcaption><span class="material-symbols-outlined">${iconName}</span>${item.l}</figcaption>
-              </div>
-            </figure>`;
-          g.innerHTML = `
-            <div class="hero-gallery-showcase">
-              ${mediaCard(splash, "hero-gallery-splash", "wallpaper")}
-              <div class="hero-gallery-side">
-                ${mediaCard(portrait, "hero-gallery-portrait", "portrait")}
-                ${mediaCard(icon, "hero-gallery-icon", "face")}
-              </div>
-            </div>`;
-          return;
-        }
-
-        imgs.forEach((item) => {
-          const filter = item.fallbackOnly ? ' style="filter:grayscale(100%) opacity(0.5)"' : "";
-          g.innerHTML += `<div class="gallery-row"><h5>${item.l}</h5><img src="${item.src}" data-fallback-src="${item.fallbackSrc}" class="gallery-img"${filter}></div>`;
-        });
+        const painted = currentModalData?.type === "skin" && currentModalData?.paintedSkinIndex != null
+          ? d.paintedSkins?.[currentModalData.paintedSkinIndex] || null
+          : null;
+        const source = painted || d;
+        const resolve = (key) => {
+          const heroValue = key === "splash"
+            ? hero?.splashArt || hero?.imageUrl || ""
+            : key === "portrait"
+              ? hero?.portrait || hero?.imageUrl || ""
+              : hero?.icon || hero?.headIconUrl || "";
+          const baseValue = key === "splash"
+            ? d.splashArt || d.imageUrl || ""
+            : key === "portrait"
+              ? d.portrait || ""
+              : d.icon || d.headIconUrl || "";
+          const ownValue = key === "splash"
+            ? source.splashArt || source.splash || source.imageUrl || ""
+            : key === "portrait"
+              ? source.portrait || ""
+              : source.icon || source.headIconUrl || "";
+          return {
+            src: ownValue || (painted ? baseValue : "") || heroValue || IMAGE_PLACEHOLDER,
+            fallbackSrc: (painted ? baseValue : "") || heroValue || IMAGE_PLACEHOLDER,
+            fallbackOnly: !ownValue,
+          };
+        };
+        const items = [
+          { key: "splash", label: "Splash Art", icon: "wallpaper", ...resolve("splash") },
+          { key: "portrait", label: "Portrait", icon: "portrait", ...resolve("portrait") },
+          { key: "icon", label: "Head Icon", icon: "face", ...resolve("icon") },
+        ];
+        const card = (item, cls) => `<figure class="hero-gallery-media ${cls}">
+          <div class="hero-gallery-media-frame">
+            <img src="${item.src}" data-fallback-src="${item.fallbackSrc}" alt="${d.name} ${item.label}"${item.fallbackOnly ? ' style="filter:grayscale(100%) opacity(0.62)"' : ""}>
+            <figcaption><span class="material-symbols-outlined">${item.icon}</span>${item.label}</figcaption>
+          </div>
+        </figure>`;
+        g.innerHTML = `<div class="hero-gallery-showcase modal-all-images ${currentModalData?.type === "skin" ? "skin-gallery-showcase" : ""}">
+          ${card(items[0], "hero-gallery-splash")}
+          <div class="hero-gallery-side">
+            ${card(items[1], "hero-gallery-portrait")}
+            ${card(items[2], "hero-gallery-icon")}
+          </div>
+        </div>${painted ? `<div class="gallery-variant-note"><span class="material-symbols-outlined">palette</span>Showing painted variant: <strong>${painted.name || "Painted Skin"}</strong> · click it again below to return to the base skin.</div>` : ""}`;
       }

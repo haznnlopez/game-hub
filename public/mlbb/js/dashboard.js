@@ -398,7 +398,7 @@
         if (type === "hero") {
           add(item.roles?.length, "Role");
           add(item.lanes?.length, "Lane");
-          add(item.nation, "Nation");
+          add(getHeroNations(item).length, "Nation");
           add(item.icon || item.portrait || item.splashArt, "Artwork");
           add(item.skills?.length, "Skills");
         } else {
@@ -493,6 +493,47 @@
           newestEl.innerHTML = newest.length
             ? newest.map((item) => dashboardRecordRow(item, false)).join("")
             : `<div class="dashboard-empty">No released skins yet.</div>`;
+        }
+
+        const leadersEl = document.getElementById("dashboard-leaders");
+        if (leadersEl) {
+          const hpLeader = heroes
+            .map((hero) => ({ hero, value: Number(hero?.stats?.hp) }))
+            .filter((entry) => Number.isFinite(entry.value))
+            .sort((a, b) => b.value - a.value)[0];
+          const overallLeader = heroes
+            .map((hero) => ({ hero, value: typeof getHeroOverallRating === "function" ? getHeroOverallRating(hero) : null }))
+            .filter((entry) => entry.value !== null && Number.isFinite(Number(entry.value)))
+            .sort((a, b) => Number(b.value) - Number(a.value))[0];
+          const skinCounts = new Map(heroes.map((hero) => [hero.id, 0]));
+          skins.forEach((skin) => skinCounts.set(skin.heroId, (skinCounts.get(skin.heroId) || 0) + 1));
+          const skinLeader = heroes
+            .map((hero) => ({ hero, value: skinCounts.get(hero.id) || 0 }))
+            .sort((a, b) => b.value - a.value || a.hero.name.localeCompare(b.hero.name))[0];
+          const rows = [
+            hpLeader && { icon: "favorite", label: "Highest HP", hero: hpLeader.hero, value: hpLeader.value.toLocaleString() },
+            overallLeader && { icon: "workspace_premium", label: "Top Overall", hero: overallLeader.hero, value: `${Number(overallLeader.value).toFixed(2)}/10` },
+            skinLeader && { icon: "style", label: "Most Skins", hero: skinLeader.hero, value: `${skinLeader.value} skins` },
+          ].filter(Boolean);
+          leadersEl.innerHTML = rows.length ? rows.map((row) => {
+            const badge = getHeroBadgeImageSources(row.hero);
+            return `<button class="dashboard-list-item dashboard-leader-row" onclick="openModal('hero','${row.hero.id}')"><span class="material-symbols-outlined dashboard-leader-icon">${row.icon}</span><img src="${badge.src}" data-fallback-src="${badge.fallback}" data-fallback-src2="${badge.fallback2}" alt=""><span class="dashboard-list-copy"><strong>${escHtml(row.label)}</strong><small>${escHtml(row.hero.name)}</small></span><span class="dashboard-leader-value">${escHtml(row.value)}</span></button>`;
+          }).join("") : `<div class="dashboard-empty">Add hero stats and ratings to populate leaders.</div>`;
+        }
+
+        const revampingEl = document.getElementById("dashboard-revamping");
+        const revampingCountEl = document.getElementById("dashboard-revamping-count");
+        if (revampingEl) {
+          const marked = getRevamping();
+          const pool = [
+            ...heroes.map((item) => ({ item, type: "hero" })),
+            ...getSkins().map((item) => ({ item, type: "skin" })),
+            ...upcoming.map((item) => ({ item, type: item.itemType === "hero" ? "hero" : "skin" })),
+          ].filter(({ item }) => marked[item.id]);
+          if (revampingCountEl) revampingCountEl.textContent = pool.length ? `${pool.length} active` : "None";
+          revampingEl.innerHTML = pool.length
+            ? pool.slice(0, 8).map(({ item, type }) => dashboardRecordRow(item, !!item.itemType)).join("")
+            : `<div class="dashboard-empty dashboard-empty-success"><span class="material-symbols-outlined">check_circle</span> No entries marked Revamping.</div>`;
         }
 
         const issues = getDataHealthIssues();

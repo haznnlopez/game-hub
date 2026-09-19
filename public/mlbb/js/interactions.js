@@ -222,7 +222,7 @@
       // COLLAPSE / EXPAND ALL (Skin Count)
       // ============================================================
       function updateSkinCountGroupControls() {
-        const groups = [...document.querySelectorAll(".skin-group-details")];
+        const groups = [...document.querySelectorAll("#skin-count-list .skin-group-details")];
         const open = groups.filter((group) => !group.classList.contains("is-collapsed")).length;
         const status = document.getElementById("skin-count-group-status");
         if (status) status.textContent = `${open}/${groups.length} groups open`;
@@ -264,7 +264,7 @@
 
       function collapseAllGroups() {
         const cState = getData(KEYS.SKIN_COUNT_STATE, {});
-        document.querySelectorAll(".skin-group-details").forEach((group) => {
+        document.querySelectorAll("#skin-count-list .skin-group-details").forEach((group) => {
           setSkinCountGroupOpen(group, false, true);
           if (group.dataset.groupKey) cState[group.dataset.groupKey] = true;
         });
@@ -274,7 +274,7 @@
 
       function expandAllGroups() {
         const cState = getData(KEYS.SKIN_COUNT_STATE, {});
-        document.querySelectorAll(".skin-group-details").forEach((group) => {
+        document.querySelectorAll("#skin-count-list .skin-group-details").forEach((group) => {
           setSkinCountGroupOpen(group, true, true);
           if (group.dataset.groupKey) cState[group.dataset.groupKey] = false;
         });

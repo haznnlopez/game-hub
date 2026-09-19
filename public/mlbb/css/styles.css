@@ -6601,3 +6601,26 @@ body *::-webkit-scrollbar-corner {
 .build-subsection-head small { font-size:.62rem; color:var(--text-med); }
 .recommended-build-row.substitute { opacity:.9; }
 .recommended-build-row.substitute .recommended-build-label { color:#93c5fd; }
+
+
+/* V2.10.1 — attribute editor reliability */
+.attr-square-item .card-overlay-actions {
+  display: flex !important;
+  opacity: 0.72;
+  z-index: 20;
+}
+.attr-square-item:hover .card-overlay-actions,
+.attr-square-item:focus-within .card-overlay-actions { opacity: 1; }
+.attr-square-item .card-overlay-actions .overlay-btn {
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(2,6,23,0.82);
+  padding: 0;
+}
+.attr-edit-series-box {
+  margin: -0.2rem 0 1rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(251,191,36,0.22);
+  border-radius: 12px;
+  background: rgba(251,191,36,0.055);
+}
+.attr-edit-series-box .attr-inline-check { margin: 0; }

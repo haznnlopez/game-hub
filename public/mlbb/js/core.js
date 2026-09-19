@@ -894,6 +894,7 @@
         if (loadingEl) loadingEl.remove();
 
         loadDefaults();
+        seedAttributeImageBackup();
         migrateLegacySkinFamiliesToSeries();
         repairAttributesFromRecords(ADMIN.isAdmin);
         setupSidebar();
@@ -992,6 +993,7 @@
         { key: "game_hub_mlbb_skin_count_state", label: "Skin Count State" },
         { key: "game_hub_mlbb_sidebar_collapsed", label: "Sidebar State" },
         { key: "mlbb_attr_images", label: "Attribute Images" },
+        { key: "mlbb_attr_images_backup", label: "Attribute Images Auto-Backup" },
         { key: "mlbb_attr_bgs", label: "Attribute Backgrounds" },
         { key: "mlbb_attr_colors", label: "Attribute Colors" },
         { key: "mlbb_skillcat_groups", label: "Skill Category Groups" },
@@ -1184,12 +1186,19 @@
         };
       }
 
-      function getData(key, def = []) {
+      function parseStoredJson(value, fallback) {
+        if (value === null || value === undefined || value === "") return fallback;
+        if (typeof value === "object") return value;
+        if (typeof value !== "string") return fallback;
         try {
-          return JSON.parse(DB.getItem(key)) || def;
+          const parsed = JSON.parse(value);
+          return parsed === null || parsed === undefined ? fallback : parsed;
         } catch (e) {
-          return def;
+          return fallback;
         }
+      }
+      function getData(key, def = []) {
+        return parseStoredJson(DB.getItem(key), def);
       }
       function saveData(key, data) {
         const ok = safeLocalStorageSet(key, JSON.stringify(data));
@@ -1413,18 +1422,46 @@
           showToast("Attribute backup restored.", "success");
         });
       }
+      const ATTR_IMAGES_KEY = "mlbb_attr_images";
+      const ATTR_IMAGES_BACKUP_KEY = "mlbb_attr_images_backup";
       function getAttributeImages() {
         if (_attributeImagesData) return _attributeImagesData;
-        try {
-          _attributeImagesData = JSON.parse(DB.getItem("mlbb_attr_images") || "{}");
-        } catch (e) {
-          _attributeImagesData = {};
-        }
+        const current = parseStoredJson(DB.getItem(ATTR_IMAGES_KEY), {});
+        _attributeImagesData = current && typeof current === "object" && !Array.isArray(current) ? current : {};
         return _attributeImagesData;
       }
       function saveAttributeImages(d) {
-        _attributeImagesData = d;
-        safeLocalStorageSet("mlbb_attr_images", JSON.stringify(d));
+        const clean = d && typeof d === "object" && !Array.isArray(d) ? d : {};
+        const previous = parseStoredJson(DB.getItem(ATTR_IMAGES_KEY), {});
+        const prevJson = JSON.stringify(previous || {});
+        const nextJson = JSON.stringify(clean);
+        if (ADMIN.isAdmin && prevJson !== nextJson && prevJson !== "{}") {
+          safeLocalStorageSet(ATTR_IMAGES_BACKUP_KEY, prevJson);
+        }
+        _attributeImagesData = clean;
+        safeLocalStorageSet(ATTR_IMAGES_KEY, nextJson);
+      }
+      function seedAttributeImageBackup() {
+        if (!ADMIN.isAdmin) return;
+        const current = getAttributeImages();
+        const backup = parseStoredJson(DB.getItem(ATTR_IMAGES_BACKUP_KEY), null);
+        if (Object.keys(current || {}).length && (!backup || typeof backup !== "object" || !Object.keys(backup).length)) {
+          safeLocalStorageSet(ATTR_IMAGES_BACKUP_KEY, JSON.stringify(current));
+        }
+      }
+      function restoreAttributeImageBackup() {
+        const backup = parseStoredJson(DB.getItem(ATTR_IMAGES_BACKUP_KEY), null);
+        if (!backup || typeof backup !== "object" || Array.isArray(backup) || !Object.keys(backup).length) {
+          showToast("No attribute image backup is available yet.", "info");
+          return;
+        }
+        showConfirm("Restore the last attribute image backup? Current attribute images will be replaced.", () => {
+          _attributeImagesData = backup;
+          safeLocalStorageSet(ATTR_IMAGES_KEY, JSON.stringify(backup));
+          renderAttributesPage();
+          populateFilters();
+          showToast("Attribute images restored from backup.", "success");
+        });
       }
       function getAttrImage(key, val) {
         const imgs = getAttributeImages();
@@ -1439,11 +1476,8 @@
       }
       function getAttributeBackgrounds() {
         if (_attributeBackgroundsData) return _attributeBackgroundsData;
-        try {
-          _attributeBackgroundsData = JSON.parse(DB.getItem("mlbb_attr_bgs") || "{}");
-        } catch (e) {
-          _attributeBackgroundsData = {};
-        }
+        const current = parseStoredJson(DB.getItem("mlbb_attr_bgs"), {});
+        _attributeBackgroundsData = current && typeof current === "object" && !Array.isArray(current) ? current : {};
         return _attributeBackgroundsData;
       }
       function saveAttributeBackgrounds(d) {
@@ -1463,11 +1497,8 @@
       }
       function getAttributeColors() {
         if (_attributeColorsData) return _attributeColorsData;
-        try {
-          _attributeColorsData = JSON.parse(DB.getItem("mlbb_attr_colors") || "{}");
-        } catch (e) {
-          _attributeColorsData = {};
-        }
+        const current = parseStoredJson(DB.getItem("mlbb_attr_colors"), {});
+        _attributeColorsData = current && typeof current === "object" && !Array.isArray(current) ? current : {};
         return _attributeColorsData;
       }
       function saveAttributeColors(d) {
@@ -1488,20 +1519,15 @@
       const BUILD_ITEM_CATEGORIES = ["Physical", "Magic", "Defense", "Movement", "Jungle", "Roam"];
       function getAttributeMeta() {
         if (_attributeMetaData) return _attributeMetaData;
-        try {
-          const raw = JSON.parse(DB.getItem("mlbb_attr_meta") || "{}");
-          _attributeMetaData = {
-            skinRaritySeries: raw?.skinRaritySeries && typeof raw.skinRaritySeries === "object" ? raw.skinRaritySeries : {},
-            itemCategories: raw?.itemCategories && typeof raw.itemCategories === "object" ? raw.itemCategories : {},
-          };
-        } catch (e) {
-          _attributeMetaData = { skinRaritySeries: {}, itemCategories: {} };
-        }
+        const raw = parseStoredJson(DB.getItem("mlbb_attr_meta"), {});
+        _attributeMetaData = {
+          skinRaritySeries: raw?.skinRaritySeries && typeof raw.skinRaritySeries === "object" ? raw.skinRaritySeries : {},
+          itemCategories: raw?.itemCategories && typeof raw.itemCategories === "object" ? raw.itemCategories : {},
+        };
         return _attributeMetaData;
       }
       function saveAttributeMeta(meta) {
-        let previous = {};
-        try { previous = JSON.parse(DB.getItem("mlbb_attr_meta") || "{}"); } catch (e) {}
+        const previous = parseStoredJson(DB.getItem("mlbb_attr_meta"), {});
         const prevJson = JSON.stringify(previous || {});
         const nextJson = JSON.stringify(meta || {});
         if (ADMIN.isAdmin && prevJson !== nextJson && prevJson !== "{}") {
@@ -1864,8 +1890,14 @@
         const tagGroupMap = getTagGroupMap();
         const groups = getSkillCatGroups();
 
+        const attrDataEscape = (value) => String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
         const renderSquare = (v, renderKey = key) => {
-          const esc = v.replace(/'/g, "\'").replace(/"/g, "&quot;");
+          const safeValue = attrDataEscape(v);
+          const safeKey = attrDataEscape(renderKey);
           const renderImgMap = getAttributeImages()[renderKey] || {};
           const renderColMap = getAttributeColors()[renderKey] || {};
           const imgUrl = renderImgMap[v] || "";
@@ -1879,18 +1911,18 @@
                 ? `<img src="${imgUrl}" data-fallback-src="${IMAGE_PLACEHOLDER}">`
                 : `<img src="${IMAGE_PLACEHOLDER}" alt="Image unavailable">`
               : `<span class="material-symbols-outlined">label</span>`;
-          return `<div class="attr-square-item attr-reorderable" draggable="true" data-attr-key="${renderKey}" data-attr-value="${esc}" ondragstart="startAttributeDrag(event,'${renderKey}','${esc}')" ondragend="endAttributeDrag(event)" ondragover="attributeDragOver(event)" ondragleave="attributeDragLeave(event)" ondrop="dropAttribute(event,'${renderKey}','${esc}')">
+          return `<div class="attr-square-item attr-reorderable" draggable="true" data-attr-key="${safeKey}" data-attr-value="${safeValue}" ondragstart="startAttributeDragFromCard(event,this)" ondragend="endAttributeDrag(event)" ondragover="attributeDragOver(event)" ondragleave="attributeDragLeave(event)" ondrop="dropAttributeFromCard(event,this)">
               <div class="attr-reorder-controls">
-                <button type="button" class="attr-order-btn" title="Move earlier" onclick="event.stopPropagation();moveAttribute('${renderKey}','${esc}',-1)"><span class="material-symbols-outlined">chevron_left</span></button>
+                <button type="button" class="attr-order-btn" title="Move earlier" onclick="event.stopPropagation();moveAttributeFromCard(this,-1)"><span class="material-symbols-outlined">chevron_left</span></button>
                 <span class="attr-drag-handle material-symbols-outlined" title="Drag to rearrange">drag_indicator</span>
-                <button type="button" class="attr-order-btn" title="Move later" onclick="event.stopPropagation();moveAttribute('${renderKey}','${esc}',1)"><span class="material-symbols-outlined">chevron_right</span></button>
+                <button type="button" class="attr-order-btn" title="Move later" onclick="event.stopPropagation();moveAttributeFromCard(this,1)"><span class="material-symbols-outlined">chevron_right</span></button>
               </div>
               <div class="card-overlay-actions">
-                <div class="overlay-btn" title="Edit" onclick="editAttributeFull('${renderKey}','${esc}')"><span class="material-symbols-outlined">edit</span></div>
-                <div class="overlay-btn delete" title="Delete" onclick="deleteAttribute('${renderKey}','${esc}')"><span class="material-symbols-outlined">delete</span></div>
+                <button type="button" class="overlay-btn" title="Edit" onclick="event.stopPropagation();editAttributeFromCard(this)"><span class="material-symbols-outlined">edit</span></button>
+                <button type="button" class="overlay-btn delete" title="Delete" onclick="event.stopPropagation();deleteAttributeFromCard(this)"><span class="material-symbols-outlined">delete</span></button>
               </div>
               <div class="attr-square-thumb">${thumbHtml}</div>
-              <div class="attr-square-label" title="${esc}">${renderHasColor && color ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:5px;"></span>` : ""}${v}</div>${renderKey === "skinRarities" && isSkinSeriesRarity(v) ? `<div class="attr-meta-badges"><span class="attr-meta-badge series"><span class="material-symbols-outlined">collections</span>Series</span></div>` : ""}${renderKey === "items" && getItemCategories(v).length ? `<div class="attr-meta-badges">${getItemCategories(v).map((cat) => `<span class="attr-meta-badge">${cat}</span>`).join("")}</div>` : ""}
+              <div class="attr-square-label" title="${safeValue}">${renderHasColor && color ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:5px;"></span>` : ""}${v}</div>${renderKey === "skinRarities" && isSkinSeriesRarity(v) ? `<div class="attr-meta-badges"><span class="attr-meta-badge series"><span class="material-symbols-outlined">collections</span>Series</span></div>` : ""}${renderKey === "items" && getItemCategories(v).length ? `<div class="attr-meta-badges">${getItemCategories(v).map((cat) => `<span class="attr-meta-badge">${cat}</span>`).join("")}</div>` : ""}
             </div>`;
         };
 
@@ -1954,6 +1986,34 @@
         }
 
         container.innerHTML = `<h3>${titles[key]}</h3>${groupsBox}${addRow}${squareItems || `<div style="color:var(--text-med);font-size:0.85rem;">No items yet.</div>`}`;
+      }
+
+
+      function getAttributeCardContext(el) {
+        const card = el?.closest?.(".attr-square-item");
+        return card ? { key: card.dataset.attrKey || "", value: card.dataset.attrValue || "" } : { key: "", value: "" };
+      }
+      function editAttributeFromCard(el) {
+        const { key, value } = getAttributeCardContext(el);
+        if (key && value) editAttributeFull(key, value);
+      }
+      function deleteAttributeFromCard(el) {
+        const { key, value } = getAttributeCardContext(el);
+        if (key && value) deleteAttribute(key, value);
+      }
+      function moveAttributeFromCard(el, direction) {
+        const { key, value } = getAttributeCardContext(el);
+        if (key && value) moveAttribute(key, value, direction);
+      }
+      function startAttributeDragFromCard(event, card) {
+        const key = card?.dataset?.attrKey || "";
+        const value = card?.dataset?.attrValue || "";
+        if (key && value) startAttributeDrag(event, key, value);
+      }
+      function dropAttributeFromCard(event, card) {
+        const key = card?.dataset?.attrKey || "";
+        const value = card?.dataset?.attrValue || "";
+        if (key && value) dropAttribute(event, key, value);
       }
 
       function onGroupSelectChange(key) {

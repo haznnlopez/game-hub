@@ -572,15 +572,17 @@
 
         const pages = [
           ["Dashboard", "dashboard", "page-dashboard"],
-          ["Change Log", "history", "page-changelog"],
           ["Heroes", "person", "page-heroes"],
-          ["Hero Stats", "monitoring", "page-hero-stats"],
           ["Skins", "style", "page-skins"],
+          ["Hero Stats", "monitoring", "page-hero-stats"],
+          ["Hero Count", "groups", "page-hero-count"],
           ["Skin Count", "analytics", "page-skin-count"],
-          ["Upcoming", "update", "page-upcoming"],
-          ["Attributes", "tune", "page-attributes"],
           ["Matrix", "grid_view", "page-matrix"],
+          ["Change Log", "history", "page-changelog"],
+          ["Upcoming", "update", "page-upcoming"],
           ["Tier List", "leaderboard", "page-tier-list"],
+          ["Attributes", "tune", "page-attributes"],
+          ["Settings", "settings", "page-settings"],
         ];
 
         const getMatches = (query) => {
@@ -710,7 +712,12 @@
         if (search) search.addEventListener("input", debounce(() => renderChangeLogPage(), 180));
         if (type) type.addEventListener("change", () => renderChangeLogPage());
         renderDashboardPage();
+        const settings = typeof getUiSettings === "function" ? getUiSettings() : null;
+        if (settings && typeof applyUiSettings === "function") applyUiSettings(settings);
         const activePage = document.querySelector(".page.active")?.id || "page-dashboard";
         currentPageId = activePage;
-        document.querySelectorAll(".sidebar-button[data-page]").forEach((btn) => btn.classList.toggle("active", btn.dataset.page === activePage));
+        if (typeof updateSidebarActive === "function") updateSidebarActive(activePage);
+        if (typeof syncSectionNavigation === "function") syncSectionNavigation(activePage);
+        const landing = settings?.defaultPage || "page-dashboard";
+        if (landing !== activePage && document.getElementById(landing)) showPage(landing);
       }

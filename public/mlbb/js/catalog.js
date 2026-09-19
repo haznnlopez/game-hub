@@ -757,6 +757,206 @@
         // Everything else: strip query params / path suffixes after extension
         return url.replace(/(\.(?:png|jpg|jpeg|webp))[^#]*/i, "$1");
       }
+
+      // ---------------- HERO COUNT ----------------
+      let heroCountChart = null;
+      let heroCountChartVisible = false;
+      const HERO_COUNT_GROUPS = {
+        role: { label: "Role", icon: "swords" },
+        lane: { label: "Lane", icon: "route" },
+        specialty: { label: "Specialty", icon: "auto_awesome" },
+        nation: { label: "Nation", icon: "public" },
+      };
+
+      function heroCountEscape(value) {
+        return String(value ?? "").replace(/[&<>'"]/g, (ch) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[ch]);
+      }
+
+      function getHeroCountValues(hero, mode) {
+        if (mode === "role") return Array.isArray(hero.roles) && hero.roles.length ? hero.roles : ["Unspecified"];
+        if (mode === "lane") return Array.isArray(hero.lanes) && hero.lanes.length ? hero.lanes : ["Unspecified"];
+        if (mode === "specialty") return Array.isArray(hero.specialties) && hero.specialties.length ? hero.specialties : ["Unspecified"];
+        if (mode === "nation") return hero.nation ? [hero.nation] : ["Unspecified"];
+        return ["Unspecified"];
+      }
+
+      function getHeroCountData() {
+        const mode = document.getElementById("hero-count-group-by")?.value || "role";
+        const query = (document.getElementById("hero-count-search")?.value || "").trim().toLowerCase();
+        const groups = new Map();
+        getHeroes().forEach((hero) => {
+          getHeroCountValues(hero, mode).forEach((value) => {
+            const key = String(value || "Unspecified");
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(hero);
+          });
+        });
+        return [...groups.entries()]
+          .map(([name, heroes]) => ({ name, heroes: heroes.sort((a,b) => String(a.name).localeCompare(String(b.name))) }))
+          .filter((group) => !query || group.name.toLowerCase().includes(query) || group.heroes.some((hero) => String(hero.name || "").toLowerCase().includes(query)))
+          .sort((a,b) => b.heroes.length - a.heroes.length || a.name.localeCompare(b.name));
+      }
+
+      function setHeroCountGroupBy(mode) {
+        if (!HERO_COUNT_GROUPS[mode]) return;
+        const input = document.getElementById("hero-count-group-by");
+        if (input) input.value = mode;
+        renderHeroCountPage();
+      }
+
+      function renderHeroCountPills() {
+        const root = document.getElementById("hero-count-group-pills");
+        if (!root) return;
+        const selected = document.getElementById("hero-count-group-by")?.value || "role";
+        root.innerHTML = Object.entries(HERO_COUNT_GROUPS).map(([key, meta]) => `<button type="button" class="filter-pill${selected === key ? " active" : ""}" onclick="setHeroCountGroupBy('${key}')"><span class="material-symbols-outlined">${meta.icon}</span><span>${meta.label}</span></button>`).join("");
+      }
+
+      function renderHeroCountPage() {
+        const list = document.getElementById("hero-count-list");
+        if (!list) return;
+        const heroes = getHeroes();
+        const mode = document.getElementById("hero-count-group-by")?.value || "role";
+        const groups = getHeroCountData();
+        const total = document.getElementById("total-heroes-number");
+        if (total) total.textContent = heroes.length;
+        renderHeroCountPills();
+
+        const largest = groups[0] || null;
+        const assigned = heroes.filter((hero) => !getHeroCountValues(hero, mode).includes("Unspecified")).length;
+        const membershipTotal = groups.reduce((sum, group) => sum + group.heroes.length, 0);
+        const avgMembership = heroes.length ? membershipTotal / heroes.length : 0;
+        const analytics = document.getElementById("hero-count-analytics");
+        if (analytics) analytics.innerHTML = `<div class="skin-analytics-kpis hero-count-kpis">
+          <div class="skin-analytics-kpi"><span class="material-symbols-outlined">category</span><div><small>Groups</small><strong>${groups.length}</strong><em>${HERO_COUNT_GROUPS[mode]?.label || "Groups"}</em></div></div>
+          <div class="skin-analytics-kpi"><span class="material-symbols-outlined">emoji_events</span><div><small>Largest Group</small><strong>${heroCountEscape(largest?.name || "—")}</strong><em>${largest ? `${largest.heroes.length} heroes` : "No data"}</em></div></div>
+          <div class="skin-analytics-kpi"><span class="material-symbols-outlined">data_check</span><div><small>Coverage</small><strong>${heroes.length ? Math.round((assigned / heroes.length) * 100) : 0}%</strong><em>${assigned}/${heroes.length} assigned</em></div></div>
+          <div class="skin-analytics-kpi"><span class="material-symbols-outlined">join_inner</span><div><small>Avg Memberships</small><strong>${avgMembership.toFixed(2)}</strong><em>per hero</em></div></div>
+        </div>`;
+
+        list.innerHTML = groups.length ? groups.map((group, index) => {
+          const avatars = group.heroes.slice(0, 8).map((hero) => {
+            const src = getHeroBadgeImageSources(hero);
+            return `<button class="hero-count-avatar" type="button" onclick="event.stopPropagation();openModal('hero','${hero.id}')" data-tooltip="${heroCountEscape(hero.name)}"><img src="${src.src}" data-fallback-src="${src.fallback}" data-fallback-src2="${src.fallback2}" alt=""></button>`;
+          }).join("");
+          return `<details class="skin-group-details hero-count-group" open>
+            <summary class="hero-count-group-summary"><span class="hero-count-group-name"><span class="material-symbols-outlined">${HERO_COUNT_GROUPS[mode]?.icon || "group"}</span><strong>${heroCountEscape(group.name)}</strong></span><span class="hero-count-group-preview">${avatars}</span><span class="hero-count-group-count">${group.heroes.length}</span><span class="material-symbols-outlined hero-count-chevron">expand_more</span></summary>
+            <div class="hero-count-group-body">${group.heroes.map((hero) => {
+              const src = getHeroBadgeImageSources(hero);
+              return `<button type="button" class="hero-count-row" onclick="openModal('hero','${hero.id}')"><img src="${src.src}" data-fallback-src="${src.fallback}" data-fallback-src2="${src.fallback2}" alt=""><span><strong>${heroCountEscape(hero.name)}</strong><small>${heroCountEscape((hero.roles || []).join(" · ") || hero.nation || "Hero")}</small></span><span class="material-symbols-outlined">chevron_right</span></button>`;
+            }).join("")}</div>
+          </details>`;
+        }).join("") : `<div class="hero-stats-empty"><span class="material-symbols-outlined">group_off</span><strong>No matching groups</strong><span>Try another search or grouping.</span></div>`;
+
+        list.querySelectorAll("details").forEach((el) => el.addEventListener("toggle", updateHeroCountGroupStatus));
+        updateHeroCountGroupStatus();
+        if (heroCountChartVisible) renderHeroCountChart(groups);
+      }
+
+      function updateHeroCountGroupStatus() {
+        const groups = [...document.querySelectorAll("#hero-count-list details.hero-count-group")];
+        const open = groups.filter((group) => group.open).length;
+        const status = document.getElementById("hero-count-group-status");
+        if (status) status.textContent = `${open}/${groups.length} groups open`;
+        const collapse = document.getElementById("hero-count-collapse-all");
+        const expand = document.getElementById("hero-count-expand-all");
+        if (collapse) collapse.disabled = open === 0 || groups.length === 0;
+        if (expand) expand.disabled = open === groups.length || groups.length === 0;
+      }
+
+      function collapseAllHeroCountGroups() {
+        document.querySelectorAll("#hero-count-list details.hero-count-group").forEach((group) => { group.open = false; });
+        updateHeroCountGroupStatus();
+      }
+
+      function expandAllHeroCountGroups() {
+        document.querySelectorAll("#hero-count-list details.hero-count-group").forEach((group) => { group.open = true; });
+        updateHeroCountGroupStatus();
+      }
+
+      function heroCountPalette(count) {
+        const colors = [];
+        for (let i = 0; i < count; i += 1) colors.push(`hsl(${(42 + i * 47) % 360} 72% ${52 + (i % 3) * 5}% / .88)`);
+        return colors;
+      }
+
+      function renderHeroCountChart(groups = getHeroCountData()) {
+        const canvas = document.getElementById("hero-count-chart");
+        const legend = document.getElementById("hero-count-chart-legend");
+        if (!canvas || typeof Chart === "undefined") return;
+        if (heroCountChart) heroCountChart.destroy();
+        const labels = groups.map((group) => group.name);
+        const values = groups.map((group) => group.heroes.length);
+        const colors = heroCountPalette(groups.length);
+        heroCountChart = new Chart(canvas, {
+          type: "doughnut",
+          data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0, hoverOffset: 7 }] },
+          options: { responsive: true, maintainAspectRatio: false, cutout: "66%", plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} heroes` } } } },
+        });
+        if (legend) legend.innerHTML = groups.map((group, index) => `<div class="skin-count-chart-legend-row"><span class="skin-count-chart-legend-swatch" style="background:${colors[index]}"></span><span>${heroCountEscape(group.name)}</span><strong>${group.heroes.length}</strong></div>`).join("");
+      }
+
+      function toggleHeroCountChart() {
+        heroCountChartVisible = !heroCountChartVisible;
+        const container = document.getElementById("hero-count-chart-container");
+        const label = document.getElementById("hero-count-view-stats-label");
+        if (container) container.style.display = heroCountChartVisible ? "block" : "none";
+        if (label) label.textContent = heroCountChartVisible ? "Hide Stats" : "View Stats";
+        if (heroCountChartVisible) renderHeroCountChart();
+      }
+
+      // ---------------- SETTINGS ----------------
+      const UI_SETTINGS_KEY = "game_hub_mlbb_ui_settings_v1";
+      const UI_SETTINGS_DEFAULTS = { defaultPage: "page-dashboard", compact: false, reduceMotion: false };
+
+      function getUiSettings() {
+        try { return { ...UI_SETTINGS_DEFAULTS, ...(JSON.parse(localStorage.getItem(UI_SETTINGS_KEY) || "{}") || {}) }; }
+        catch (_) { return { ...UI_SETTINGS_DEFAULTS }; }
+      }
+
+      function applyUiSettings(settings = getUiSettings()) {
+        document.body.classList.toggle("ui-compact", !!settings.compact);
+        document.body.classList.toggle("ui-reduced-motion", !!settings.reduceMotion);
+      }
+
+      function renderSettingsPage() {
+        const settings = getUiSettings();
+        const defaultPage = document.getElementById("settings-default-page");
+        const compact = document.getElementById("settings-compact-ui");
+        const reduce = document.getElementById("settings-reduce-motion");
+        const collapsed = document.getElementById("settings-sidebar-collapsed");
+        if (defaultPage) defaultPage.value = settings.defaultPage || "page-dashboard";
+        if (compact) compact.checked = !!settings.compact;
+        if (reduce) reduce.checked = !!settings.reduceMotion;
+        if (collapsed) collapsed.checked = document.getElementById("sidebar")?.classList.contains("collapsed") || false;
+      }
+
+      function saveUiPreferences() {
+        const settings = {
+          defaultPage: document.getElementById("settings-default-page")?.value || "page-dashboard",
+          compact: !!document.getElementById("settings-compact-ui")?.checked,
+          reduceMotion: !!document.getElementById("settings-reduce-motion")?.checked,
+        };
+        localStorage.setItem(UI_SETTINGS_KEY, JSON.stringify(settings));
+        const shouldCollapse = !!document.getElementById("settings-sidebar-collapsed")?.checked;
+        const sidebar = document.getElementById("sidebar");
+        const content = document.querySelector(".main-content");
+        sidebar?.classList.toggle("collapsed", shouldCollapse);
+        content?.classList.toggle("sidebar-collapsed", shouldCollapse);
+        localStorage.setItem(KEYS.SIDEBAR, shouldCollapse);
+        applyUiSettings(settings);
+        showToast("Settings saved", "success");
+      }
+
+      function resetUiPreferences() {
+        localStorage.removeItem(UI_SETTINGS_KEY);
+        localStorage.setItem(KEYS.SIDEBAR, "false");
+        document.getElementById("sidebar")?.classList.remove("collapsed");
+        document.querySelector(".main-content")?.classList.remove("sidebar-collapsed");
+        applyUiSettings(UI_SETTINGS_DEFAULTS);
+        renderSettingsPage();
+        showToast("UI preferences reset", "success");
+      }
+
       // Builds a data-cat-tooltip attribute (JSON list of category names) used to
       // render colored category tag pills on hover, instead of plain text.
       function buildCatTooltipAttr(categories) {
@@ -790,6 +990,73 @@
           );
         }
       }
+      const NAV_ROOT_BY_PAGE = {
+        "page-dashboard": "page-dashboard",
+        "page-heroes": "page-heroes",
+        "page-skins": "page-heroes",
+        "page-hero-form": "page-heroes",
+        "page-skin-form": "page-heroes",
+        "page-hero-stats": "page-hero-stats",
+        "page-hero-count": "page-hero-stats",
+        "page-skin-count": "page-hero-stats",
+        "page-matrix": "page-hero-stats",
+        "page-changelog": "page-changelog",
+        "page-upcoming": "page-changelog",
+        "page-tier-list": "page-tier-list",
+        "page-attributes": "page-attributes",
+        "page-settings": "page-settings",
+      };
+
+      const SECTION_TAB_GROUPS = {
+        collection: [
+          ["page-heroes", "person", "Heroes"],
+          ["page-skins", "style", "Skins"],
+        ],
+        stats: [
+          ["page-hero-stats", "monitoring", "Hero Stats"],
+          ["page-hero-count", "groups", "Hero Count"],
+          ["page-skin-count", "analytics", "Skin Count"],
+          ["page-matrix", "grid_view", "Matrix"],
+        ],
+        updates: [
+          ["page-changelog", "history", "Change Log"],
+          ["page-upcoming", "update", "Upcoming"],
+        ],
+      };
+
+      function getNavRootForPage(pid) {
+        return NAV_ROOT_BY_PAGE[pid] || pid;
+      }
+
+      function getSectionTabGroup(pid) {
+        if (["page-heroes", "page-skins"].includes(pid)) return "collection";
+        if (["page-hero-stats", "page-hero-count", "page-skin-count", "page-matrix"].includes(pid)) return "stats";
+        if (["page-changelog", "page-upcoming"].includes(pid)) return "updates";
+        return null;
+      }
+
+      function updateSidebarActive(pid) {
+        const root = getNavRootForPage(pid);
+        document.querySelectorAll(".sidebar-button[data-page]").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.page === root);
+        });
+      }
+
+      function syncSectionNavigation(pid) {
+        const host = document.getElementById("section-subnav-host");
+        if (!host) return;
+        const groupKey = getSectionTabGroup(pid);
+        if (!groupKey) {
+          host.hidden = true;
+          host.innerHTML = "";
+          return;
+        }
+        const tabs = SECTION_TAB_GROUPS[groupKey] || [];
+        const activePid = pid === "page-hero-form" ? "page-heroes" : pid === "page-skin-form" ? "page-skins" : pid;
+        host.innerHTML = `<div class="section-subnav" role="tablist">${tabs.map(([page, icon, label]) => `<button type="button" class="section-subnav-tab${page === activePid ? " active" : ""}" onclick="showPage('${page}')" role="tab" aria-selected="${page === activePid}"><span class="material-symbols-outlined">${icon}</span><span>${label}</span></button>`).join("")}</div>`;
+        host.hidden = false;
+      }
+
       function setupSidebar() {
         const s = document.getElementById("sidebar");
         const c = document.querySelector(".main-content");
@@ -797,11 +1064,20 @@
           s.classList.add("collapsed");
           c.classList.add("sidebar-collapsed");
         }
-        document.getElementById("toggle-sidebar").onclick = () => {
+        const toggle = document.getElementById("toggle-sidebar");
+        const syncSidebarToggle = () => {
+          if (!toggle) return;
+          const collapsed = s.classList.contains("collapsed");
+          toggle.setAttribute("aria-label", collapsed ? "Expand sidebar" : "Collapse sidebar");
+          toggle.dataset.tooltip = collapsed ? "Expand sidebar" : "Collapse sidebar";
+        };
+        if (toggle) toggle.onclick = () => {
           s.classList.toggle("collapsed");
           c.classList.toggle("sidebar-collapsed");
           localStorage.setItem(KEYS.SIDEBAR, s.classList.contains("collapsed"));
+          syncSidebarToggle();
         };
+        syncSidebarToggle();
 
         const btn = document.getElementById("back-to-top");
         if (btn) {
@@ -812,47 +1088,33 @@
         }
       }
       function setupNavigation() {
-        document.querySelectorAll(".sidebar-button[data-page]").forEach(
-          (b) =>
-            (b.onclick = () => {
-              document
-                .querySelectorAll(".sidebar-button")
-                .forEach((btn) => btn.classList.remove("active"));
-              b.classList.add("active");
-              document
-                .querySelectorAll(".page")
-                .forEach((p) => p.classList.remove("active"));
-              document.getElementById(b.dataset.page).classList.add("active");
-              showPage(b.dataset.page);
-            }),
-        );
+        document.querySelectorAll(".sidebar-button[data-page]").forEach((button) => {
+          button.onclick = () => showPage(button.dataset.page);
+        });
       }
       function showPage(pid, restoreScroll = false) {
-        document
-          .querySelectorAll(".page")
-          .forEach((p) => p.classList.remove("active"));
+        document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
         const targetPage = document.getElementById(pid);
         if (!targetPage) return;
         targetPage.classList.add("active");
-        document.querySelectorAll(".sidebar-button[data-page]").forEach((btn) =>
-          btn.classList.toggle("active", btn.dataset.page === pid),
-        );
+        updateSidebarActive(pid);
+        syncSectionNavigation(pid);
         currentPageId = pid;
-        if (restoreScroll) {
-          restoreScrollPos(pid);
-        } else {
-          scrollToTop();
-        }
+        if (restoreScroll) restoreScrollPos(pid);
+        else scrollToTop();
+
         if (pid === "page-dashboard" && typeof renderDashboardPage === "function") renderDashboardPage();
         if (pid === "page-changelog" && typeof renderChangeLogPage === "function") renderChangeLogPage();
         if (pid === "page-heroes") renderHeroesPage();
         if (pid === "page-hero-stats") renderHeroStatsPage();
+        if (pid === "page-hero-count") renderHeroCountPage();
         if (pid === "page-skins") renderSkinsPage();
         if (pid === "page-skin-count") renderSkinCountPage();
         if (pid === "page-upcoming") renderUpcomingPage();
         if (pid === "page-attributes") renderAttributesPage();
         if (pid === "page-matrix") renderMatrixPage();
         if (pid === "page-tier-list") renderTierListPage();
+        if (pid === "page-settings") renderSettingsPage();
       }
       function showToast(m, t = "info") {
         const c = document.getElementById("toast-container");

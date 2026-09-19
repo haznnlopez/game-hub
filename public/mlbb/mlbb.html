@@ -57,55 +57,35 @@
         <div class="sidebar-logo"></div>
         <h2 class="sidebar-game-name">Mobile Legends: BB</h2>
       </div>
-      <nav class="sidebar-nav">
+      <nav class="sidebar-nav" aria-label="Primary navigation">
         <button class="sidebar-button" data-page="page-dashboard">
           <span class="material-symbols-outlined">dashboard</span>
           <span>Dashboard</span>
         </button>
-        <button class="sidebar-button" data-page="page-changelog">
-          <span class="material-symbols-outlined">history</span>
-          <span>Change Log</span>
-        </button>
         <button class="sidebar-button" data-page="page-heroes">
-          <span class="material-symbols-outlined">person</span>
-          <span>Heroes</span>
+          <span class="material-symbols-outlined">collections_bookmark</span>
+          <span>Heroes &amp; Skins</span>
         </button>
         <button class="sidebar-button" data-page="page-hero-stats">
           <span class="material-symbols-outlined">monitoring</span>
-          <span>Hero Stats</span>
+          <span>Stats</span>
         </button>
-        <button class="sidebar-button" data-page="page-skins">
-          <span class="material-symbols-outlined">magic_button</span>
-          <span>Skins</span>
-        </button>
-        <button class="sidebar-button" data-page="page-skin-count">
-          <span class="material-symbols-outlined">analytics</span>
-          <span>Skin Count</span>
-        </button>
-        <button class="sidebar-button" data-page="page-upcoming">
+        <button class="sidebar-button" data-page="page-changelog">
           <span class="material-symbols-outlined">update</span>
-          <span>Upcoming</span>
-        </button>
-        <button class="sidebar-button" data-page="page-attributes">
-          <span class="material-symbols-outlined">tune</span>
-          <span>Attributes</span>
-        </button>
-        <button class="sidebar-button" data-page="page-matrix">
-          <span class="material-symbols-outlined">grid_view</span>
-          <span>Matrix</span>
+          <span>Change Log &amp; Upcoming</span>
         </button>
         <button class="sidebar-button" data-page="page-tier-list">
           <span class="material-symbols-outlined">leaderboard</span>
           <span>Tier List</span>
         </button>
-        <a
-          href="../index.html"
-          onclick="changeGame(event)"
-          class="sidebar-button"
-          style="text-decoration: none; margin-top: auto"
-          ><span class="material-symbols-outlined">swap_horiz</span>
-          <span>Change Game</span></a
-        >
+        <button class="sidebar-button" data-page="page-attributes">
+          <span class="material-symbols-outlined">tune</span>
+          <span>Attributes</span>
+        </button>
+        <button class="sidebar-button" data-page="page-settings">
+          <span class="material-symbols-outlined">settings</span>
+          <span>Settings</span>
+        </button>
       </nav>
       <div class="sidebar-footer">
         <div
@@ -137,14 +117,13 @@
           class="sidebar-button"
           onclick="openStorageManager()"
         >
-          <span class="material-symbols-outlined">cloud_sync</span>
-          <span>Backup &amp; Database</span>
-        </button>
-        <button id="toggle-sidebar" class="sidebar-button">
-          <span class="material-symbols-outlined">menu_open</span>
-          <span>Collapse</span>
+          <span class="material-symbols-outlined">database</span>
+          <span>Database</span>
         </button>
       </div>
+      <button id="toggle-sidebar" class="sidebar-collapse-handle" type="button" aria-label="Collapse sidebar" data-tooltip="Collapse sidebar">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
     </aside>
 
     <main class="main-content">
@@ -156,6 +135,7 @@
           <div id="global-search-results" class="global-search-results" hidden></div>
         </div>
       </div>
+      <div id="section-subnav-host" class="section-subnav-host" hidden></div>
       <div class="content-wrapper">
         <div id="page-dashboard" class="page active">
           <header class="page-header dashboard-header">
@@ -480,6 +460,55 @@
           >
             No skins found.
           </div>
+        </div>
+
+        <div id="page-hero-count" class="page">
+          <header class="page-header">
+            <div>
+              <h1>Hero Count</h1>
+              <p class="page-subtitle">See how the hero roster is distributed across roles, lanes, specialties, and nations.</p>
+            </div>
+            <div class="hero-count-group-toolbar">
+              <span id="hero-count-group-status" class="skin-count-group-status">0/0 groups open</span>
+              <div class="skin-count-group-actions">
+                <button id="hero-count-collapse-all" class="btn btn-secondary btn-sm" type="button" onclick="collapseAllHeroCountGroups()" data-tooltip="Collapse every visible group">
+                  <span class="material-symbols-outlined">unfold_less</span><span>Collapse</span>
+                </button>
+                <button id="hero-count-expand-all" class="btn btn-secondary btn-sm" type="button" onclick="expandAllHeroCountGroups()" data-tooltip="Expand every visible group">
+                  <span class="material-symbols-outlined">unfold_more</span><span>Expand</span>
+                </button>
+              </div>
+            </div>
+          </header>
+          <div id="hero-count-widget" class="hero-count-widget unified-card">
+            <div class="hero-count-total-block">
+              <strong id="total-heroes-number">0</strong>
+              <span>Heroes</span>
+              <button id="hero-count-view-stats-btn" class="btn btn-secondary btn-sm" type="button" onclick="toggleHeroCountChart()">
+                <span class="material-symbols-outlined">donut_large</span>
+                <span id="hero-count-view-stats-label">View Stats</span>
+              </button>
+            </div>
+            <div id="hero-count-chart-container" class="skin-count-chart-container hero-count-chart-container" style="display:none">
+              <div class="skin-count-chart-layout">
+                <div class="skin-count-chart-canvas-wrap"><canvas id="hero-count-chart"></canvas></div>
+                <div id="hero-count-chart-legend" class="skin-count-chart-legend" aria-label="Hero count chart legend"></div>
+              </div>
+            </div>
+          </div>
+          <div id="hero-count-analytics" class="skin-count-analytics" aria-live="polite"></div>
+          <div class="filters-bar hero-count-filters">
+            <div class="filter-item">
+              <label class="form-label">Group By</label>
+              <input id="hero-count-group-by" type="hidden" value="role">
+              <div id="hero-count-group-pills" class="filter-pill-row" aria-label="Group hero count by"></div>
+            </div>
+            <div class="filter-item">
+              <label class="form-label">Search</label>
+              <input id="hero-count-search" class="form-input" type="search" placeholder="Search groups or heroes..." autocomplete="off" oninput="renderHeroCountPage()">
+            </div>
+          </div>
+          <div id="hero-count-list"></div>
         </div>
 
         <div id="page-skin-count" class="page">
@@ -885,6 +914,55 @@
                 ></div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div id="page-settings" class="page">
+          <header class="page-header">
+            <div>
+              <h1>Settings</h1>
+              <p class="page-subtitle">Personalize navigation and interface behavior for this browser.</p>
+            </div>
+          </header>
+          <div class="settings-grid">
+            <section class="settings-card">
+              <div class="settings-card-head">
+                <span class="material-symbols-outlined">home</span>
+                <div><h2>Startup</h2><p>Choose which section opens first when the app loads.</p></div>
+              </div>
+              <label class="form-group">
+                <span class="form-label">Default landing section</span>
+                <select id="settings-default-page" class="form-select">
+                  <option value="page-dashboard">Dashboard</option>
+                  <option value="page-heroes">Heroes &amp; Skins</option>
+                  <option value="page-hero-stats">Stats</option>
+                  <option value="page-changelog">Change Log &amp; Upcoming</option>
+                  <option value="page-tier-list">Tier List</option>
+                  <option value="page-attributes">Attributes</option>
+                  <option value="page-settings">Settings</option>
+                </select>
+              </label>
+            </section>
+            <section class="settings-card">
+              <div class="settings-card-head">
+                <span class="material-symbols-outlined">view_compact</span>
+                <div><h2>Interface</h2><p>Adjust density and motion without changing your data.</p></div>
+              </div>
+              <label class="settings-toggle-row"><span><strong>Compact spacing</strong><small>Tighten cards, panels, and page spacing.</small></span><input id="settings-compact-ui" type="checkbox"></label>
+              <label class="settings-toggle-row"><span><strong>Reduce interface motion</strong><small>Disable most UI animations and transitions.</small></span><input id="settings-reduce-motion" type="checkbox"></label>
+              <label class="settings-toggle-row"><span><strong>Keep sidebar collapsed</strong><small>Use the compact icon-only sidebar on desktop.</small></span><input id="settings-sidebar-collapsed" type="checkbox"></label>
+            </section>
+            <section class="settings-card settings-card-wide">
+              <div class="settings-card-head">
+                <span class="material-symbols-outlined">sports_esports</span>
+                <div><h2>Application</h2><p>Navigation actions that do not affect the MLBB database.</p></div>
+              </div>
+              <div class="settings-actions">
+                <button class="btn btn-secondary" type="button" onclick="changeGame(event)"><span class="material-symbols-outlined">swap_horiz</span> Change Game</button>
+                <button class="btn btn-secondary" type="button" onclick="resetUiPreferences()"><span class="material-symbols-outlined">restart_alt</span> Reset UI Preferences</button>
+                <button class="btn btn-primary" type="button" onclick="saveUiPreferences()"><span class="material-symbols-outlined">save</span> Save Settings</button>
+              </div>
+            </section>
           </div>
         </div>
 

@@ -880,17 +880,11 @@
       }
 
       function cleanImageUrl(url) {
+        // Preserve image URLs exactly as entered. Many CDNs/Fandom/Wikia links
+        // require query strings or path suffixes; stripping them can turn a
+        // valid image into a 403/404 and trigger the global placeholder.
         if (!url) return "";
-        url = url.replace(/\/thumb\//g, "/");
-        if (url.includes("/revision/latest")) {
-          // Fandom: strip scale/resize paths but keep /revision/latest?cb=TIMESTAMP
-          return url.replace(
-            /(\.(?:png|jpg|jpeg|webp))(?:\/[^?]*)?\/revision\/latest(?:\/[^?]*)?(\?cb=\d+)?[^#]*/i,
-            "$1/revision/latest$2",
-          );
-        }
-        // Everything else: strip query params / path suffixes after extension
-        return url.replace(/(\.(?:png|jpg|jpeg|webp))[^#]*/i, "$1");
+        return String(url).trim();
       }
 
       // ---------------- HERO COUNT ----------------

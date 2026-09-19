@@ -1548,19 +1548,37 @@
         }
         return "";
       }
-      function getAttrImage(key, val) {
-        const current = getAttributeImages();
-        const live = findAttributeImageInMap(current, key, val);
-        if (live) return live;
-
-        // Read-through fallback: if a previous regression removed only the
-        // live entry, the grid can still render the last backed-up URL without
-        // requiring the user to restore the entire image map first.
+      function collectAttributeImagesFromMap(map, key, val) {
+        if (!map || typeof map !== "object" || Array.isArray(map)) return [];
+        const rawName = String(val ?? "");
+        const trimmed = rawName.trim();
+        const folded = trimmed.toLocaleLowerCase();
+        const group = map[key] && typeof map[key] === "object" && !Array.isArray(map[key]) ? map[key] : {};
+        const out = [];
+        const push = (value) => {
+          const url = normalizeAttributeImageValue(value);
+          if (url && !out.includes(url)) out.push(url);
+        };
+        push(group[rawName]);
+        if (trimmed !== rawName) push(group[trimmed]);
+        Object.keys(group)
+          .filter((candidate) => String(candidate).trim().toLocaleLowerCase() === folded)
+          .forEach((candidate) => push(group[candidate]));
+        return out;
+      }
+      function getAttrImageCandidates(key, val) {
+        const candidates = [];
+        const push = (url) => {
+          const clean = normalizeAttributeImageValue(url);
+          if (clean && !candidates.includes(clean)) candidates.push(clean);
+        };
+        collectAttributeImagesFromMap(getAttributeImages(), key, val).forEach(push);
         const backup = parseStoredJson(DB.getItem(ATTR_IMAGES_BACKUP_KEY), {});
-        const backedUp = findAttributeImageInMap(backup, key, val);
-        if (backedUp) return backedUp;
-
-        return "";
+        collectAttributeImagesFromMap(backup, key, val).forEach(push);
+        return candidates;
+      }
+      function getAttrImage(key, val) {
+        return getAttrImageCandidates(key, val)[0] || "";
       }
       function setAttrImage(key, val, url) {
         const imgs = getAttributeImages();
@@ -2002,12 +2020,19 @@
           // path as the original working Attributes grid. getAttrImage also
           // falls back to the automatic image backup when the live entry was
           // lost by an older regression.
-          const imgUrl = getAttrImage(renderKey, v);
+          const imageCandidates = getAttrImageCandidates(renderKey, v);
+          const imgUrl = imageCandidates[0] || "";
+          const fallback1 = imageCandidates[1] || "";
+          const fallback2 = imageCandidates[2] || "";
           const color = renderColMap[v] || "";
           const renderHasColor = ATTR_COLOR_KEYS.includes(renderKey);
           const safeImgUrl = attrDataEscape(imgUrl);
+          const fallbackAttrs = [
+            fallback1 ? `data-fallback-src="${attrDataEscape(fallback1)}"` : "",
+            fallback2 ? `data-fallback-src2="${attrDataEscape(fallback2)}"` : "",
+          ].filter(Boolean).join(" ");
           const thumbHtml = imgUrl
-            ? `<div class="attr-grid-image-frame"><img class="attr-grid-image" src="${safeImgUrl}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="${safeValue}" referrerpolicy="no-referrer"></div>`
+            ? `<div class="attr-grid-image-frame"><img class="attr-grid-image" src="${safeImgUrl}" ${fallbackAttrs} alt="${safeValue}"></div>`
             : renderHasColor
               ? `<div style="width:100%;height:100%;border-radius:8px;background:${color || "var(--bg-light)"};display:flex;align-items:center;justify-content:center;">${color ? "" : `<span class="material-symbols-outlined" style="opacity:0.5;">palette</span>`}</div>`
               : `<div class="attr-grid-image-frame empty"><img class="attr-grid-image image-fallback" src="${IMAGE_PLACEHOLDER}" alt="Image unavailable"></div>`;

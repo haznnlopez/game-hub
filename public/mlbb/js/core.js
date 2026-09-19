@@ -1,4 +1,4 @@
-      const APP_VERSION = "2.11.0";
+      const APP_VERSION = "2.11.1";
 
       const KEYS = {
         HEROES: "game_hub_mlbb_heroes",
@@ -305,6 +305,12 @@
 
       function applyImageFallback(img) {
         if (!img || img.tagName !== "IMG") return;
+        if (img.dataset?.attrGridImage === "true") {
+          img.classList.add("attr-grid-image-failed");
+          img.style.display = "none";
+          img.closest(".attr-grid-visual")?.classList.add("image-failed");
+          return;
+        }
         if (img.classList.contains("filter-pill-icon-wide")) {
           img.style.display = "none";
           const fallbackLabel = img
@@ -902,10 +908,7 @@
         if (loadingEl) loadingEl.remove();
 
         loadDefaults();
-        recoverWipedAttributeImages();
-        seedAttributeImageBackup();
         migrateLegacySkinFamiliesToSeries();
-        repairAttributesFromRecords(ADMIN.isAdmin);
         setupSidebar();
         setupNavigation();
         installImageFallbacks();
@@ -995,14 +998,12 @@
         { key: "game_hub_mlbb_heroes", label: "Heroes" },
         { key: "game_hub_mlbb_skins", label: "Skins" },
         { key: "game_hub_mlbb_attributes", label: "Attributes" },
-        { key: "game_hub_mlbb_attributes_backup", label: "Attributes Auto-Backup" },
         { key: "game_hub_mlbb_tier_list", label: "Tier List" },
         { key: "game_hub_mlbb_tier_snapshots", label: "Tier List Versions" },
         { key: "game_hub_mlbb_upcoming", label: "Upcoming" },
         { key: "game_hub_mlbb_skin_count_state", label: "Skin Count State" },
         { key: "game_hub_mlbb_sidebar_collapsed", label: "Sidebar State" },
         { key: "mlbb_attr_images", label: "Attribute Images" },
-        { key: "mlbb_attr_images_backup", label: "Attribute Images Auto-Backup" },
         { key: "mlbb_attr_bgs", label: "Attribute Backgrounds" },
         { key: "mlbb_attr_colors", label: "Attribute Colors" },
         { key: "mlbb_skillcat_groups", label: "Skill Category Groups" },
@@ -1310,11 +1311,6 @@
         const storedCurrent = normalizeAttributesPayload(getData(KEYS.ATTRIBUTES, {}), {});
         const runtimeCurrent = normalizeAttributesPayload(getAttributes(), storedCurrent);
         const next = normalizeAttributesPayload(d, runtimeCurrent);
-        const prevJson = JSON.stringify(storedCurrent);
-        const nextJson = JSON.stringify(next);
-        if (prevJson !== nextJson && ADMIN.isAdmin && prevJson !== JSON.stringify(normalizeAttributesPayload({}, {}))) {
-          DB.setItem(KEYS.ATTRIBUTES_BACKUP, prevJson);
-        }
         return saveData(KEYS.ATTRIBUTES, next);
       }
       function getHeroNations(hero) {
@@ -1450,7 +1446,6 @@
         });
       }
       const ATTR_IMAGES_KEY = "mlbb_attr_images";
-      const ATTR_IMAGES_BACKUP_KEY = "mlbb_attr_images_backup";
       function parseAttributeImageStore(value) {
         let current = value;
         for (let depth = 0; depth < 5; depth++) {
@@ -1472,111 +1467,59 @@
         return current && typeof current === "object" && !Array.isArray(current) ? current : {};
       }
       function getAttributeImages() {
-        if (_attributeImagesData) return _attributeImagesData;
+        if (_attributeImagesData && typeof _attributeImagesData === "object") return _attributeImagesData;
         _attributeImagesData = parseAttributeImageStore(DB.getItem(ATTR_IMAGES_KEY));
         return _attributeImagesData;
       }
-      function saveAttributeImages(d) {
+      let _attributeImageWriteQueue = Promise.resolve();
+      function cloneAttributeImageMap(d) {
         const clean = d && typeof d === "object" && !Array.isArray(d) ? d : {};
-        const previous = parseAttributeImageStore(DB.getItem(ATTR_IMAGES_KEY));
-        const prevJson = JSON.stringify(previous || {});
-        const nextJson = JSON.stringify(clean);
-        if (ADMIN.isAdmin && prevJson !== nextJson && prevJson !== "{}") {
-          safeLocalStorageSet(ATTR_IMAGES_BACKUP_KEY, prevJson);
-        }
-        _attributeImagesData = clean;
-        safeLocalStorageSet(ATTR_IMAGES_KEY, nextJson);
-      }
-      function seedAttributeImageBackup() {
-        if (!ADMIN.isAdmin) return;
-        const current = getAttributeImages();
-        const backup = parseAttributeImageStore(DB.getItem(ATTR_IMAGES_BACKUP_KEY));
-        if (Object.keys(current || {}).length && (!backup || typeof backup !== "object" || !Object.keys(backup).length)) {
-          safeLocalStorageSet(ATTR_IMAGES_BACKUP_KEY, JSON.stringify(current));
+        try {
+          return typeof structuredClone === "function" ? structuredClone(clean) : JSON.parse(JSON.stringify(clean));
+        } catch (e) {
+          return clean;
         }
       }
-      function countAttributeImageUrls(map) {
-        if (!map || typeof map !== "object" || Array.isArray(map)) return 0;
-        return Object.values(map).reduce((total, group) => {
-          if (!group || typeof group !== "object" || Array.isArray(group)) return total;
-          return total + Object.values(group).filter((value) => typeof value === "string" && value.trim()).length;
-        }, 0);
-      }
-      function recoverWipedAttributeImages() {
-        const current = parseAttributeImageStore(DB.getItem(ATTR_IMAGES_KEY));
-        const backup = parseAttributeImageStore(DB.getItem(ATTR_IMAGES_BACKUP_KEY));
-        if (!backup || typeof backup !== "object" || Array.isArray(backup)) return false;
-
-        const attrs = getAttributes();
-        const merged = current && typeof current === "object" && !Array.isArray(current)
-          ? (typeof structuredClone === "function" ? structuredClone(current) : JSON.parse(JSON.stringify(current)))
-          : {};
-        let recovered = 0;
-        Object.entries(backup).forEach(([key, group]) => {
-          if (!group || typeof group !== "object" || Array.isArray(group)) return;
-          if (!merged[key] || typeof merged[key] !== "object" || Array.isArray(merged[key])) merged[key] = {};
-          Object.entries(group).forEach(([value, rawUrl]) => {
-            const url = normalizeAttributeImageValue(rawUrl);
-            if (!url) return;
-            // Restore only images for attributes that still exist (or legacy family data kept for migration).
-            const stillExists = key === "skinFamilies" || (Array.isArray(attrs[key]) && attrs[key].includes(value));
-            if (!stillExists) return;
-            if (!normalizeAttributeImageValue(merged[key][value])) {
-              merged[key][value] = url;
-              recovered++;
-            }
+      function saveAttributeImages(d) {
+        const snapshot = cloneAttributeImageMap(d);
+        const payload = JSON.stringify(snapshot);
+        _attributeImagesData = snapshot;
+        // Keep the in-memory DB view aligned with what the grid is showing immediately.
+        DB._cache[ATTR_IMAGES_KEY] = payload;
+        if (!ADMIN.isAdmin) {
+          showToast("Sign in as admin to save changes", "info");
+          openAdminLoginModal();
+          return false;
+        }
+        // Attribute artwork edits are deliberately serialized. This guarantees that
+        // clear → save → paste again → save cannot land on the server out of order.
+        _attributeImageWriteQueue = _attributeImageWriteQueue
+          .then(() => DB.setItemAwaited(ATTR_IMAGES_KEY, payload))
+          .catch((e) => {
+            console.error("Attribute image save failed:", e);
+            return false;
           });
-        });
-        _attributeImagesData = merged;
-        if (recovered > 0 && ADMIN.isAdmin) safeLocalStorageSet(ATTR_IMAGES_KEY, JSON.stringify(merged));
-        if (recovered > 0) showToast(`Recovered ${recovered} missing attribute image${recovered === 1 ? "" : "s"} from backup.`, "success");
-        return recovered > 0;
-      }
-
-      function restoreAttributeImageBackup() {
-        const backup = parseAttributeImageStore(DB.getItem(ATTR_IMAGES_BACKUP_KEY));
-        if (!backup || typeof backup !== "object" || Array.isArray(backup) || !Object.keys(backup).length) {
-          showToast("No attribute image backup is available yet.", "info");
-          return;
-        }
-        showConfirm("Restore the last attribute image backup? Current attribute images will be replaced.", () => {
-          _attributeImagesData = backup;
-          safeLocalStorageSet(ATTR_IMAGES_KEY, JSON.stringify(backup));
-          renderAttributesPage();
-          populateFilters();
-          showToast("Attribute images restored from backup.", "success");
-        });
+        return true;
       }
       function normalizeAttributeImageValue(value) {
-        let current = value;
-        for (let depth = 0; depth < 4; depth++) {
-          if (current && typeof current === "object" && !Array.isArray(current)) {
-            const nested = [current.url, current.src, current.imageUrl, current.image, current.href].find(
-              (candidate) => typeof candidate === "string" && candidate.trim(),
-            );
-            if (nested) current = nested;
-            else return "";
-          }
-          if (typeof current !== "string") return "";
-          let text = current.trim();
-          if (!text) return "";
-          // Older imports/backups can leave a URL JSON-encoded one extra time.
-          if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("{") && text.endsWith("}"))) {
-            try {
-              const parsed = JSON.parse(text);
-              if (parsed !== text) { current = parsed; continue; }
-            } catch (e) {}
-          }
-          text = text
-            .replace(/\\\//g, "/")
-            .replace(/&amp;/gi, "&")
-            .replace(/&#38;/g, "&")
-            .replace(/&quot;/gi, '"')
-            .replace(/^['"]+|['"]+$/g, "")
-            .trim();
-          return text;
+        if (value && typeof value === "object" && !Array.isArray(value)) {
+          value = [value.url, value.src, value.imageUrl, value.image, value.href].find(
+            (candidate) => typeof candidate === "string" && candidate.trim(),
+          ) || "";
         }
-        return typeof current === "string" ? current.trim() : "";
+        if (typeof value !== "string") return "";
+        let text = value.trim();
+        if (!text) return "";
+        // Keep old double-serialized values readable, but never rewrite a valid URL.
+        for (let depth = 0; depth < 3; depth++) {
+          if (!(text.startsWith('"') && text.endsWith('"'))) break;
+          try {
+            const parsed = JSON.parse(text);
+            if (typeof parsed !== "string" || parsed === text) break;
+            text = parsed.trim();
+          } catch (e) { break; }
+        }
+        return text;
       }
       function normalizedAttrGroupKey(value) {
         return String(value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -1619,62 +1562,19 @@
         });
         return out;
       }
-      function legacyDisplayImageVariant(url) {
-        let value = normalizeAttributeImageValue(url);
-        if (!value) return "";
-        try {
-          if (/static\.wikia\.nocookie\.net|fandom\.com/i.test(value) || value.includes("/revision/latest") || value.includes("/thumb/")) {
-            value = value.replace(/\/thumb\//g, "/");
-            if (value.includes("/revision/latest")) {
-              value = value.replace(
-                /(\.(?:png|jpg|jpeg|webp|gif))(?:\/[^?]*)?\/revision\/latest(?:\/[^?]*)?(\?cb=\d+)?[^#]*/i,
-                "$1/revision/latest$2",
-              );
-            }
-            return value;
-          }
-        } catch (e) {}
-        return "";
-      }
-      function getDiscoveredAttributeImageMaps() {
-        const maps = [];
-        const seen = new Set();
-        const add = (value) => {
-          const parsed = parseAttributeImageStore(value);
-          if (!parsed || !Object.keys(parsed).length) return;
-          let signature = "";
-          try { signature = JSON.stringify(parsed); } catch (e) { signature = String(parsed); }
-          if (seen.has(signature)) return;
-          seen.add(signature);
-          maps.push(parsed);
-        };
-        add(getAttributeImages());
-        add(DB.getItem(ATTR_IMAGES_BACKUP_KEY));
-        // Recover image maps left under older/imported database keys.
-        Object.entries(DB._cache || {}).forEach(([dbKey, value]) => {
-          const normalized = String(dbKey).toLowerCase();
-          if ((normalized.includes("attr") || normalized.includes("attribute")) && normalized.includes("image")) add(value);
-        });
-        return maps;
-      }
       function getAttrImageCandidates(key, val) {
-        const candidates = [];
-        const push = (url) => {
-          const clean = normalizeAttributeImageValue(url);
-          if (clean && !candidates.includes(clean)) candidates.push(clean);
-          const legacy = legacyDisplayImageVariant(clean);
-          if (legacy && !candidates.includes(legacy)) candidates.push(legacy);
-        };
-        getDiscoveredAttributeImageMaps().forEach((map) => collectAttributeImagesFromMap(map, key, val).forEach(push));
-        return candidates;
+        // Deliberately simple: only the current live image map is used.
+        // Clearing and re-saving an image now has one predictable source of truth.
+        return collectAttributeImagesFromMap(getAttributeImages(), key, val);
       }
       function getAttrImage(key, val) {
         return getAttrImageCandidates(key, val)[0] || "";
       }
       function setAttrImage(key, val, url) {
         const imgs = getAttributeImages();
-        if (!imgs[key]) imgs[key] = {};
-        if (url) imgs[key][val] = url;
+        if (!imgs[key] || typeof imgs[key] !== "object" || Array.isArray(imgs[key])) imgs[key] = {};
+        const cleanUrl = normalizeAttributeImageValue(url);
+        if (cleanUrl) imgs[key][val] = cleanUrl;
         else delete imgs[key][val];
         saveAttributeImages(imgs);
       }
@@ -1731,14 +1631,8 @@
         return _attributeMetaData;
       }
       function saveAttributeMeta(meta) {
-        const previous = parseStoredJson(DB.getItem("mlbb_attr_meta"), {});
-        const prevJson = JSON.stringify(previous || {});
-        const nextJson = JSON.stringify(meta || {});
-        if (ADMIN.isAdmin && prevJson !== nextJson && prevJson !== "{}") {
-          safeLocalStorageSet("mlbb_attr_meta_backup", prevJson);
-        }
         _attributeMetaData = meta;
-        safeLocalStorageSet("mlbb_attr_meta", nextJson);
+        safeLocalStorageSet("mlbb_attr_meta", JSON.stringify(meta || {}));
       }
       function isSkinSeriesRarity(value) {
         return !!getAttributeMeta().skinRaritySeries?.[value];
@@ -2058,7 +1952,6 @@
         const tabsEl = document.getElementById("attr-tabs");
         const container = document.getElementById("attributes-container");
         const attrs = getAttributes();
-        const imgs = getAttributeImages();
         const titles = {
           roles: "Hero Roles",
           specialties: "Hero Specialty",
@@ -2072,7 +1965,6 @@
         };
         const keys = Object.keys(titles);
         if (!keys.includes(currentAttrTab)) currentAttrTab = keys[0];
-        const hasImg = (key) => ATTR_IMAGE_KEYS.includes(key);
 
         // Tab bar
         tabsEl.innerHTML = keys
@@ -2093,7 +1985,6 @@
         if (!Array.isArray(attrs[key])) attrs[key] = [];
         if (key === "emblems" && !Array.isArray(attrs.emblemTalents)) attrs.emblemTalents = [];
         const hasColor = (k) => ATTR_COLOR_KEYS.includes(k);
-        const imgMap = imgs[key] || {};
         const colMap = getAttributeColors()[key] || {};
         const tagGroupMap = getTagGroupMap();
         const groups = getSkillCatGroups();
@@ -2107,26 +1998,18 @@
           const safeValue = attrDataEscape(v);
           const safeKey = attrDataEscape(renderKey);
           const renderColMap = getAttributeColors()[renderKey] || {};
-          // Attribute cards intentionally use the same direct image storage
-          // path as the original working Attributes grid. getAttrImage also
-          // falls back to the automatic image backup when the live entry was
-          // lost by an older regression.
-          const imageCandidates = getAttrImageCandidates(renderKey, v);
-          const imgUrl = imageCandidates[0] || "";
-          const fallback1 = imageCandidates[1] || "";
-          const fallback2 = imageCandidates[2] || "";
+          const imgUrl = getAttrImage(renderKey, v);
           const color = renderColMap[v] || "";
           const renderHasColor = ATTR_COLOR_KEYS.includes(renderKey);
           const safeImgUrl = attrDataEscape(imgUrl);
-          const fallbackAttrs = [
-            fallback1 ? `data-fallback-src="${attrDataEscape(fallback1)}"` : "",
-            fallback2 ? `data-fallback-src2="${attrDataEscape(fallback2)}"` : "",
-          ].filter(Boolean).join(" ");
-          const thumbHtml = imgUrl
-            ? `<div class="attr-grid-image-frame"><img class="attr-grid-image" src="${safeImgUrl}" ${fallbackAttrs} alt="${safeValue}"></div>`
-            : renderHasColor
-              ? `<div style="width:100%;height:100%;border-radius:8px;background:${color || "var(--bg-light)"};display:flex;align-items:center;justify-content:center;">${color ? "" : `<span class="material-symbols-outlined" style="opacity:0.5;">palette</span>`}</div>`
-              : `<div class="attr-grid-image-frame empty"><img class="attr-grid-image image-fallback" src="${IMAGE_PLACEHOLDER}" alt="Image unavailable"></div>`;
+          const safeColor = color ? attrDataEscape(color) : "";
+          const visualClass = `attr-grid-visual${imgUrl ? " has-image" : ""}${renderHasColor && color ? " has-color" : ""}`;
+          const visualStyle = color ? ` style="--attr-peek-color:${safeColor};"` : "";
+          const thumbHtml = `<div class="${visualClass}"${visualStyle}>
+            ${imgUrl ? `<img class="attr-grid-image" data-attr-grid-image="true" src="${safeImgUrl}" alt="${safeValue}">` : ""}
+            ${!imgUrl && renderHasColor && color ? `<span class="attr-grid-color-core" aria-hidden="true"></span>` : ""}
+            ${!imgUrl && !(renderHasColor && color) ? `<span class="material-symbols-outlined attr-grid-empty-icon" aria-hidden="true">image</span>` : ""}
+          </div>`;
           return `<div class="attr-square-item attr-reorderable" draggable="true" data-attr-key="${safeKey}" data-attr-value="${safeValue}" ondragstart="startAttributeDragFromCard(event,this)" ondragend="endAttributeDrag(event)" ondragover="attributeDragOver(event)" ondragleave="attributeDragLeave(event)" ondrop="dropAttributeFromCard(event,this)">
               <div class="attr-reorder-controls">
                 <button type="button" class="attr-order-btn" title="Move earlier" onclick="event.stopPropagation();moveAttributeFromCard(this,-1)"><span class="material-symbols-outlined">chevron_left</span></button>

@@ -615,6 +615,8 @@
           ["Dashboard", "dashboard", "page-dashboard"],
           ["Heroes", "person", "page-heroes"],
           ["Skins", "style", "page-skins"],
+          ["Relationships", "hub", "page-relationships"],
+          ["Skin Series", "collections", "page-skin-families"],
           ["Hero Stats", "monitoring", "page-hero-stats"],
           ["Hero Count", "groups", "page-hero-count"],
           ["Skin Count", "analytics", "page-skin-count"],

@@ -977,6 +977,28 @@
           </div>
         </div>
 
+        <div id="page-relationships" class="page">
+          <header class="page-header">
+            <div><h1>Relationship Graph</h1><p class="page-subtitle">Explore lore connections between heroes. Click a node to center it; Shift-click to open the Hero modal.</p></div>
+          </header>
+          <div class="relationship-graph-toolbar">
+            <label class="form-group relationship-graph-select-wrap"><span class="form-label">Center Hero</span><select id="relationship-graph-hero" class="form-select"></select></label>
+            <div class="relationship-graph-filter-wrap"><span class="form-label">Relationship Types</span><div id="relationship-graph-filters" class="relationship-graph-filters"></div></div>
+            <div id="relationship-graph-summary" class="relationship-graph-summary"></div>
+          </div>
+          <div id="relationship-graph-stage" class="relationship-graph-stage"></div>
+        </div>
+
+        <div id="page-skin-families" class="page">
+          <header class="page-header">
+            <div><h1>Skin Series</h1><p class="page-subtitle">Browse rarities marked as Skin Series. Series are managed directly inside Skin Rarity attributes.</p></div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="showPage('page-attributes');switchAttrTab('skinRarities')"><span class="material-symbols-outlined">tune</span> Manage Rarities</button>
+          </header>
+          <div id="skin-family-summary" class="skin-family-summary"></div>
+          <div class="skin-family-toolbar"><div class="filter-quick-search"><span class="material-symbols-outlined filter-search-icon">search</span><input id="skin-family-search" class="form-input filter-search-input" type="search" placeholder="Search series or skins..." oninput="renderSkinFamiliesPage()" autocomplete="off"></div></div>
+          <div id="skin-family-groups" class="skin-family-groups"></div>
+        </div>
+
         <div id="page-hero-form" class="page">
           <header class="page-header">
             <h1 id="hero-form-title">Add Hero</h1>
@@ -1125,6 +1147,10 @@
                 placeholder="https://..."
               />
             </div>
+            <h3 class="form-section-title">Recommended Builds &amp; Emblems</h3>
+            <p class="form-section-help">Create reusable build presets using categorized equipment, substitute equipment, one Main Emblem, and exactly three Talents from Attributes.</p>
+            <div id="hero-builds-container" class="hero-builds-editor"></div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addHeroBuildInput()"><span class="material-symbols-outlined" style="font-size:15px">add</span> Add Build Preset</button>
             <h3 class="form-section-title">Relationships</h3>
             <p class="form-section-help">Add lore relationships such as companions, lovers, family, rivals, mentors, or enemies. Parent/Child and Mentor/Student are mirrored automatically in the other hero's modal.</p>
             <div id="hero-relationships-container" class="hero-relationship-editor"></div>
@@ -1453,5 +1479,6 @@
     <script src="js/modals.js" defer></script>
     <script src="js/interactions.js" defer></script>
     <script src="js/dashboard.js" defer></script>
+    <script src="js/systems.js" defer></script>
   </body>
 </html>

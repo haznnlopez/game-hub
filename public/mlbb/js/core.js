@@ -273,6 +273,7 @@
         _attributeImagesData = null,
         _attributeBackgroundsData = null,
         _attributeColorsData = null,
+        _attributeMetaData = null,
         _skillCatGroupsData = null,
         _tagGroupMapData = null;
       const formTags = {
@@ -893,6 +894,7 @@
         if (loadingEl) loadingEl.remove();
 
         loadDefaults();
+        migrateLegacySkinFamiliesToSeries();
         repairAttributesFromRecords(ADMIN.isAdmin);
         setupSidebar();
         setupNavigation();
@@ -1241,6 +1243,10 @@
         "skinRarities",
         "collectibleRarities",
         "skillCategories",
+        "skinFamilies",
+        "items",
+        "emblems",
+        "emblemTalents",
       ];
       function getAttributes() {
         if (!_attributesData) {
@@ -1307,10 +1313,22 @@
         const scanSkin = (skin) => {
           add("skinRarities", skin?.rarity);
           add("collectibleRarities", skin?.collectible);
+          // Skin series are now represented by Skin Rarity metadata. Legacy family names are migrated separately.
         };
-        getHeroes().forEach(scanHero);
+        const scanBuilds = (hero) => {
+          (hero?.builds || []).forEach((build) => {
+            (build?.items || []).forEach((value) => add("items", value));
+            (build?.substituteItems || []).forEach((value) => add("items", value));
+            add("emblems", build?.emblem);
+            (build?.talents || []).forEach((value) => add("emblemTalents", value));
+          });
+        };
+        getHeroes().forEach((hero) => { scanHero(hero); scanBuilds(hero); });
         getSkins().forEach(scanSkin);
-        getUpcoming().forEach((item) => item?.itemType === "hero" ? scanHero(item) : scanSkin(item));
+        getUpcoming().forEach((item) => {
+          if (item?.itemType === "hero") { scanHero(item); scanBuilds(item); }
+          else scanSkin(item);
+        });
         const imageMaps = getAttributeImages();
         const bgMaps = getAttributeBackgrounds();
         const colorMaps = getAttributeColors();
@@ -1341,6 +1359,41 @@
         }
         return changed;
       }
+      function migrateLegacySkinFamiliesToSeries() {
+        const attrs = getAttributes();
+        const legacy = Array.isArray(attrs.skinFamilies) ? attrs.skinFamilies.filter(Boolean) : [];
+        if (!legacy.length) return false;
+        let changedAttrs = false;
+        let changedMeta = false;
+        const meta = getAttributeMeta();
+        if (!meta.skinRaritySeries) meta.skinRaritySeries = {};
+        legacy.forEach((value) => {
+          if (!attrs.skinRarities.includes(value)) {
+            attrs.skinRarities.push(value);
+            changedAttrs = true;
+          }
+          if (!meta.skinRaritySeries[value]) {
+            meta.skinRaritySeries[value] = true;
+            changedMeta = true;
+          }
+          const legacyImg = getAttrImage("skinFamilies", value);
+          if (legacyImg && !getAttrImage("skinRarities", value) && ADMIN.isAdmin) setAttrImage("skinRarities", value, legacyImg);
+        });
+        if (changedMeta) {
+          _attributeMetaData = meta;
+          if (ADMIN.isAdmin) saveAttributeMeta(meta);
+        }
+        if (changedAttrs && ADMIN.isAdmin) saveAttributes(attrs);
+        return changedAttrs || changedMeta;
+      }
+      function getSkinSeriesName(skin) {
+        if (!skin) return "";
+        if (isSkinSeriesRarity(skin.rarity)) return skin.rarity || "";
+        // Legacy V2.9 records remain readable until they are edited into the new rarity-only model.
+        if (skin.family && isSkinSeriesRarity(skin.family)) return skin.family;
+        return "";
+      }
+
       function restoreAttributeBackup() {
         const backup = getData(KEYS.ATTRIBUTES_BACKUP, null);
         if (!backup || typeof backup !== "object") {
@@ -1350,6 +1403,11 @@
         showConfirm("Restore the last automatic attribute backup? This will replace the current attribute lists.", () => {
           saveAttributes(backup);
           _attributesData = normalizeAttributesPayload(backup, {});
+          const metaBackup = getData("mlbb_attr_meta_backup", null);
+          if (metaBackup && typeof metaBackup === "object") {
+            _attributeMetaData = metaBackup;
+            safeLocalStorageSet("mlbb_attr_meta", JSON.stringify(metaBackup));
+          }
           populateFilters();
           renderAttributesPage();
           showToast("Attribute backup restored.", "success");
@@ -1427,6 +1485,82 @@
         else delete cols[key][val];
         saveAttributeColors(cols);
       }
+      const BUILD_ITEM_CATEGORIES = ["Physical", "Magic", "Defense", "Movement", "Jungle", "Roam"];
+      function getAttributeMeta() {
+        if (_attributeMetaData) return _attributeMetaData;
+        try {
+          const raw = JSON.parse(DB.getItem("mlbb_attr_meta") || "{}");
+          _attributeMetaData = {
+            skinRaritySeries: raw?.skinRaritySeries && typeof raw.skinRaritySeries === "object" ? raw.skinRaritySeries : {},
+            itemCategories: raw?.itemCategories && typeof raw.itemCategories === "object" ? raw.itemCategories : {},
+          };
+        } catch (e) {
+          _attributeMetaData = { skinRaritySeries: {}, itemCategories: {} };
+        }
+        return _attributeMetaData;
+      }
+      function saveAttributeMeta(meta) {
+        let previous = {};
+        try { previous = JSON.parse(DB.getItem("mlbb_attr_meta") || "{}"); } catch (e) {}
+        const prevJson = JSON.stringify(previous || {});
+        const nextJson = JSON.stringify(meta || {});
+        if (ADMIN.isAdmin && prevJson !== nextJson && prevJson !== "{}") {
+          safeLocalStorageSet("mlbb_attr_meta_backup", prevJson);
+        }
+        _attributeMetaData = meta;
+        safeLocalStorageSet("mlbb_attr_meta", nextJson);
+      }
+      function isSkinSeriesRarity(value) {
+        return !!getAttributeMeta().skinRaritySeries?.[value];
+      }
+      function setSkinSeriesRarity(value, enabled) {
+        const meta = getAttributeMeta();
+        if (!meta.skinRaritySeries) meta.skinRaritySeries = {};
+        if (enabled) meta.skinRaritySeries[value] = true;
+        else delete meta.skinRaritySeries[value];
+        saveAttributeMeta(meta);
+      }
+      function getItemCategories(value) {
+        const raw = getAttributeMeta().itemCategories?.[value];
+        return Array.isArray(raw) ? raw.filter((cat) => BUILD_ITEM_CATEGORIES.includes(cat)) : [];
+      }
+      function setItemCategories(value, categories) {
+        const meta = getAttributeMeta();
+        if (!meta.itemCategories) meta.itemCategories = {};
+        const clean = [...new Set((categories || []).filter((cat) => BUILD_ITEM_CATEGORIES.includes(cat)))];
+        if (clean.length) meta.itemCategories[value] = clean;
+        else delete meta.itemCategories[value];
+        saveAttributeMeta(meta);
+      }
+      function renameAttributeMetaReference(key, oldVal, newVal) {
+        const meta = getAttributeMeta();
+        let changed = false;
+        if (key === "skinRarities" && Object.prototype.hasOwnProperty.call(meta.skinRaritySeries || {}, oldVal)) {
+          meta.skinRaritySeries[newVal] = !!meta.skinRaritySeries[oldVal];
+          delete meta.skinRaritySeries[oldVal];
+          changed = true;
+        }
+        if (key === "items" && Object.prototype.hasOwnProperty.call(meta.itemCategories || {}, oldVal)) {
+          meta.itemCategories[newVal] = meta.itemCategories[oldVal];
+          delete meta.itemCategories[oldVal];
+          changed = true;
+        }
+        if (changed) saveAttributeMeta(meta);
+      }
+      function deleteAttributeMetaReference(key, value) {
+        const meta = getAttributeMeta();
+        let changed = false;
+        if (key === "skinRarities" && meta.skinRaritySeries?.[value] !== undefined) {
+          delete meta.skinRaritySeries[value];
+          changed = true;
+        }
+        if (key === "items" && meta.itemCategories?.[value] !== undefined) {
+          delete meta.itemCategories[value];
+          changed = true;
+        }
+        if (changed) saveAttributeMeta(meta);
+      }
+
       // Skill Category color groups: a named group has one color; every tag
       // assigned to that group shares the exact same RGB value.
       function getSkillCatGroups() {
@@ -1664,6 +1798,10 @@
         "nations",
         "skinRarities",
         "collectibleRarities",
+        "skinFamilies",
+        "items",
+        "emblems",
+        "emblemTalents",
       ];
       // Keys that support a custom tag color
       const ATTR_COLOR_KEYS = ["skillCategories"];
@@ -1677,6 +1815,10 @@
         skinRarities: "auto_awesome",
         collectibleRarities: "workspace_premium",
         skillCategories: "bolt",
+        skinFamilies: "collections",
+        items: "shopping_bag",
+        emblems: "verified",
+        emblemTalents: "stars",
       };
       let currentAttrTab = "roles";
 
@@ -1693,6 +1835,8 @@
           skinRarities: "Skin Rarity",
           collectibleRarities: "Skin Collectible Rarity",
           skillCategories: "Skill Category",
+          items: "Build Items",
+          emblems: "Emblems & Talents",
         };
         const keys = Object.keys(titles);
         if (!keys.includes(currentAttrTab)) currentAttrTab = keys[0];
@@ -1701,7 +1845,9 @@
         // Tab bar
         tabsEl.innerHTML = keys
           .map((key) => {
-            const count = (attrs[key] || []).length;
+            const count = key === "emblems"
+              ? (attrs.emblems || []).length + (attrs.emblemTalents || []).length
+              : (attrs[key] || []).length;
             return `<button class="attr-tab${key === currentAttrTab ? " active" : ""}" onclick="switchAttrTab('${key}')">
               <span class="material-symbols-outlined" style="font-size:18px;">${ATTR_TAB_ICONS[key] || "label"}</span>
               ${titles[key]}
@@ -1718,29 +1864,33 @@
         const tagGroupMap = getTagGroupMap();
         const groups = getSkillCatGroups();
 
-        const renderSquare = (v) => {
+        const renderSquare = (v, renderKey = key) => {
           const esc = v.replace(/'/g, "\'").replace(/"/g, "&quot;");
-          const imgUrl = imgMap[v] || "";
-          const color = colMap[v] || "";
-          const thumbHtml = hasColor(key)
+          const renderImgMap = getAttributeImages()[renderKey] || {};
+          const renderColMap = getAttributeColors()[renderKey] || {};
+          const imgUrl = renderImgMap[v] || "";
+          const color = renderColMap[v] || "";
+          const renderHasColor = ATTR_COLOR_KEYS.includes(renderKey);
+          const renderHasImg = ATTR_IMAGE_KEYS.includes(renderKey);
+          const thumbHtml = renderHasColor
             ? `<div style="width:100%;height:100%;border-radius:8px;background:${color || "var(--bg-light)"};display:flex;align-items:center;justify-content:center;">${color ? "" : `<span class="material-symbols-outlined" style="opacity:0.5;">palette</span>`}</div>`
-            : hasImg(key)
+            : renderHasImg
               ? imgUrl
                 ? `<img src="${imgUrl}" data-fallback-src="${IMAGE_PLACEHOLDER}">`
                 : `<img src="${IMAGE_PLACEHOLDER}" alt="Image unavailable">`
               : `<span class="material-symbols-outlined">label</span>`;
-          return `<div class="attr-square-item attr-reorderable" draggable="true" data-attr-key="${key}" data-attr-value="${esc}" ondragstart="startAttributeDrag(event,'${key}','${esc}')" ondragend="endAttributeDrag(event)" ondragover="attributeDragOver(event)" ondragleave="attributeDragLeave(event)" ondrop="dropAttribute(event,'${key}','${esc}')">
+          return `<div class="attr-square-item attr-reorderable" draggable="true" data-attr-key="${renderKey}" data-attr-value="${esc}" ondragstart="startAttributeDrag(event,'${renderKey}','${esc}')" ondragend="endAttributeDrag(event)" ondragover="attributeDragOver(event)" ondragleave="attributeDragLeave(event)" ondrop="dropAttribute(event,'${renderKey}','${esc}')">
               <div class="attr-reorder-controls">
-                <button type="button" class="attr-order-btn" title="Move earlier" onclick="event.stopPropagation();moveAttribute('${key}','${esc}',-1)"><span class="material-symbols-outlined">chevron_left</span></button>
+                <button type="button" class="attr-order-btn" title="Move earlier" onclick="event.stopPropagation();moveAttribute('${renderKey}','${esc}',-1)"><span class="material-symbols-outlined">chevron_left</span></button>
                 <span class="attr-drag-handle material-symbols-outlined" title="Drag to rearrange">drag_indicator</span>
-                <button type="button" class="attr-order-btn" title="Move later" onclick="event.stopPropagation();moveAttribute('${key}','${esc}',1)"><span class="material-symbols-outlined">chevron_right</span></button>
+                <button type="button" class="attr-order-btn" title="Move later" onclick="event.stopPropagation();moveAttribute('${renderKey}','${esc}',1)"><span class="material-symbols-outlined">chevron_right</span></button>
               </div>
               <div class="card-overlay-actions">
-                <div class="overlay-btn" title="Edit" onclick="editAttributeFull('${key}','${esc}')"><span class="material-symbols-outlined">edit</span></div>
-                <div class="overlay-btn delete" title="Delete" onclick="deleteAttribute('${key}','${esc}')"><span class="material-symbols-outlined">delete</span></div>
+                <div class="overlay-btn" title="Edit" onclick="editAttributeFull('${renderKey}','${esc}')"><span class="material-symbols-outlined">edit</span></div>
+                <div class="overlay-btn delete" title="Delete" onclick="deleteAttribute('${renderKey}','${esc}')"><span class="material-symbols-outlined">delete</span></div>
               </div>
               <div class="attr-square-thumb">${thumbHtml}</div>
-              <div class="attr-square-label" title="${esc}">${hasColor(key) && color ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:5px;"></span>` : ""}${v}</div>
+              <div class="attr-square-label" title="${esc}">${renderHasColor && color ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:5px;"></span>` : ""}${v}</div>${renderKey === "skinRarities" && isSkinSeriesRarity(v) ? `<div class="attr-meta-badges"><span class="attr-meta-badge series"><span class="material-symbols-outlined">collections</span>Series</span></div>` : ""}${renderKey === "items" && getItemCategories(v).length ? `<div class="attr-meta-badges">${getItemCategories(v).map((cat) => `<span class="attr-meta-badge">${cat}</span>`).join("")}</div>` : ""}
             </div>`;
         };
 
@@ -1785,11 +1935,23 @@
         const groupOptions = groups
           .map((g) => `<option value="${g.id}">${g.name}</option>`)
           .join("");
-        const addRow = hasColor(key)
+        const standardImageAddRow = (addKey, label = "Name") => `<div class="attr-add-row"><input type="text" id="input-${addKey}" class="form-input" placeholder="${label}..." style="flex:2"><input type="url" id="input-img-${addKey}" class="form-input" placeholder="Image URL (optional)" style="flex:3"><button class="btn btn-primary btn-sm" onclick="addAttribute('${addKey}')">Add</button></div>`;
+        let addRow = hasColor(key)
           ? `<div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;"><input type="text" id="input-${key}" class="form-input" placeholder="Add..." style="flex:1;min-width:120px;"><select id="input-group-${key}" class="form-select" style="width:170px;" onchange="onGroupSelectChange('${key}')"><option value="">Custom color</option>${groupOptions}</select><input type="color" id="input-color-${key}" class="form-input" value="#fbbf24" title="Tag color" style="width:52px;padding:2px;flex-shrink:0;"><button class="btn btn-primary btn-sm" onclick="addAttribute('${key}')">Add</button></div>`
           : hasImg(key)
-            ? `<div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1.5rem;"><input type="text" id="input-${key}" class="form-input" placeholder="Name..." style="flex:2"><input type="url" id="input-img-${key}" class="form-input" placeholder="Image URL (optional)" style="flex:3"><button class="btn btn-primary btn-sm" onclick="addAttribute('${key}')">Add</button></div>`
+            ? standardImageAddRow(key)
             : `<div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;"><input type="text" id="input-${key}" class="form-input" placeholder="Add..."><button class="btn btn-primary btn-sm" onclick="addAttribute('${key}')">Add</button></div>`;
+
+        if (key === "skinRarities") {
+          addRow = `<div class="attr-special-add"><div class="attr-add-row"><input type="text" id="input-skinRarities" class="form-input" placeholder="Rarity / series name..." style="flex:2"><input type="url" id="input-img-skinRarities" class="form-input" placeholder="Image URL (optional)" style="flex:3"><button class="btn btn-primary btn-sm" onclick="addAttribute('skinRarities')">Add</button></div><label class="attr-inline-check"><input type="checkbox" id="input-series-skinRarities"><span><strong>Skin Series</strong><small>Mark this rarity as a named series/collection so it appears in Skin Series.</small></span></label></div>`;
+        } else if (key === "items") {
+          addRow = `<div class="attr-special-add">${standardImageAddRow("items", "Equipment name")}<div class="attr-category-editor"><span class="form-label">Equipment Categories <span class="form-label-note">Choose all that apply</span></span><div class="attr-category-pills">${BUILD_ITEM_CATEGORIES.map((cat) => `<label class="attr-category-pill"><input type="checkbox" name="input-item-category" value="${cat}"><span>${cat}</span></label>`).join("")}</div></div></div>`;
+        } else if (key === "emblems") {
+          const mainGrid = `<div class="attr-square-grid">${(attrs.emblems || []).map((v) => renderSquare(v, "emblems")).join("")}</div>`;
+          const talentGrid = `<div class="attr-square-grid">${(attrs.emblemTalents || []).map((v) => renderSquare(v, "emblemTalents")).join("")}</div>`;
+          container.innerHTML = `<h3>Emblems &amp; Talents</h3><p class="form-section-help">Main Emblems and Talents live together here. A recommended build chooses exactly one Main Emblem and exactly three Talents.</p><section class="attr-combined-section"><div class="attr-combined-head"><span><span class="material-symbols-outlined">verified</span><strong>Main Emblems</strong></span><small>${(attrs.emblems || []).length}</small></div>${standardImageAddRow("emblems", "Emblem name")}${mainGrid || `<div class="attr-empty">No emblems yet.</div>`}</section><section class="attr-combined-section"><div class="attr-combined-head"><span><span class="material-symbols-outlined">stars</span><strong>Talents</strong></span><small>${(attrs.emblemTalents || []).length}</small></div>${standardImageAddRow("emblemTalents", "Talent name")}${talentGrid || `<div class="attr-empty">No talents yet.</div>`}</section>`;
+          return;
+        }
 
         container.innerHTML = `<h3>${titles[key]}</h3>${groupsBox}${addRow}${squareItems || `<div style="color:var(--text-med);font-size:0.85rem;">No items yet.</div>`}`;
       }

@@ -536,7 +536,12 @@
         if (existingOverlay) existingOverlay.remove();
         const overlay = document.createElement("div");
         overlay.className = "confirm-modal-overlay";
-        overlay.innerHTML = `<div class="confirm-modal" style="min-width:340px;"><h3 style="margin-top:0;">Edit "${oldVal}"</h3><label class="form-label">Name</label><input type="text" id="attr-edit-name" class="form-input" value="${oldVal.replace(/"/g, "&quot;")}" style="margin-bottom:1rem;">${hasImg ? `<label class="form-label">Image URL</label><input type="url" id="attr-edit-img" class="form-input" value="${existing.replace(/"/g, "&quot;")}" placeholder="https://..." style="margin-bottom:0.75rem;"><div id="attr-edit-preview" style="width:56px;height:56px;border-radius:10px;background:var(--bg-light);margin:0 auto 1rem;overflow:hidden;display:flex;align-items:center;justify-content:center;">${existing ? `<img src="${existing}" style="width:100%;height:100%;object-fit:contain;">` : ""}</div>` : ""}${hasBg ? `<label class="form-label">Background Image URL</label><input type="url" id="attr-edit-bg" class="form-input" value="${existingBg.replace(/"/g, "&quot;")}" placeholder="https://... (hero modal background)" style="margin-bottom:0.75rem;"><div id="attr-edit-bg-preview" style="width:100%;height:80px;border-radius:10px;background:var(--bg-light);margin:0 auto 1rem;overflow:hidden;background-size:cover;background-position:center;${existingBg ? `background-image:url('${existingBg}');` : ""}"></div>` : ""}${hasColor ? `<label class="form-label">Color Group</label><select id="attr-edit-group" class="form-select" style="margin-bottom:0.75rem;" onchange="onEditGroupChange()"><option value="">Custom color</option>${groupOptsHtml}</select><label class="form-label">Tag Color</label><div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;"><input type="color" id="attr-edit-color" class="form-input" value="${existingColor}" ${existingGroupId ? "disabled" : ""} style="width:52px;padding:2px;flex-shrink:0;"></div>` : ""}<div class="confirm-actions"><button class="btn btn-secondary" id="attr-edit-cancel">Cancel</button><button class="btn btn-primary" id="attr-edit-save">Save</button></div></div>`;
+        const metaControls = key === "skinRarities"
+          ? `<label class="attr-inline-check attr-edit-meta"><input type="checkbox" id="attr-edit-series" ${isSkinSeriesRarity(oldVal) ? "checked" : ""}><span><strong>Skin Series</strong><small>This rarity represents a named skin series/collection.</small></span></label>`
+          : key === "items"
+            ? `<div class="attr-category-editor attr-edit-meta"><span class="form-label">Equipment Categories <span class="form-label-note">Choose all that apply</span></span><div class="attr-category-pills">${BUILD_ITEM_CATEGORIES.map((cat) => `<label class="attr-category-pill"><input type="checkbox" name="attr-edit-item-category" value="${cat}" ${getItemCategories(oldVal).includes(cat) ? "checked" : ""}><span>${cat}</span></label>`).join("")}</div></div>`
+            : "";
+        overlay.innerHTML = `<div class="confirm-modal" style="min-width:340px;"><h3 style="margin-top:0;">Edit "${oldVal}"</h3><label class="form-label">Name</label><input type="text" id="attr-edit-name" class="form-input" value="${oldVal.replace(/"/g, "&quot;")}" style="margin-bottom:1rem;">${hasImg ? `<label class="form-label">Image URL</label><input type="url" id="attr-edit-img" class="form-input" value="${existing.replace(/"/g, "&quot;")}" placeholder="https://..." style="margin-bottom:0.75rem;"><div id="attr-edit-preview" style="width:56px;height:56px;border-radius:10px;background:var(--bg-light);margin:0 auto 1rem;overflow:hidden;display:flex;align-items:center;justify-content:center;">${existing ? `<img src="${existing}" style="width:100%;height:100%;object-fit:contain;">` : ""}</div>` : ""}${hasBg ? `<label class="form-label">Background Image URL</label><input type="url" id="attr-edit-bg" class="form-input" value="${existingBg.replace(/"/g, "&quot;")}" placeholder="https://... (hero modal background)" style="margin-bottom:0.75rem;"><div id="attr-edit-bg-preview" style="width:100%;height:80px;border-radius:10px;background:var(--bg-light);margin:0 auto 1rem;overflow:hidden;background-size:cover;background-position:center;${existingBg ? `background-image:url('${existingBg}');` : ""}"></div>` : ""}${hasColor ? `<label class="form-label">Color Group</label><select id="attr-edit-group" class="form-select" style="margin-bottom:0.75rem;" onchange="onEditGroupChange()"><option value="">Custom color</option>${groupOptsHtml}</select><label class="form-label">Tag Color</label><div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;"><input type="color" id="attr-edit-color" class="form-input" value="${existingColor}" ${existingGroupId ? "disabled" : ""} style="width:52px;padding:2px;flex-shrink:0;"></div>` : ""}${metaControls}<div class="confirm-actions"><button class="btn btn-secondary" id="attr-edit-cancel">Cancel</button><button class="btn btn-primary" id="attr-edit-save">Save</button></div></div>`;
         document.body.appendChild(overlay);
         if (hasColor) {
           window.onEditGroupChange = () => {
@@ -593,6 +598,10 @@
           }
           a[key][idx] = newName;
           saveAttributes(a);
+          if (newName !== oldVal) {
+            renameAttributeReferences(key, oldVal, newName);
+            renameAttributeMetaReference(key, oldVal, newName);
+          }
           if (hasImg) {
             const newImg = cleanImageUrl(
               document.getElementById("attr-edit-img").value.trim(),
@@ -636,6 +645,13 @@
               : "";
             if (oldVal !== newName) setTagGroupId(oldVal, "");
             setTagGroupId(newName, newGroupId);
+          }
+          if (key === "skinRarities") {
+            setSkinSeriesRarity(newName, !!document.getElementById("attr-edit-series")?.checked);
+          }
+          if (key === "items") {
+            const categories = [...document.querySelectorAll('input[name="attr-edit-item-category"]:checked')].map((el) => el.value);
+            setItemCategories(newName, categories);
           }
           renderAttributesPage();
           populateFilters();
@@ -701,6 +717,13 @@
           if (groupInput) {
             setTagGroupId(v, groupInput.value);
           }
+          if (key === "skinRarities") {
+            setSkinSeriesRarity(v, !!document.getElementById("input-series-skinRarities")?.checked);
+          }
+          if (key === "items") {
+            const categories = [...document.querySelectorAll('input[name="input-item-category"]:checked')].map((el) => el.value);
+            setItemCategories(v, categories);
+          }
           renderAttributesPage();
           populateFilters();
           showToast("Added", "success");
@@ -725,11 +748,64 @@
           }
           a[key][idx] = newVal;
           saveAttributes(a);
+          renameAttributeReferences(key, oldVal, newVal);
           renderAttributesPage();
           populateFilters();
           showToast("Updated", "success");
         });
       }
+      function renameAttributeReferences(key, oldVal, newVal) {
+        if (!oldVal || !newVal || oldVal === newVal) return;
+        const replaceInArray = (arr) => (arr || []).map((value) => value === oldVal ? newVal : value);
+        let heroesChanged = false;
+        let skinsChanged = false;
+        let upcomingChanged = false;
+
+        const updateHero = (hero) => {
+          let changed = false;
+          if (key === "roles" && (hero.roles || []).includes(oldVal)) { hero.roles = replaceInArray(hero.roles); changed = true; }
+          if (key === "specialties" && (hero.specialties || []).includes(oldVal)) { hero.specialties = replaceInArray(hero.specialties); changed = true; }
+          if (key === "lanes" && (hero.lanes || []).includes(oldVal)) { hero.lanes = replaceInArray(hero.lanes); changed = true; }
+          if (key === "nations" && getHeroNations(hero).includes(oldVal)) {
+            hero.nations = replaceInArray(getHeroNations(hero));
+            hero.nation = hero.nations[0] || "";
+            changed = true;
+          }
+          if (key === "skillCategories") {
+            (hero.skills || []).forEach((skill) => {
+              if ((skill.categories || []).includes(oldVal)) { skill.categories = replaceInArray(skill.categories); changed = true; }
+            });
+          }
+          (hero.builds || []).forEach((build) => {
+            if (key === "items" && (build.items || []).includes(oldVal)) { build.items = replaceInArray(build.items); changed = true; }
+            if (key === "items" && (build.substituteItems || []).includes(oldVal)) { build.substituteItems = replaceInArray(build.substituteItems); changed = true; }
+            if (key === "emblems" && build.emblem === oldVal) { build.emblem = newVal; changed = true; }
+            if (key === "emblemTalents" && (build.talents || []).includes(oldVal)) { build.talents = replaceInArray(build.talents); changed = true; }
+          });
+          return changed;
+        };
+        const updateSkin = (skin) => {
+          let changed = false;
+          if (key === "skinRarities" && skin.rarity === oldVal) { skin.rarity = newVal; changed = true; }
+          if (key === "collectibleRarities" && skin.collectible === oldVal) { skin.collectible = newVal; changed = true; }
+          if (key === "skinFamilies" && skin.family === oldVal) { skin.family = newVal; changed = true; }
+          return changed;
+        };
+
+        const heroes = getHeroes();
+        heroes.forEach((hero) => { if (updateHero(hero)) heroesChanged = true; });
+        const skins = getSkins();
+        skins.forEach((skin) => { if (updateSkin(skin)) skinsChanged = true; });
+        const upcoming = getUpcoming();
+        upcoming.forEach((item) => {
+          const changed = item.itemType === "hero" ? updateHero(item) : updateSkin(item);
+          if (changed) upcomingChanged = true;
+        });
+        if (heroesChanged) saveHeroes(heroes);
+        if (skinsChanged) saveSkins(skins);
+        if (upcomingChanged) saveUpcoming(upcoming);
+      }
+
       function getAttributeUsageCount(key, val) {
         let count = 0;
         const heroes = [...getHeroes(), ...getUpcoming().filter((item) => item.itemType === "hero")];
@@ -744,6 +820,15 @@
         skins.forEach((skin) => {
           if (key === "skinRarities" && skin.rarity === val) count++;
           if (key === "collectibleRarities" && skin.collectible === val) count++;
+          if (key === "skinFamilies" && skin.family === val) count++;
+        });
+        heroes.forEach((hero) => {
+          (hero.builds || []).forEach((build) => {
+            if (key === "items" && (build.items || []).includes(val)) count++;
+            if (key === "items" && (build.substituteItems || []).includes(val)) count++;
+            if (key === "emblems" && build.emblem === val) count++;
+            if (key === "emblemTalents" && (build.talents || []).includes(val)) count++;
+          });
         });
         return count;
       }
@@ -757,9 +842,11 @@
           const a = getAttributes();
           a[key] = a[key].filter((v) => v !== val);
           saveAttributes(a);
+          if (ATTR_IMAGE_KEYS.includes(key)) setAttrImage(key, val, "");
           if (ATTR_COLOR_KEYS.includes(key)) setAttrColor(key, val, "");
           if (ATTR_BG_KEYS.includes(key)) setAttrBg(key, val, "");
           if (ATTR_COLOR_KEYS.includes(key)) setTagGroupId(val, "");
+          deleteAttributeMetaReference(key, val);
           renderAttributesPage();
           populateFilters();
           showToast("Deleted", "success");
@@ -1198,6 +1285,8 @@
         "page-dashboard": "page-dashboard",
         "page-heroes": "page-heroes",
         "page-skins": "page-heroes",
+        "page-relationships": "page-heroes",
+        "page-skin-families": "page-heroes",
         "page-hero-form": "page-heroes",
         "page-skin-form": "page-heroes",
         "page-hero-stats": "page-hero-stats",
@@ -1215,6 +1304,8 @@
         collection: [
           ["page-heroes", "person", "Heroes"],
           ["page-skins", "style", "Skins"],
+          ["page-relationships", "hub", "Relationships"],
+          ["page-skin-families", "collections", "Skin Series"],
         ],
         stats: [
           ["page-hero-stats", "monitoring", "Hero Stats"],
@@ -1233,7 +1324,7 @@
       }
 
       function getSectionTabGroup(pid) {
-        if (["page-heroes", "page-skins"].includes(pid)) return "collection";
+        if (["page-heroes", "page-skins", "page-relationships", "page-skin-families"].includes(pid)) return "collection";
         if (["page-hero-stats", "page-hero-count", "page-skin-count", "page-matrix"].includes(pid)) return "stats";
         if (["page-changelog", "page-upcoming"].includes(pid)) return "updates";
         return null;
@@ -1313,6 +1404,8 @@
         if (pid === "page-hero-stats") renderHeroStatsPage();
         if (pid === "page-hero-count") renderHeroCountPage();
         if (pid === "page-skins") renderSkinsPage();
+        if (pid === "page-relationships" && typeof renderRelationshipGraphPage === "function") renderRelationshipGraphPage();
+        if (pid === "page-skin-families" && typeof renderSkinFamiliesPage === "function") renderSkinFamiliesPage();
         if (pid === "page-skin-count") renderSkinCountPage();
         if (pid === "page-upcoming") renderUpcomingPage();
         if (pid === "page-attributes") renderAttributesPage();
@@ -1665,6 +1758,8 @@
         document.getElementById("hero-skills-container").innerHTML = "";
         const relationshipContainer = document.getElementById("hero-relationships-container");
         if (relationshipContainer) relationshipContainer.innerHTML = "";
+        const buildsContainer = document.getElementById("hero-builds-container");
+        if (buildsContainer) buildsContainer.innerHTML = "";
         updateSkillHeaders();
         document.getElementById("hero-form-context").value = isUpcoming
           ? "upcoming"
@@ -1701,6 +1796,7 @@
             formTags["hero-nations"] = getHeroNations(h);
             refreshHeroFormChoicePills();
             if (h.skills) h.skills.forEach((s) => addSkillInput(s));
+            if (typeof addHeroBuildInput === "function") (h.builds || []).forEach((build) => addHeroBuildInput(build));
             if (typeof addHeroRelationshipInput === "function") {
               (h.relationships || []).forEach((entry) => addHeroRelationshipInput(entry));
               if (typeof getHeroLoreRelationships === "function") {
@@ -1879,6 +1975,8 @@
               subSkills,
             });
           });
+        const heroBuilds = typeof collectHeroBuilds === "function" ? collectHeroBuilds() : [];
+        if (heroBuilds === null) return;
         const h = {
           id,
           name: document.getElementById("hero-name").value,
@@ -1901,6 +1999,7 @@
             document.getElementById("hero-price-diamonds").value || "",
           stats: collectHeroMetricValues(HERO_STAT_DEFS, "hero-stat-"),
           ratings: collectHeroMetricValues(HERO_RATING_DEFS, "hero-rating-", 10),
+          builds: heroBuilds,
           relationships:
             typeof collectHeroRelationships === "function"
               ? collectHeroRelationships()
@@ -2154,6 +2253,7 @@
         const attrs = getAttributes();
         populateSelect("skin-rarity-select", attrs.skinRarities);
         populateSelect("skin-collectible-select", attrs.collectibleRarities);
+        if (typeof refreshSkinFamilyPills === "function") refreshSkinFamilyPills("");
         decorateImageSelect(
           document.getElementById("skin-rarity-select"),
           "skinRarities",
@@ -2183,7 +2283,7 @@
             toggleSkinType();
             if (!isStatue) {
               document.getElementById("skin-rarity-select").value =
-                s.rarity || "";
+                (s.family && typeof isSkinSeriesRarity === "function" && isSkinSeriesRarity(s.family)) ? s.family : (s.rarity || "");
               decorateImageSelect(
                 document.getElementById("skin-rarity-select"),
                 "skinRarities",
@@ -2237,6 +2337,7 @@
           }
         } else {
           document.getElementById("skin-id").value = "";
+          if (typeof refreshSkinFamilyPills === "function") refreshSkinFamilyPills("");
           document.getElementById("is-sacred-statue").checked = false;
           toggleSkinType();
         }
@@ -2684,6 +2785,7 @@
           !isStatue && s.collectible
             ? detailGroup("Tag", [{ text: s.collectible, color: rarityColor }])
             : "",
+          !isStatue && typeof getSkinSeriesName === "function" && getSkinSeriesName(s) ? detailGroup("Series", [getSkinSeriesName(s)]) : "",
         ].join("");
 
         const tagMeta = Object.entries(s.tagDetails || {})
@@ -2778,7 +2880,8 @@
             : "";
 
         const statsAndRatingsHtml = buildHeroStatsAndRatingsHtml(h);
-        let html = `<div class="modal-detail-summary"><div class="detail-groups">${classification}</div>${meta ? `<div class="detail-meta-strip">${meta}</div>` : ""}</div>${statsAndRatingsHtml}${changeLogHtml}${skillsHtml}${relationshipsHtml}`;
+        const recommendedBuildsHtml = typeof buildHeroRecommendedBuildsHtml === "function" ? buildHeroRecommendedBuildsHtml(h) : "";
+        let html = `<div class="modal-detail-summary"><div class="detail-groups">${classification}</div>${meta ? `<div class="detail-meta-strip">${meta}</div>` : ""}</div>${statsAndRatingsHtml}${recommendedBuildsHtml}${changeLogHtml}${skillsHtml}${relationshipsHtml}`;
         html += `<div class="modal-section-header">Skins <span class="section-count">${skins.length}</span></div><div class="mini-grid compact-gallery">${skins
           .map((skin) => {
             const ex = getSkinExtraInfo(skin);
@@ -2875,7 +2978,7 @@
           }
         }
 
-        if (fSearch || fRarities.length || fCollectibles.length || fHero) {
+        if (fSearch || fRarities.length || fCollectibles.length || fFamilies.length || fHero) {
           display = display.filter((item) => {
             const baseSkin =
               item.type === "painted" ? item._baseSkin || getSkinById(item.id) : null;

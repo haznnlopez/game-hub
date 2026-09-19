@@ -1519,9 +1519,29 @@
           showToast("Attribute images restored from backup.", "success");
         });
       }
+      function normalizeAttributeImageValue(value) {
+        if (typeof value === "string") return value.trim();
+        if (value && typeof value === "object" && !Array.isArray(value)) {
+          for (const candidate of [value.url, value.src, value.imageUrl, value.image, value.href]) {
+            if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+          }
+        }
+        return "";
+      }
       function getAttrImage(key, val) {
         const imgs = getAttributeImages();
-        return (imgs[key] && imgs[key][val]) || "";
+        const group = imgs && imgs[key] && typeof imgs[key] === "object" && !Array.isArray(imgs[key]) ? imgs[key] : {};
+        const rawName = String(val ?? "");
+        const exact = normalizeAttributeImageValue(group[rawName]);
+        if (exact) return exact;
+        const trimmed = rawName.trim();
+        if (trimmed !== rawName) {
+          const trimmedMatch = normalizeAttributeImageValue(group[trimmed]);
+          if (trimmedMatch) return trimmedMatch;
+        }
+        const folded = trimmed.toLocaleLowerCase();
+        const matchingKey = Object.keys(group).find((candidate) => String(candidate).trim().toLocaleLowerCase() === folded);
+        return matchingKey ? normalizeAttributeImageValue(group[matchingKey]) : "";
       }
       function setAttrImage(key, val, url) {
         const imgs = getAttributeImages();
@@ -1958,14 +1978,14 @@
         const renderSquare = (v, renderKey = key) => {
           const safeValue = attrDataEscape(v);
           const safeKey = attrDataEscape(renderKey);
-          const renderImgMap = getAttributeImages()[renderKey] || {};
           const renderColMap = getAttributeColors()[renderKey] || {};
-          const imgUrl = renderImgMap[v] || "";
+          const imgUrl = getAttrImage(renderKey, v);
           const color = renderColMap[v] || "";
           const renderHasColor = ATTR_COLOR_KEYS.includes(renderKey);
           const renderHasImg = ATTR_IMAGE_KEYS.includes(renderKey);
+          const safeImgUrl = attrDataEscape(imgUrl);
           const thumbHtml = imgUrl
-            ? `<img src="${imgUrl}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="${safeValue}">`
+            ? `<img class="attr-grid-image" src="${safeImgUrl}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="${safeValue}" loading="lazy">`
             : renderHasColor
               ? `<div style="width:100%;height:100%;border-radius:8px;background:${color || "var(--bg-light)"};display:flex;align-items:center;justify-content:center;">${color ? "" : `<span class="material-symbols-outlined" style="opacity:0.5;">palette</span>`}</div>`
               : renderHasImg

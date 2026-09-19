@@ -6916,3 +6916,22 @@ body *::-webkit-scrollbar-corner {
   border-color: rgba(251,191,36,.28) !important;
   background: rgba(251,191,36,.035) !important;
 }
+
+
+/* V2.10.7 — Attribute grid images are explicit, full-card thumbnails. */
+.attr-square-thumb {
+  position: relative;
+  width: 100%;
+  min-height: 84px;
+}
+.attr-square-thumb .attr-grid-image {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}

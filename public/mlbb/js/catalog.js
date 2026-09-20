@@ -808,6 +808,7 @@
             if (key === "emblems" && build.emblem === oldVal) { build.emblem = newVal; changed = true; }
             if (key === "emblemTalents" && (build.talents || []).includes(oldVal)) { build.talents = replaceInArray(build.talents); changed = true; }
             if (key === "coreTalents" && build.coreTalent === oldVal) { build.coreTalent = newVal; changed = true; }
+            if (key === "battleSpells" && build.battleSpell === oldVal) { build.battleSpell = newVal; changed = true; }
           });
           return changed;
         };
@@ -856,6 +857,7 @@
             if (key === "emblems" && build.emblem === val) count++;
             if (key === "emblemTalents" && (build.talents || []).includes(val)) count++;
             if (key === "coreTalents" && build.coreTalent === val) count++;
+            if (key === "battleSpells" && build.battleSpell === val) count++;
           });
         });
         return count;

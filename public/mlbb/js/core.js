@@ -1,4 +1,4 @@
-      const APP_VERSION = "2.11.4";
+      const APP_VERSION = "2.11.5";
 
       const KEYS = {
         HEROES: "game_hub_mlbb_heroes",
@@ -1267,6 +1267,7 @@
         "emblems",
         "emblemTalents",
         "coreTalents",
+        "battleSpells",
       ];
       function getAttributes() {
         if (!_attributesData) {
@@ -1355,6 +1356,7 @@
             add("emblems", build?.emblem);
             (build?.talents || []).forEach((value) => add("emblemTalents", value));
             add("coreTalents", build?.coreTalent);
+            add("battleSpells", build?.battleSpell);
           });
         };
         getHeroes().forEach((hero) => { scanHero(hero); scanBuilds(hero); });
@@ -1538,6 +1540,7 @@
         emblems: ["emblems", "mainEmblems", "main_emblems", "Main Emblems"],
         emblemTalents: ["emblemTalents", "emblem_talents", "Talents", "Emblem Talents", "Standard Talents"],
         coreTalents: ["coreTalents", "core_talents", "Core Talents", "Core Talent"],
+        battleSpells: ["battleSpells", "battle_spells", "Battle Spells", "Battle Spell"],
         skinFamilies: ["skinFamilies", "skin_families", "Skin Families"],
       };
       function getAttributeImageGroups(map, key) {
@@ -1932,6 +1935,7 @@
         "emblems",
         "emblemTalents",
         "coreTalents",
+        "battleSpells",
       ];
       // Keys that support a custom tag color
       const ATTR_COLOR_KEYS = ["skillCategories"];
@@ -1950,6 +1954,7 @@
         emblems: "verified",
         emblemTalents: "stars",
         coreTalents: "workspace_premium",
+        battleSpells: "magic_button",
       };
       let currentAttrTab = "roles";
 
@@ -1967,6 +1972,7 @@
           skillCategories: "Skill Category",
           items: "Build Items",
           emblems: "Emblems & Talents",
+          battleSpells: "Battle Spells",
         };
         const keys = Object.keys(titles);
         if (!keys.includes(currentAttrTab)) currentAttrTab = keys[0];

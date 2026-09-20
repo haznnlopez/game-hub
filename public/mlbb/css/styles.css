@@ -7273,3 +7273,20 @@ body *::-webkit-scrollbar-corner {
     min-height: 186px;
   }
 }
+
+
+/* V2.11.5 — compact emblem line + battle spell */
+.recommended-build-emblem-row { align-items: center; }
+.recommended-build-emblem-line {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: .15rem;
+  scrollbar-width: thin;
+}
+.recommended-build-emblem-line .recommended-build-token { flex: 0 0 54px; }
+.battle-spell-setup .build-choice-grid { max-height: 160px; }
+@media (max-width: 640px) {
+  .recommended-build-emblem-line { gap: .3rem; }
+  .recommended-build-emblem-line .recommended-build-token { flex-basis: 50px; width: 50px; }
+}

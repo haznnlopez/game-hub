@@ -1,4 +1,4 @@
-      const APP_VERSION = "2.11.3";
+      const APP_VERSION = "2.11.4";
 
       const KEYS = {
         HEROES: "game_hub_mlbb_heroes",
@@ -1266,6 +1266,7 @@
         "items",
         "emblems",
         "emblemTalents",
+        "coreTalents",
       ];
       function getAttributes() {
         if (!_attributesData) {
@@ -1353,6 +1354,7 @@
             (build?.substituteItems || []).forEach((value) => add("items", value));
             add("emblems", build?.emblem);
             (build?.talents || []).forEach((value) => add("emblemTalents", value));
+            add("coreTalents", build?.coreTalent);
           });
         };
         getHeroes().forEach((hero) => { scanHero(hero); scanBuilds(hero); });
@@ -1534,7 +1536,8 @@
         skillCategories: ["skillCategories", "skill_categories", "Skill Category", "Skill Categories"],
         items: ["items", "buildItems", "build_items", "Build Items"],
         emblems: ["emblems", "mainEmblems", "main_emblems", "Main Emblems"],
-        emblemTalents: ["emblemTalents", "emblem_talents", "Talents", "Emblem Talents"],
+        emblemTalents: ["emblemTalents", "emblem_talents", "Talents", "Emblem Talents", "Standard Talents"],
+        coreTalents: ["coreTalents", "core_talents", "Core Talents", "Core Talent"],
         skinFamilies: ["skinFamilies", "skin_families", "Skin Families"],
       };
       function getAttributeImageGroups(map, key) {
@@ -1928,6 +1931,7 @@
         "items",
         "emblems",
         "emblemTalents",
+        "coreTalents",
       ];
       // Keys that support a custom tag color
       const ATTR_COLOR_KEYS = ["skillCategories"];
@@ -1945,6 +1949,7 @@
         items: "shopping_bag",
         emblems: "verified",
         emblemTalents: "stars",
+        coreTalents: "workspace_premium",
       };
       let currentAttrTab = "roles";
 
@@ -1970,7 +1975,7 @@
         tabsEl.innerHTML = keys
           .map((key) => {
             const count = key === "emblems"
-              ? (attrs.emblems || []).length + (attrs.emblemTalents || []).length
+              ? (attrs.emblems || []).length + (attrs.emblemTalents || []).length + (attrs.coreTalents || []).length
               : (attrs[key] || []).length;
             return `<button class="attr-tab${key === currentAttrTab ? " active" : ""}" onclick="switchAttrTab('${key}')">
               <span class="material-symbols-outlined" style="font-size:18px;">${ATTR_TAB_ICONS[key] || "label"}</span>
@@ -1984,6 +1989,7 @@
         const key = currentAttrTab;
         if (!Array.isArray(attrs[key])) attrs[key] = [];
         if (key === "emblems" && !Array.isArray(attrs.emblemTalents)) attrs.emblemTalents = [];
+        if (key === "emblems" && !Array.isArray(attrs.coreTalents)) attrs.coreTalents = [];
         const hasColor = (k) => ATTR_COLOR_KEYS.includes(k);
         const colMap = getAttributeColors()[key] || {};
         const tagGroupMap = getTagGroupMap();
@@ -2084,8 +2090,9 @@
           addRow = `<div class="attr-special-add">${standardImageAddRow("items", "Equipment name")}<div class="attr-category-editor"><span class="form-label">Equipment Categories <span class="form-label-note">Choose all that apply</span></span><div class="attr-category-pills">${BUILD_ITEM_CATEGORIES.map((cat) => `<label class="attr-category-pill"><input type="checkbox" name="input-item-category" value="${cat}"><span>${cat}</span></label>`).join("")}</div></div></div>`;
         } else if (key === "emblems") {
           const mainGrid = `<div class="attr-square-grid">${(attrs.emblems || []).map((v) => renderSquare(v, "emblems")).join("")}</div>`;
-          const talentGrid = `<div class="attr-square-grid">${(attrs.emblemTalents || []).map((v) => renderSquare(v, "emblemTalents")).join("")}</div>`;
-          container.innerHTML = `<h3>Emblems &amp; Talents</h3><p class="form-section-help">Main Emblems and Talents live together here. A recommended build chooses exactly one Main Emblem and exactly three Talents.</p><section class="attr-combined-section"><div class="attr-combined-head"><span><span class="material-symbols-outlined">verified</span><strong>Main Emblems</strong></span><small>${(attrs.emblems || []).length}</small></div>${standardImageAddRow("emblems", "Emblem name")}${mainGrid || `<div class="attr-empty">No emblems yet.</div>`}</section><section class="attr-combined-section"><div class="attr-combined-head"><span><span class="material-symbols-outlined">stars</span><strong>Talents</strong></span><small>${(attrs.emblemTalents || []).length}</small></div>${standardImageAddRow("emblemTalents", "Talent name")}${talentGrid || `<div class="attr-empty">No talents yet.</div>`}</section>`;
+          const standardTalentGrid = `<div class="attr-square-grid">${(attrs.emblemTalents || []).map((v) => renderSquare(v, "emblemTalents")).join("")}</div>`;
+          const coreTalentGrid = `<div class="attr-square-grid">${(attrs.coreTalents || []).map((v) => renderSquare(v, "coreTalents")).join("")}</div>`;
+          container.innerHTML = `<h3>Emblems &amp; Talents</h3><p class="form-section-help">Keep the complete Emblem system in one place. Recommended builds use exactly one Main Emblem, two Standard Talents, and one Core Talent.</p><section class="attr-combined-section"><div class="attr-combined-head"><span><span class="material-symbols-outlined">verified</span><strong>Main Emblems</strong></span><small>${(attrs.emblems || []).length}</small></div>${standardImageAddRow("emblems", "Emblem name")}${mainGrid || `<div class="attr-empty">No emblems yet.</div>`}</section><section class="attr-combined-section"><div class="attr-combined-head"><span><span class="material-symbols-outlined">stars</span><strong>Standard Talents</strong></span><small>${(attrs.emblemTalents || []).length}</small></div>${standardImageAddRow("emblemTalents", "Standard talent name")}${standardTalentGrid || `<div class="attr-empty">No standard talents yet.</div>`}</section><section class="attr-combined-section"><div class="attr-combined-head"><span><span class="material-symbols-outlined">workspace_premium</span><strong>Core Talents</strong></span><small>${(attrs.coreTalents || []).length}</small></div>${standardImageAddRow("coreTalents", "Core talent name")}${coreTalentGrid || `<div class="attr-empty">No core talents yet.</div>`}</section>`;
           return;
         }
 

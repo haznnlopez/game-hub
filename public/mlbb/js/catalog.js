@@ -807,6 +807,7 @@
             if (key === "items" && (build.substituteItems || []).includes(oldVal)) { build.substituteItems = replaceInArray(build.substituteItems); changed = true; }
             if (key === "emblems" && build.emblem === oldVal) { build.emblem = newVal; changed = true; }
             if (key === "emblemTalents" && (build.talents || []).includes(oldVal)) { build.talents = replaceInArray(build.talents); changed = true; }
+            if (key === "coreTalents" && build.coreTalent === oldVal) { build.coreTalent = newVal; changed = true; }
           });
           return changed;
         };
@@ -854,6 +855,7 @@
             if (key === "items" && (build.substituteItems || []).includes(val)) count++;
             if (key === "emblems" && build.emblem === val) count++;
             if (key === "emblemTalents" && (build.talents || []).includes(val)) count++;
+            if (key === "coreTalents" && build.coreTalent === val) count++;
           });
         });
         return count;

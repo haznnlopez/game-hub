@@ -155,7 +155,7 @@
       // ---------------- RECOMMENDED BUILDS ----------------
       function buildChoiceButton(kind, value, selected, key) {
         const image = getAttrImage(key, value);
-        const fallback = kind === "emblem" ? "verified" : kind === "talent" ? "stars" : "shopping_bag";
+        const fallback = kind === "emblem" ? "verified" : kind === "talent" ? "stars" : kind === "coreTalent" ? "workspace_premium" : "shopping_bag";
         return `<button type="button" class="build-choice-pill${selected ? " active" : ""}" data-kind="${kind}" data-value="${escHtml(value)}" onclick="toggleBuildChoice(this,'${kind}')">${image ? `<img src="${image}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="">` : `<span class="material-symbols-outlined">${fallback}</span>`}<span>${escHtml(value)}</span></button>`;
       }
 
@@ -172,7 +172,7 @@
         return sections.map(({ category, items: categoryItems }, index) => `<details class="build-item-category" ${index < 2 ? "open" : ""}><summary><span>${category}</span><small>${categoryItems.length}</small></summary><div class="build-choice-grid">${categoryItems.map((value) => buildChoiceButton(kind, value, selected.has(value), "items")).join("")}</div></details>`).join("");
       }
 
-      function addHeroBuildInput(data = { name: "Recommended", items: [], substituteItems: [], emblem: "", talents: [] }) {
+      function addHeroBuildInput(data = { name: "Recommended", items: [], substituteItems: [], emblem: "", talents: [], coreTalent: "" }) {
         const container = document.getElementById("hero-builds-container");
         if (!container) return;
         const attrs = getAttributes();
@@ -182,10 +182,11 @@
         card.dataset.substituteItems = JSON.stringify(data.substituteItems || []);
         card.dataset.emblem = data.emblem || "";
         card.dataset.talents = JSON.stringify(data.talents || []);
+        card.dataset.coreTalent = data.coreTalent || "";
         card.innerHTML = `<div class="hero-build-editor-head"><input type="text" class="form-input hero-build-name" value="${escHtml(data.name || "Recommended")}" placeholder="Build name, e.g. Burst / Sustain / Roam"><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.hero-build-editor-card').remove()"><span class="material-symbols-outlined">delete</span></button></div>
           <details class="hero-build-choice-group" open><summary><span><span class="material-symbols-outlined">shopping_bag</span>Main Equipment</span><small class="build-choice-count build-item-count">${(data.items || []).length}/6 selected</small></summary><div class="build-category-stack build-items-grid">${buildItemCategorySections("item", data.items || [])}</div></details>
           <details class="hero-build-choice-group"><summary><span><span class="material-symbols-outlined">swap_horiz</span>Substitute Equipment</span><small class="build-choice-count build-substitute-count">${(data.substituteItems || []).length}/6 selected</small></summary><p class="build-choice-help">Optional alternatives you can swap into the build depending on matchup or role.</p><div class="build-category-stack build-substitute-grid">${buildItemCategorySections("substitute", data.substituteItems || [])}</div></details>
-          <details class="hero-build-choice-group emblem-setup" open><summary><span><span class="material-symbols-outlined">shield</span>Emblem Setup</span><small class="build-choice-count build-emblem-summary">${data.emblem ? "1 emblem" : "No emblem"} · ${(data.talents || []).length}/3 talents</small></summary><div class="build-emblem-section"><div class="build-subsection-head"><strong>Main Emblem</strong><small>Choose exactly one</small></div><div class="build-choice-grid build-emblems-grid">${(attrs.emblems || []).map((value) => buildChoiceButton("emblem", value, data.emblem === value, "emblems")).join("") || `<span class="build-choice-empty">Add Main Emblems in Attributes first.</span>`}</div></div><div class="build-emblem-section"><div class="build-subsection-head"><strong>Talents</strong><small>Choose exactly three</small></div><div class="build-choice-grid build-talents-grid">${(attrs.emblemTalents || []).map((value) => buildChoiceButton("talent", value, (data.talents || []).includes(value), "emblemTalents")).join("") || `<span class="build-choice-empty">Add Talents in Attributes first.</span>`}</div></div></details>`;
+          <details class="hero-build-choice-group emblem-setup" open><summary><span><span class="material-symbols-outlined">shield</span>Emblem Setup</span><small class="build-choice-count build-emblem-summary">${data.emblem ? "1 emblem" : "No emblem"} · ${(data.talents || []).length}/2 standard · ${data.coreTalent ? "1 core" : "No core"}</small></summary><div class="build-emblem-section"><div class="build-subsection-head"><strong>Main Emblem</strong><small>Choose exactly one</small></div><div class="build-choice-grid build-emblems-grid">${(attrs.emblems || []).map((value) => buildChoiceButton("emblem", value, data.emblem === value, "emblems")).join("") || `<span class="build-choice-empty">Add Main Emblems in Attributes first.</span>`}</div></div><div class="build-emblem-section"><div class="build-subsection-head"><strong>Standard Talents</strong><small>Choose exactly two</small></div><div class="build-choice-grid build-talents-grid">${(attrs.emblemTalents || []).map((value) => buildChoiceButton("talent", value, (data.talents || []).includes(value), "emblemTalents")).join("") || `<span class="build-choice-empty">Add Standard Talents in Attributes first.</span>`}</div></div><div class="build-emblem-section"><div class="build-subsection-head"><strong>Core Talent</strong><small>Choose exactly one</small></div><div class="build-choice-grid build-core-talents-grid">${(attrs.coreTalents || []).map((value) => buildChoiceButton("coreTalent", value, data.coreTalent === value, "coreTalents")).join("") || `<span class="build-choice-empty">Add Core Talents in Attributes first.</span>`}</div></div></details>`;
         container.appendChild(card);
       }
 
@@ -200,7 +201,7 @@
         if (!el) return;
         let talents = [];
         try { talents = JSON.parse(card.dataset.talents || "[]"); } catch (e) {}
-        el.textContent = `${card.dataset.emblem ? "1 emblem" : "No emblem"} · ${talents.length}/3 talents`;
+        el.textContent = `${card.dataset.emblem ? "1 emblem" : "No emblem"} · ${talents.length}/2 standard · ${card.dataset.coreTalent ? "1 core" : "No core"}`;
       }
 
       function toggleBuildChoice(button, kind) {
@@ -214,14 +215,21 @@
           updateEmblemSummary(card);
           return;
         }
+        if (kind === "coreTalent") {
+          const next = card.dataset.coreTalent === value ? "" : value;
+          card.dataset.coreTalent = next;
+          card.querySelectorAll('.build-choice-pill[data-kind="coreTalent"]').forEach((pill) => pill.classList.toggle("active", pill.dataset.value === next));
+          updateEmblemSummary(card);
+          return;
+        }
         const key = kind === "item" ? "items" : kind === "substitute" ? "substituteItems" : "talents";
-        const max = kind === "talent" ? 3 : 6;
+        const max = kind === "talent" ? 2 : 6;
         let values = [];
         try { values = JSON.parse(card.dataset[key] || "[]"); } catch (e) {}
         if (values.includes(value)) values = values.filter((entry) => entry !== value);
         else {
           if (values.length >= max) {
-            showToast(kind === "talent" ? "Choose exactly 3 talents." : `Choose up to ${max} equipment.`, "info");
+            showToast(kind === "talent" ? "Choose exactly 2 Standard Talents." : `Choose up to ${max} equipment.`, "info");
             return;
           }
           values.push(value);
@@ -249,11 +257,12 @@
             substituteItems,
             emblem: card.dataset.emblem || "",
             talents,
+            coreTalent: card.dataset.coreTalent || "",
           };
-        }).filter((build) => build.items.length || build.substituteItems.length || build.emblem || build.talents.length);
-        const invalid = builds.find((build) => !build.emblem || build.talents.length !== 3);
+        }).filter((build) => build.items.length || build.substituteItems.length || build.emblem || build.talents.length || build.coreTalent);
+        const invalid = builds.find((build) => !build.emblem || build.talents.length !== 2 || !build.coreTalent);
         if (invalid) {
-          showToast(`Build "${invalid.name}" needs exactly 1 Main Emblem and 3 Talents.`, "info");
+          showToast(`Build "${invalid.name}" needs exactly 1 Main Emblem, 2 Standard Talents, and 1 Core Talent.`, "info");
           return null;
         }
         return builds;
@@ -266,5 +275,5 @@
           const image = getAttrImage(key, value);
           return `<div class="recommended-build-token" data-tooltip="${escHtml(value)}">${image ? `<img src="${image}" data-fallback-src="${IMAGE_PLACEHOLDER}" alt="">` : `<span class="material-symbols-outlined">${fallbackIcon}</span>`}<small>${escHtml(value)}</small></div>`;
         };
-        return `<div class="modal-section-header">Recommended Builds <span class="section-count">${builds.length}</span></div><div class="recommended-build-list">${builds.map((build) => `<article class="recommended-build-card"><div class="recommended-build-title"><span class="material-symbols-outlined">build_circle</span><strong>${escHtml(build.name || "Recommended")}</strong></div><div class="recommended-build-row"><span class="recommended-build-label">Main Equipment</span><div class="recommended-build-tokens">${(build.items || []).map((value) => icon("items", value, "shopping_bag")).join("") || `<em>None set</em>`}</div></div>${(build.substituteItems || []).length ? `<div class="recommended-build-row substitute"><span class="recommended-build-label">Substitutes</span><div class="recommended-build-tokens">${build.substituteItems.map((value) => icon("items", value, "swap_horiz")).join("")}</div></div>` : ""}<div class="recommended-build-row"><span class="recommended-build-label">Main Emblem</span><div class="recommended-build-tokens">${build.emblem ? icon("emblems", build.emblem, "verified") : `<em>None set</em>`}</div></div><div class="recommended-build-row"><span class="recommended-build-label">Talents</span><div class="recommended-build-tokens">${(build.talents || []).map((value) => icon("emblemTalents", value, "stars")).join("") || `<em>None set</em>`}</div></div></article>`).join("")}</div>`;
+        return `<div class="modal-section-header">Recommended Builds <span class="section-count">${builds.length}</span></div><div class="recommended-build-list">${builds.map((build) => `<article class="recommended-build-card"><div class="recommended-build-title"><span class="material-symbols-outlined">build_circle</span><strong>${escHtml(build.name || "Recommended")}</strong></div><div class="recommended-build-row"><span class="recommended-build-label">Main Equipment</span><div class="recommended-build-tokens">${(build.items || []).map((value) => icon("items", value, "shopping_bag")).join("") || `<em>None set</em>`}</div></div>${(build.substituteItems || []).length ? `<div class="recommended-build-row substitute"><span class="recommended-build-label">Substitutes</span><div class="recommended-build-tokens">${build.substituteItems.map((value) => icon("items", value, "swap_horiz")).join("")}</div></div>` : ""}<div class="recommended-build-row"><span class="recommended-build-label">Main Emblem</span><div class="recommended-build-tokens">${build.emblem ? icon("emblems", build.emblem, "verified") : `<em>None set</em>`}</div></div><div class="recommended-build-row"><span class="recommended-build-label">Standard Talents</span><div class="recommended-build-tokens">${(build.talents || []).map((value) => icon("emblemTalents", value, "stars")).join("") || `<em>None set</em>`}</div></div><div class="recommended-build-row"><span class="recommended-build-label">Core Talent</span><div class="recommended-build-tokens">${build.coreTalent ? icon("coreTalents", build.coreTalent, "workspace_premium") : `<em>None set</em>`}</div></div></article>`).join("")}</div>`;
       }

@@ -144,6 +144,7 @@
       }
 
       function closeModal(clearHistory = true) {
+        closeImageViewer();
         document.getElementById("universal-modal").classList.remove("open");
         currentModalData = null;
         if (clearHistory) modalHistory = [];
@@ -195,11 +196,9 @@
         if (titleEl) titleEl.textContent = paintedName || s.name;
       }
 
-      function renderGalleryView(d) {
-        const g = document.getElementById("modal-gallery-view");
-        const single = document.getElementById("modal-single-view");
-        if (single) single.style.display = "none";
-        g.classList.add("active");
+      let imageViewerState = null;
+
+      function resolveModalGalleryMedia(d) {
         const hero = getHeroById(d.heroId);
         const painted = currentModalData?.type === "skin" && currentModalData?.paintedSkinIndex != null
           ? d.paintedSkins?.[currentModalData.paintedSkinIndex] || null
@@ -227,22 +226,203 @@
             fallbackOnly: !ownValue,
           };
         };
-        const items = [
-          { key: "splash", label: "Splash Art", icon: "wallpaper", ...resolve("splash") },
-          { key: "portrait", label: "Portrait", icon: "portrait", ...resolve("portrait") },
-          { key: "icon", label: "Head Icon", icon: "face", ...resolve("icon") },
-        ];
-        const card = (item, cls) => `<figure class="hero-gallery-media ${cls}">
-          <div class="hero-gallery-media-frame">
-            <img src="${item.src}" data-fallback-src="${item.fallbackSrc}" alt="${d.name} ${item.label}"${item.fallbackOnly ? ' style="filter:grayscale(100%) opacity(0.62)"' : ""}>
-            <figcaption><span class="material-symbols-outlined">${item.icon}</span>${item.label}</figcaption>
-          </div>
-        </figure>`;
+        return {
+          painted,
+          splash: { key: "splash", label: "Splash Art", icon: "wallpaper", ...resolve("splash") },
+          portrait: { key: "portrait", label: "Portrait", icon: "portrait", ...resolve("portrait") },
+          headIcon: { key: "icon", label: "Head Icon", icon: "face", ...resolve("icon") },
+        };
+      }
+
+      function updateModalHeaderIcon(item, ownerName = "") {
+        const icon = document.getElementById("modal-header-icon");
+        if (!icon || !item) return;
+        icon.classList.remove("image-fallback", "image-fallback-secondary");
+        icon.dataset.fallbackSrc = item.fallbackSrc || IMAGE_PLACEHOLDER;
+        icon.dataset.fallbackIndex = "0";
+        icon.src = item.src || item.fallbackSrc || IMAGE_PLACEHOLDER;
+        icon.alt = ownerName ? `${ownerName} head icon` : "Head icon";
+        icon.setAttribute("aria-hidden", "false");
+        icon.classList.toggle("fallback-only", Boolean(item.fallbackOnly));
+      }
+
+      function openGalleryImageViewerFromCard(card) {
+        if (!card) return;
+        const img = card.querySelector("img");
+        let src = img?.currentSrc || img?.src || "";
+        const fallback = card.dataset.imageFallback
+          ? decodeURIComponent(card.dataset.imageFallback)
+          : "";
+        if (!src || src === IMAGE_PLACEHOLDER) {
+          src = card.dataset.imageSrc ? decodeURIComponent(card.dataset.imageSrc) : fallback;
+        }
+        const label = card.dataset.imageLabel
+          ? decodeURIComponent(card.dataset.imageLabel)
+          : "Artwork";
+        const owner = card.dataset.imageOwner
+          ? decodeURIComponent(card.dataset.imageOwner)
+          : document.getElementById("modal-title")?.textContent || "MLBB";
+        openImageViewer(src || fallback || IMAGE_PLACEHOLDER, label, owner, fallback);
+      }
+
+      function openImageViewer(src, label = "Artwork", owner = "MLBB", fallbackSrc = "") {
+        const overlay = document.getElementById("image-viewer-modal");
+        const img = document.getElementById("image-viewer-img");
+        const title = document.getElementById("image-viewer-title");
+        const subtitle = document.getElementById("image-viewer-subtitle");
+        if (!overlay || !img) return;
+
+        const hdSrc = typeof cleanImageUrl === "function" ? cleanImageUrl(src) : src;
+        const hdFallback = fallbackSrc && typeof cleanImageUrl === "function"
+          ? cleanImageUrl(fallbackSrc)
+          : fallbackSrc;
+        img.classList.remove("image-fallback", "image-fallback-secondary");
+        imageViewerState = {
+          src: hdSrc || hdFallback || IMAGE_PLACEHOLDER,
+          label,
+          owner,
+        };
+        title.textContent = label || "Artwork";
+        subtitle.textContent = owner || "";
+        img.dataset.fallbackSrc = hdFallback || IMAGE_PLACEHOLDER;
+        img.dataset.fallbackIndex = "0";
+        img.src = imageViewerState.src;
+        img.alt = `${owner || "MLBB"} ${label || "artwork"}`;
+        img.onload = () => {
+          if (imageViewerState) imageViewerState.src = img.currentSrc || img.src || imageViewerState.src;
+        };
+        overlay.classList.add("open");
+        overlay.setAttribute("aria-hidden", "false");
+        overlay.onclick = (event) => {
+          if (event.target === overlay) closeImageViewer();
+        };
+        requestAnimationFrame(() => overlay.querySelector(".image-viewer-close")?.focus());
+      }
+
+      function closeImageViewer() {
+        const overlay = document.getElementById("image-viewer-modal");
+        const img = document.getElementById("image-viewer-img");
+        if (!overlay) return;
+        overlay.classList.remove("open");
+        overlay.setAttribute("aria-hidden", "true");
+        if (img) {
+          img.onload = null;
+          img.removeAttribute("src");
+          img.dataset.fallbackSrc = "";
+          img.dataset.fallbackIndex = "0";
+        }
+        imageViewerState = null;
+      }
+
+      function imageViewerSuggestedName() {
+        const safe = (value) => String(value || "image")
+          .trim()
+          .replace(/[^a-z0-9._-]+/gi, "-")
+          .replace(/^-+|-+$/g, "") || "image";
+        const src = imageViewerState?.src || "";
+        let ext = "png";
+        try {
+          const pathname = new URL(src, window.location.href).pathname;
+          const match = pathname.match(/\.([a-z0-9]{2,5})$/i);
+          if (match && /^(png|jpe?g|webp|gif|bmp|svg)$/i.test(match[1])) ext = match[1].toLowerCase().replace("jpeg", "jpg");
+        } catch (_) {}
+        return `${safe(imageViewerState?.owner)}-${safe(imageViewerState?.label)}.${ext}`;
+      }
+
+      async function downloadImageViewer() {
+        const img = document.getElementById("image-viewer-img");
+        const src = img?.currentSrc || img?.src || imageViewerState?.src || "";
+        if (!src || src === IMAGE_PLACEHOLDER) {
+          showToast("No downloadable artwork is available.", "info");
+          return;
+        }
+        let suggestedName = imageViewerSuggestedName();
+        try {
+          const response = await fetch(src, { cache: "no-store" });
+          if (!response.ok) throw new Error(`Image request failed (${response.status})`);
+          const blob = await response.blob();
+          const mimeExt = {
+            "image/jpeg": "jpg",
+            "image/png": "png",
+            "image/webp": "webp",
+            "image/gif": "gif",
+            "image/bmp": "bmp",
+            "image/svg+xml": "svg",
+          }[blob.type];
+          if (mimeExt) suggestedName = suggestedName.replace(/\.[a-z0-9]+$/i, `.${mimeExt}`);
+
+          if (window.showSaveFilePicker && window.isSecureContext) {
+            try {
+              const handle = await window.showSaveFilePicker({ suggestedName });
+              const writable = await handle.createWritable();
+              await writable.write(blob);
+              await writable.close();
+              showToast("Image saved", "success");
+              return;
+            } catch (err) {
+              if (err?.name === "AbortError") return;
+              throw err;
+            }
+          }
+
+          const objectUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = objectUrl;
+          link.download = suggestedName;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+          showToast("Download started", "success");
+        } catch (err) {
+          console.warn("Direct image download was blocked; opening the image instead.", err);
+          const link = document.createElement("a");
+          link.href = src;
+          link.download = suggestedName;
+          link.target = "_blank";
+          link.rel = "noopener";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          showToast("Opened the original image so you can save it.", "info");
+        }
+      }
+
+      function renderGalleryView(d) {
+        const g = document.getElementById("modal-gallery-view");
+        const single = document.getElementById("modal-single-view");
+        if (single) single.style.display = "none";
+        g.classList.add("active");
+
+        const media = resolveModalGalleryMedia(d);
+        updateModalHeaderIcon(media.headIcon, media.painted?.name || d.name);
+        const items = [media.splash, media.portrait];
+        const owner = media.painted?.name || d.name;
+        const card = (item, cls) => `<button type="button" class="hero-gallery-media gallery-viewer-trigger ${cls}"
+          data-image-src="${encodeURIComponent(item.src || "")}"
+          data-image-fallback="${encodeURIComponent(item.fallbackSrc || "")}"
+          data-image-label="${encodeURIComponent(item.label)}"
+          data-image-owner="${encodeURIComponent(owner)}"
+          onclick="openGalleryImageViewerFromCard(this)"
+          aria-label="Open ${item.label} image viewer">
+          <span class="hero-gallery-media-frame">
+            <img src="${item.src}" data-fallback-src="${item.fallbackSrc}" alt="${owner} ${item.label}"${item.fallbackOnly ? ' style="filter:grayscale(100%) opacity(0.62)"' : ""}>
+            <span class="hero-gallery-open-hint"><span class="material-symbols-outlined">open_in_full</span>Open</span>
+            <span class="hero-gallery-caption"><span class="material-symbols-outlined">${item.icon}</span>${item.label}</span>
+          </span>
+        </button>`;
+
         g.innerHTML = `<div class="hero-gallery-showcase modal-all-images ${currentModalData?.type === "skin" ? "skin-gallery-showcase" : ""}">
           ${card(items[0], "hero-gallery-splash")}
-          <div class="hero-gallery-side">
-            ${card(items[1], "hero-gallery-portrait")}
-            ${card(items[2], "hero-gallery-icon")}
-          </div>
-        </div>${painted ? `<div class="gallery-variant-note"><span class="material-symbols-outlined">palette</span>Showing painted variant: <strong>${painted.name || "Painted Skin"}</strong> · click it again below to return to the base skin.</div>` : ""}`;
+          ${card(items[1], "hero-gallery-portrait")}
+        </div>${media.painted ? `<div class="gallery-variant-note"><span class="material-symbols-outlined">palette</span>Showing painted variant: <strong>${media.painted.name || "Painted Skin"}</strong> · click it again below to return to the base skin.</div>` : ""}`;
       }
+
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && document.getElementById("image-viewer-modal")?.classList.contains("open")) {
+          event.preventDefault();
+          event.stopPropagation();
+          closeImageViewer();
+        }
+      }, true);

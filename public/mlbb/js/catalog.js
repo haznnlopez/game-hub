@@ -884,11 +884,45 @@
       }
 
       function cleanImageUrl(url) {
-        // Preserve image URLs exactly as entered. Many CDNs/Fandom/Wikia links
-        // require query strings or path suffixes; stripping them can turn a
-        // valid image into a 403/404 and trigger the global placeholder.
+        // Image HD-fier: restore original-quality MediaWiki/Fandom artwork
+        // without rewriting ordinary CDN/signed URLs. This intentionally only
+        // touches known thumbnail URL shapes so query tokens elsewhere remain intact.
         if (!url) return "";
-        return String(url).trim();
+        let value = String(url).trim();
+        if (!value) return "";
+
+        try {
+          const parsed = new URL(value, window.location.href);
+          const host = parsed.hostname.toLowerCase();
+
+          // Fandom/Wikia commonly appends /revision/latest/scale-to-width-down/...
+          // to an otherwise full-resolution image. Remove only that resize suffix
+          // and keep cache-busting/query parameters intact.
+          if (host.endsWith("wikia.nocookie.net") || host.includes("fandom")) {
+            parsed.pathname = parsed.pathname.replace(/\/thumb\//g, "/");
+            parsed.pathname = parsed.pathname.replace(
+              /(\.(?:png|jpe?g|webp|gif))\/revision\/latest(?:\/.*)?$/i,
+              "$1/revision/latest",
+            );
+            value = parsed.toString();
+          }
+
+          // Wikimedia thumbnail URLs use /thumb/.../<size>-Filename.ext.
+          // Reconstruct the original file path while retaining any query/hash.
+          if (host === "upload.wikimedia.org" && parsed.pathname.includes("/thumb/")) {
+            const match = parsed.pathname.match(
+              /^(.*)\/thumb\/(.+\/[^/]+\.(?:png|jpe?g|webp|gif))\/[^/]+$/i,
+            );
+            if (match) {
+              parsed.pathname = `${match[1]}/${match[2]}`;
+              value = parsed.toString();
+            }
+          }
+        } catch (_) {
+          // If URL parsing fails, keep exactly what the user entered.
+        }
+
+        return value;
       }
 
       // ---------------- HERO COUNT ----------------

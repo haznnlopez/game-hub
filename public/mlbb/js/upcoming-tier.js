@@ -12,6 +12,8 @@
         const skinTab = document.getElementById("tab-upcoming-skins");
         heroTab.classList.toggle("active", currentUpcomingView === "heroes");
         skinTab.classList.toggle("active", currentUpcomingView === "skins");
+        heroTab.setAttribute("aria-selected", currentUpcomingView === "heroes" ? "true" : "false");
+        skinTab.setAttribute("aria-selected", currentUpcomingView === "skins" ? "true" : "false");
         document.getElementById("tab-count-heroes").textContent =
           heroCount || "";
         document.getElementById("tab-count-skins").textContent =

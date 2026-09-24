@@ -137,7 +137,7 @@
           </div>
           <div class="topbar-version-chip" title="Current app version" aria-label="Current app version">
             <span class="material-symbols-outlined">deployed_code</span>
-            <strong data-app-version>v2.11.5</strong>
+            <strong data-app-version>v2.11.7</strong>
           </div>
         </div>
       </div>
@@ -662,93 +662,30 @@
               </button>
             </div>
           </header>
-          <div
-            class="upcoming-tabs"
-            style="
-              display: flex;
-              gap: 0;
-              margin-bottom: 2rem;
-              border-bottom: 2px solid rgba(255, 255, 255, 0.07);
-              position: relative;
-            "
-          >
+          <div class="upcoming-tabs" role="tablist" aria-label="Upcoming item type">
             <button
+              type="button"
               class="upcoming-tab active"
               id="tab-upcoming-heroes"
               onclick="renderUpcomingPage('heroes')"
-              style="
-                background: transparent;
-                border: none;
-                color: var(--text-med);
-                font-family: &quot;Montserrat&quot;, sans-serif;
-                font-size: 0.95rem;
-                font-weight: 700;
-                padding: 0.9rem 1.8rem;
-                cursor: pointer;
-                position: relative;
-                transition: color 0.2s;
-                letter-spacing: 0.5px;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-              "
+              role="tab"
+              aria-selected="true"
             >
-              <span class="material-symbols-outlined" style="font-size: 18px"
-                >person</span
-              >
-              Heroes
-              <span
-                id="tab-count-heroes"
-                style="
-                  background: rgba(255, 255, 255, 0.08);
-                  color: var(--text-med);
-                  font-size: 0.7rem;
-                  font-weight: 800;
-                  padding: 0.15rem 0.55rem;
-                  border-radius: 20px;
-                  min-width: 20px;
-                  text-align: center;
-                "
-              ></span>
+              <span class="material-symbols-outlined">person</span>
+              <span>Heroes</span>
+              <span id="tab-count-heroes" class="upcoming-tab-count"></span>
             </button>
             <button
+              type="button"
               class="upcoming-tab"
               id="tab-upcoming-skins"
               onclick="renderUpcomingPage('skins')"
-              style="
-                background: transparent;
-                border: none;
-                color: var(--text-med);
-                font-family: &quot;Montserrat&quot;, sans-serif;
-                font-size: 0.95rem;
-                font-weight: 700;
-                padding: 0.9rem 1.8rem;
-                cursor: pointer;
-                position: relative;
-                transition: color 0.2s;
-                letter-spacing: 0.5px;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-              "
+              role="tab"
+              aria-selected="false"
             >
-              <span class="material-symbols-outlined" style="font-size: 18px"
-                >style</span
-              >
-              Skins
-              <span
-                id="tab-count-skins"
-                style="
-                  background: rgba(255, 255, 255, 0.08);
-                  color: var(--text-med);
-                  font-size: 0.7rem;
-                  font-weight: 800;
-                  padding: 0.15rem 0.55rem;
-                  border-radius: 20px;
-                  min-width: 20px;
-                  text-align: center;
-                "
-              ></span>
+              <span class="material-symbols-outlined">style</span>
+              <span>Skins</span>
+              <span id="tab-count-skins" class="upcoming-tab-count"></span>
             </button>
           </div>
           <div class="filters-bar">
@@ -1452,6 +1389,7 @@
             <button id="modal-back-btn" class="modal-btn-circle modal-back-btn" type="button" onclick="goBackModal()" title="Back" aria-label="Back to previous modal">
               <span class="material-symbols-outlined">arrow_back</span>
             </button>
+            <img id="modal-header-icon" class="modal-header-icon" alt="" aria-hidden="true" />
             <h2 id="modal-title" class="modal-title">Title</h2>
           </div>
           <div class="modal-header-actions">
@@ -1474,6 +1412,32 @@
         </div>
       </div>
     </div>
+
+    <div id="image-viewer-modal" class="image-viewer-overlay" role="dialog" aria-modal="true" aria-labelledby="image-viewer-title" aria-hidden="true">
+      <div class="image-viewer-shell">
+        <header class="image-viewer-header">
+          <div class="image-viewer-heading">
+            <span class="material-symbols-outlined">image</span>
+            <div>
+              <div id="image-viewer-title" class="image-viewer-title">Artwork</div>
+              <div id="image-viewer-subtitle" class="image-viewer-subtitle"></div>
+            </div>
+          </div>
+          <div class="image-viewer-actions">
+            <button type="button" class="btn btn-secondary image-viewer-download" onclick="downloadImageViewer()">
+              <span class="material-symbols-outlined">download</span>Download As…
+            </button>
+            <button type="button" class="modal-btn-circle close image-viewer-close" onclick="closeImageViewer()" aria-label="Close image viewer" data-tooltip="Back to details">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+        </header>
+        <div class="image-viewer-stage">
+          <img id="image-viewer-img" class="image-viewer-img" alt="Expanded artwork" />
+        </div>
+      </div>
+    </div>
+
     <div id="toast-container"></div>
     <div id="custom-tooltip" class="custom-tooltip"></div>
     <div id="img-preview-tooltip"><img alt="Preview" /></div>

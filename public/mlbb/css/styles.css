@@ -7290,3 +7290,298 @@ body *::-webkit-scrollbar-corner {
   .recommended-build-emblem-line { gap: .3rem; }
   .recommended-build-emblem-line .recommended-build-token { flex-basis: 50px; width: 50px; }
 }
+
+
+/* ============================================================
+   V2.11.6 — Upcoming tab placement + Image HD-fier restoration
+   ============================================================ */
+
+/* Upcoming has both the Updates section nav and its own Heroes/Skins tabs.
+   Keep the local tabs centered and sticky *below* the section navigation. */
+#page-upcoming .upcoming-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px !important;
+  position: sticky !important;
+  top: 126px !important;
+  z-index: 60;
+  width: max-content;
+  max-width: calc(100% - 1rem);
+  margin: 0 auto 1.15rem !important;
+  padding: 4px;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, .94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 10px 24px rgba(0,0,0,.18);
+  overflow-x: auto;
+}
+#page-upcoming .upcoming-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .48rem;
+  min-height: 38px;
+  padding: .55rem .9rem !important;
+  border: 0;
+  border-radius: 10px !important;
+  background: transparent;
+  color: var(--text-med);
+  font: inherit;
+  font-size: .8rem !important;
+  font-weight: 750;
+  letter-spacing: 0 !important;
+  white-space: nowrap;
+  cursor: pointer;
+}
+#page-upcoming .upcoming-tab .material-symbols-outlined { font-size: 18px; }
+#page-upcoming .upcoming-tab.active {
+  color: var(--accent) !important;
+  background: rgba(251,191,36,.12) !important;
+}
+#page-upcoming .upcoming-tab-count {
+  min-width: 20px;
+  padding: .14rem .48rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,.07);
+  color: var(--text-med);
+  font-size: .68rem;
+  font-weight: 800;
+  text-align: center;
+}
+#page-upcoming .upcoming-tab.active .upcoming-tab-count {
+  background: rgba(251,191,36,.18);
+  color: var(--accent);
+}
+
+@media (max-width: 700px) {
+  #page-upcoming .upcoming-tabs {
+    top: 122px !important;
+    max-width: calc(100vw - 1.25rem);
+  }
+}
+
+/* ============================================================
+   V2.11.7 — Hero/Skin modal gallery + image viewer
+   ============================================================ */
+.modal-header-icon {
+  display: none;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  object-fit: contain;
+  padding: 3px;
+  border-radius: 14px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  background: rgba(2, 6, 23, 0.72);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+.modal-overlay.open .modal-header-icon { display: block; }
+.modal-header-icon.fallback-only { opacity: 0.72; }
+
+/* Splash + portrait share the exact same visual height. */
+.hero-gallery-showcase {
+  --modal-gallery-art-height: clamp(340px, 44vw, 480px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(220px, 0.78fr);
+  gap: 1rem;
+  align-items: stretch;
+  width: 100%;
+}
+.hero-gallery-media,
+.hero-gallery-splash,
+.hero-gallery-portrait {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  height: var(--modal-gallery-art-height) !important;
+  min-height: 0 !important;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: zoom-in;
+}
+.hero-gallery-media-frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.hero-gallery-media img,
+.skin-gallery-showcase .hero-gallery-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: rgba(2, 6, 23, 0.82);
+}
+.hero-gallery-caption {
+  position: absolute;
+  left: 0.8rem;
+  bottom: 0.75rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.76);
+  backdrop-filter: blur(10px);
+  color: #f8fafc;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.hero-gallery-caption .material-symbols-outlined {
+  font-size: 1rem;
+  color: var(--accent);
+}
+.hero-gallery-open-hint {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.58rem;
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.76);
+  color: #f8fafc;
+  font-size: 0.64rem;
+  font-weight: 750;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .16s ease, transform .16s ease;
+}
+.hero-gallery-open-hint .material-symbols-outlined { font-size: 15px; color: var(--accent); }
+.gallery-viewer-trigger:hover .hero-gallery-open-hint,
+.gallery-viewer-trigger:focus-visible .hero-gallery-open-hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+.gallery-viewer-trigger:focus-visible {
+  outline: 2px solid rgba(251,191,36,.75);
+  outline-offset: 3px;
+}
+
+.image-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 360;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: min(3vw, 2rem);
+  background: rgba(2, 6, 23, 0.94);
+  backdrop-filter: blur(16px);
+}
+.image-viewer-overlay.open { display: flex; }
+.image-viewer-shell {
+  width: min(96vw, 1600px);
+  height: min(94vh, 1040px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 22px;
+  background: #030712;
+  box-shadow: 0 30px 120px rgba(0,0,0,.72);
+}
+.image-viewer-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .9rem 1rem .9rem 1.15rem;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: rgba(15,23,42,.92);
+}
+.image-viewer-heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+}
+.image-viewer-heading > .material-symbols-outlined { color: var(--accent); }
+.image-viewer-title {
+  color: var(--text-light);
+  font-size: .92rem;
+  font-weight: 850;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.image-viewer-subtitle {
+  margin-top: 2px;
+  color: var(--text-med);
+  font-size: .68rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.image-viewer-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+}
+.image-viewer-download {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  white-space: nowrap;
+}
+.image-viewer-download .material-symbols-outlined { font-size: 17px; }
+.image-viewer-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(251,191,36,.055), transparent 30%),
+    #020617;
+}
+.image-viewer-img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 14px 44px rgba(0,0,0,.4);
+}
+
+@media (max-width: 680px) {
+  .modal-header-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 11px;
+  }
+  .hero-gallery-showcase {
+    --modal-gallery-art-height: clamp(270px, 84vw, 390px);
+    grid-template-columns: 1fr;
+  }
+  .image-viewer-overlay { padding: .55rem; }
+  .image-viewer-shell { width: 100%; height: 96vh; border-radius: 16px; }
+  .image-viewer-header { align-items: flex-start; }
+  .image-viewer-download { padding-inline: .65rem; }
+  .image-viewer-download { font-size: 0; }
+  .image-viewer-download .material-symbols-outlined { font-size: 19px; }
+}

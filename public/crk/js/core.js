@@ -480,12 +480,20 @@
             return;
           }
           const data = payload && payload.data ? payload.data : payload;
-          if (!data || typeof data !== "object") {
+          if (!data || typeof data !== "object" || Array.isArray(data)) {
             showToast("Invalid backup file", "info");
             return;
           }
+          const keys = Object.keys(data);
+          if (!keys.length) {
+            showToast("Backup contains no stored data", "info");
+            return;
+          }
+          // Restoring shared/server data is intentionally admin-only.
+          // A backup can still be exported by everyone, but only an
+          // authenticated admin may overwrite the live database.
           if (!ADMIN.isAdmin) {
-            showToast("Sign in as admin to restore a backup", "info");
+            showToast("Sign in as admin to restore the shared database", "info");
             openAdminLoginModal();
             return;
           }
@@ -493,7 +501,6 @@
             "This will overwrite the live database (for everyone) with this backup file. Continue?",
             async () => {
               showToast("Restoring backup...", "info");
-              const keys = Object.keys(data);
               const failed = [];
               // Sequential + awaited on purpose: a partially-applied
               // backup (some keys saved, some not) is worse than a slow
@@ -545,7 +552,7 @@
           : "";
         const overlay = document.createElement("div");
         overlay.className = "confirm-modal-overlay";
-        overlay.innerHTML = `<div class="confirm-modal" style="min-width:380px;text-align:left;"><h3 style="margin-top:0;text-align:center;">Backup &amp; Database</h3><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;"><span class="form-label" style="margin:0;">Total stored</span><span style="font-weight:700;">${formatBytes(total)}</span></div><div style="max-height:220px;overflow-y:auto;margin-bottom:0.5rem;">${rowsHtml}</div>${oversizedHtml}<p style="color:var(--text-muted);font-size:0.8rem;margin:1rem 0 0.5rem;">Data now lives in the server's database and is shared by everyone who visits this site. Exporting a backup is still a good idea before big changes; importing will overwrite the live database for everyone (admin only).</p><input type="file" id="import-file-input" accept="application/json" style="display:none;"><div class="confirm-actions" style="flex-wrap:wrap;"><button class="btn btn-secondary" id="storage-close">Close</button><button class="btn btn-secondary" id="storage-import">Import Backup</button><button class="btn btn-primary" id="storage-export">Export Backup</button></div></div>`;
+        overlay.innerHTML = `<div class="confirm-modal" style="min-width:380px;text-align:left;"><h3 style="margin-top:0;text-align:center;">Backup &amp; Database</h3><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;"><span class="form-label" style="margin:0;">Total stored</span><span style="font-weight:700;">${formatBytes(total)}</span></div><div style="max-height:220px;overflow-y:auto;margin-bottom:0.5rem;">${rowsHtml}</div>${oversizedHtml}<p style="color:var(--text-muted);font-size:0.8rem;margin:1rem 0 0.5rem;">Data lives in the server database and is shared by everyone. Exporting works for all visitors; importing a backup overwrites the shared database and requires Admin Sign In.</p><input type="file" id="import-file-input" accept="application/json" style="display:none;"><div class="confirm-actions" style="flex-wrap:wrap;"><button class="btn btn-secondary" id="storage-close">Close</button><button class="btn btn-secondary" id="storage-import">Import Backup</button><button class="btn btn-primary" id="storage-export">Export Backup</button></div></div>`;
         document.body.appendChild(overlay);
         document.getElementById("storage-close").onclick = () =>
           overlay.remove();

@@ -72,28 +72,13 @@
             Cookie Run:<br />Kingdom Wiki
           </div>
         </div>
-        <nav class="sidebar-nav">
-          <div class="sidebar-group-label">Overview</div>
-          <button class="nav-item active" data-page="dashboard" onclick="switchTab('dashboard')"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></button>
-
-          <div class="sidebar-group-label">Collection</div>
-          <button class="nav-item" data-page="cookies" onclick="switchTab('cookies')"><span class="material-symbols-outlined">cookie</span><span>Cookies</span></button>
-          <button class="nav-item" data-page="costumes" onclick="switchTab('costumes')"><span class="material-symbols-outlined">checkroom</span><span>Costumes</span></button>
-          <button class="nav-item" data-page="sets" onclick="switchTab('sets')"><span class="material-symbols-outlined">group_work</span><span>Costume Sets</span></button>
-          <button class="nav-item" data-page="powerups" onclick="switchTab('powerups')"><span class="material-symbols-outlined">diamond</span><span>Power-ups</span></button>
-
-          <div class="sidebar-group-label">Stats</div>
-          <button class="nav-item" data-page="cookie-stats" onclick="switchTab('cookie-stats')"><span class="material-symbols-outlined">monitoring</span><span>Cookie Stats</span></button>
-          <button class="nav-item" data-page="cookie-count" onclick="switchTab('cookie-count')"><span class="material-symbols-outlined">groups</span><span>Cookie Count</span></button>
-          <button class="nav-item" data-page="costume-count" onclick="switchTab('costume-count')"><span class="material-symbols-outlined">analytics</span><span>Costume Count</span></button>
-          <button class="nav-item" data-page="matrix" onclick="switchTab('matrix')"><span class="material-symbols-outlined">grid_view</span><span>Matrix</span></button>
-
-          <div class="sidebar-group-label">Ranking</div>
-          <button class="nav-item" data-page="tierlist" onclick="switchTab('tierlist')"><span class="material-symbols-outlined">leaderboard</span><span>Tier List</span></button>
-
-          <div class="sidebar-group-label">System</div>
-          <button class="nav-item" data-page="attributes" onclick="switchTab('attributes')"><span class="material-symbols-outlined">category</span><span>Attributes</span></button>
-          <button class="nav-item" data-page="settings" onclick="switchTab('settings')"><span class="material-symbols-outlined">settings</span><span>Settings</span></button>
+        <nav class="sidebar-nav" aria-label="Primary navigation">
+          <button class="nav-item" data-page="dashboard" type="button"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></button>
+          <button class="nav-item" data-page="collection" type="button"><span class="material-symbols-outlined">collections_bookmark</span><span>Collection</span></button>
+          <button class="nav-item" data-page="stats" type="button"><span class="material-symbols-outlined">monitoring</span><span>Stats</span></button>
+          <button class="nav-item" data-page="tierlist" type="button"><span class="material-symbols-outlined">leaderboard</span><span>Tier List</span></button>
+          <button class="nav-item" data-page="attributes" type="button"><span class="material-symbols-outlined">category</span><span>Attributes</span></button>
+          <button class="nav-item" data-page="settings" type="button"><span class="material-symbols-outlined">settings</span><span>Settings</span></button>
         </nav>
         <div class="sidebar-footer">
           <div
@@ -128,25 +113,26 @@
             <span class="material-symbols-outlined">cloud_sync</span>
             <span>Backup &amp; Database</span>
           </button>
-          <button class="nav-item" id="toggle-sidebar">
-            <span class="material-symbols-outlined">menu_open</span>
-            <span>Collapse</span>
-          </button>
+
         </div>
+        <button id="toggle-sidebar" class="sidebar-collapse-handle" type="button" aria-label="Collapse sidebar" data-tooltip="Collapse sidebar">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
       </aside>
 
       <main class="main-content">
         <header class="crk-topbar">
           <div class="crk-topbar-brand"><span class="material-symbols-outlined">cookie</span><strong>Cookie Run: Kingdom</strong></div>
-          <div class="crk-global-search-wrap">
-            <span class="material-symbols-outlined">search</span>
-            <input id="global-search" class="crk-global-search" type="search" autocomplete="off" placeholder="Search cookies, costumes, pages..." /
+          <div class="global-search-shell" id="global-search-shell">
+            <span class="material-symbols-outlined global-search-icon">search</span>
+            <input id="global-search" class="global-search-input" type="search" autocomplete="off" placeholder="Search cookies, costumes, pages..." aria-label="Global search" />
             <span class="crk-version">v1.0.0</span>
             <div id="global-search-results" class="global-search-results" hidden></div>
           </div>
         </header>
+        <div id="section-subnav-host" class="section-subnav-host" hidden></div>
         <!-- Cookie List View -->
-        <div id="view-cookies" class="page active">
+        <div id="view-cookies" class="page">
           <div class="sticky-page-header">
             <div class="page-header">
               <h1>Cookies</h1>
@@ -160,7 +146,7 @@
           </div>
           <div class="catalog-toolbar sticky-filter-bar">
             <div class="catalog-search-row">
-              <div class="catalog-search-box"><span class="material-symbols-outlined">search</span><input type="search" id="search-cookie" class="form-control" autocomplete="off" placeholder="Search cookies..." /</div>
+              <div class="catalog-search-box"><span class="material-symbols-outlined">search</span><input type="search" id="search-cookie" class="form-control" autocomplete="off" placeholder="Search cookies..." /></div>
               <div class="sort-pill-wrap"><span class="toolbar-label">Sort</span><div id="cookie-sort-pills" class="sort-pills"></div></div>
             </div>
             <div class="filter-pills" id="cookie-filter-pills"></div>
@@ -183,7 +169,7 @@
           </div>
           <div class="catalog-toolbar sticky-filter-bar">
             <div class="catalog-search-row">
-              <div class="catalog-search-box"><span class="material-symbols-outlined">search</span><input type="search" id="search-skins" class="form-control" autocomplete="off" placeholder="Search costumes..." /</div>
+              <div class="catalog-search-box"><span class="material-symbols-outlined">search</span><input type="search" id="search-skins" class="form-control" autocomplete="off" placeholder="Search costumes..." /></div>
               <div class="sort-pill-wrap"><span class="toolbar-label">Sort</span><div id="costume-sort-pills" class="sort-pills"></div></div>
             </div>
             <div class="filter-pills" id="costume-filter-pills"></div>
@@ -216,7 +202,7 @@
           </div>
           <div class="catalog-toolbar">
             <div class="catalog-search-row">
-              <div class="catalog-search-box"><span class="material-symbols-outlined">search</span><input type="search" id="search-powerups" class="form-control" autocomplete="off" placeholder="Search power-ups..." /</div>
+              <div class="catalog-search-box"><span class="material-symbols-outlined">search</span><input type="search" id="search-powerups" class="form-control" autocomplete="off" placeholder="Search power-ups..." /></div>
               <div class="sort-pill-wrap"><span class="toolbar-label">Sort</span><div id="powerup-sort-pills" class="sort-pills"></div></div>
             </div>
             <div class="filter-pills" id="powerup-filter-pills"></div>
@@ -330,7 +316,7 @@
         </div>
 
         <!-- Dashboard -->
-        <div id="view-dashboard" class="page">
+        <div id="view-dashboard" class="page active">
           <div class="page-header"><div><h1>Dashboard</h1><p class="page-subtitle">Cookie Run: Kingdom database overview.</p></div></div>
           <div id="dashboard-content" class="dashboard-grid"></div>
         </div>

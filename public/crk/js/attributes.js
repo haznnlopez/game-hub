@@ -166,6 +166,7 @@
         if (loadingEl) loadingEl.remove();
         initUrlPreviews(); // Global hook
         setupBackToTop(); // Initialize back-to-top button
-        renderCookies();
+        const initial=getUiSettings?.().defaultPage||"dashboard";
+        switchTab(initial);
       }
     

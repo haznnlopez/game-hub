@@ -115,46 +115,6 @@
         setTimeout(() => t.remove(), 3000);
       }
 
-      function switchTab(id) {
-        clearCycles(); // STOP old animations
-        document
-          .querySelectorAll(".page")
-          .forEach((p) => p.classList.remove("active"));
-        document.getElementById(`view-${id}`).classList.add("active");
-        document
-          .querySelectorAll(".nav-item")
-          .forEach((b) => b.classList.remove("active"));
-        event.currentTarget.classList.add("active");
-
-        if (id === "cookies") renderCookies();
-        if (id === "costumes") renderSkins();
-        if (id === "sets") renderSets();
-        if (id === "powerups") renderAllPowerups();
-        if (id === "matrix") {
-          // Initialize matrix view with default values on first load
-          const rowSelect = document.getElementById("matrix-row");
-          const colSelect = document.getElementById("matrix-col");
-          if (!rowSelect.value) {
-            rowSelect.value = "rarity";
-            colSelect.value = "role";
-          }
-          renderMatrix();
-        }
-        if (id === "tierlist") renderTierList();
-        if (id === "attributes") renderAttributes();
-      }
-
-      document
-        .getElementById("toggle-sidebar")
-        .addEventListener("click", () => {
-          const sb = document.getElementById("sidebar");
-          const btn = document.getElementById("toggle-sidebar");
-          sb.classList.toggle("collapsed");
-          const isCol = sb.classList.contains("collapsed");
-          btn.innerHTML = `<span class="material-symbols-outlined">${isCol ? "menu" : "menu_open"}</span> <span>${isCol ? "" : "Collapse"}</span>`;
-          localStorage.setItem("sidebar_collapsed", isCol);
-        });
-
       // --- Smart Text Logic ---
       function smartText(text) {
         if (!text) return "";

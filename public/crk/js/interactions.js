@@ -1,0 +1,491 @@
+// --- Core UI Functions ---
+
+      // Setup Back to Top
+      function setupBackToTop() {
+        const btn = document.getElementById("back-to-top");
+
+        // Listen on all page containers via capture
+        document.addEventListener(
+          "scroll",
+          (e) => {
+            if (
+              e.target &&
+              e.target.classList &&
+              e.target.classList.contains("page")
+            ) {
+              if (e.target.scrollTop > 120) {
+                btn.classList.add("visible");
+              } else {
+                btn.classList.remove("visible");
+              }
+            }
+          },
+          true,
+        );
+      }
+
+      function scrollToTop() {
+        const activePage = document.querySelector(".page.active");
+        if (activePage) {
+          activePage.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }
+
+      // Reset Modal Scroll
+      function resetModalScroll(id) {
+        const body = document.querySelector(`#${id} .modal-body`);
+        if (body) body.scrollTop = 0;
+      }
+
+      // URL Cleaner
+      function cleanUrl(url) {
+        if (!url) return "";
+        let clean = url.trim();
+        // Wikimedia thumb: .../images/thumb/x/xx/Filename.ext/NNNpx-Filename.ext
+        // → .../images/x/xx/Filename.ext  (keep hash dirs, drop /thumb/ and resize suffix)
+        const wikiThumb = clean.match(
+          /^(https?:\/\/.+?)\/images\/thumb\/(([^/]+\/[^/]+\/)([^/]+))\/.+$/,
+        );
+        if (wikiThumb) return `${wikiThumb[1]}/images/${wikiThumb[2]}`;
+        if (clean.includes("/revision/")) clean = clean.split("/revision/")[0];
+        else clean = clean.split("?")[0];
+        return clean;
+      }
+
+      // URL Preview Tooltip
+      function initUrlPreviews() {
+        const tooltip = document.getElementById("url-tooltip");
+        const img = document.getElementById("url-tooltip-img");
+
+        // Broad selector for all inputs that might take an image URL
+        const inputs = document.querySelectorAll(
+          'input[placeholder*="URL"], input[id*="url"], input[id*="head"], input[id*="card"], input[id*="splash"], input[id*="sprite"], input[id*="bg"]',
+        );
+
+        inputs.forEach((input) => {
+          input.addEventListener("mouseenter", (e) => {
+            const val = cleanUrl(e.target.value);
+            if (val) {
+              img.src = val;
+              tooltip.style.display = "block";
+              // Initial positioning (will be updated by mousemove)
+              tooltip.style.top = e.clientY + 15 + "px";
+              tooltip.style.left = e.clientX + 15 + "px";
+            }
+          });
+          input.addEventListener("mouseleave", () => {
+            tooltip.style.display = "none";
+          });
+          input.addEventListener("mousemove", (e) => {
+            // Follow cursor logic
+            tooltip.style.top = e.clientY + 15 + "px";
+            tooltip.style.left = e.clientX + 15 + "px";
+          });
+          input.addEventListener("input", (e) => {
+            // dynamic update if hovering while typing
+            const val = cleanUrl(e.target.value);
+            if (val && tooltip.style.display === "block") img.src = val;
+          });
+        });
+      }
+
+      // Custom Confirmation Modal Logic
+      let confirmCallback = null;
+
+      function showConfirm(msg, onYes) {
+        document.getElementById("confirm-message").innerText = msg;
+        confirmCallback = onYes;
+        document.getElementById("modal-confirm").classList.add("open");
+      }
+
+      document
+        .getElementById("confirm-btn-yes")
+        .addEventListener("click", () => {
+          if (confirmCallback) confirmCallback();
+          closeModal("modal-confirm");
+          confirmCallback = null;
+        });
+
+      function showToast(msg, type = "success") {
+        const c = document.getElementById("toast-container");
+        const t = document.createElement("div");
+        t.className = `toast ${type}`;
+        t.innerHTML = `<span class="material-symbols-outlined">${type === "success" ? "check_circle" : "error"}</span> <span>${msg}</span>`;
+        c.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
+      }
+
+      function switchTab(id) {
+        clearCycles(); // STOP old animations
+        document
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById(`view-${id}`).classList.add("active");
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((b) => b.classList.remove("active"));
+        event.currentTarget.classList.add("active");
+
+        if (id === "cookies") renderCookies();
+        if (id === "costumes") renderSkins();
+        if (id === "sets") renderSets();
+        if (id === "powerups") renderAllPowerups();
+        if (id === "matrix") {
+          // Initialize matrix view with default values on first load
+          const rowSelect = document.getElementById("matrix-row");
+          const colSelect = document.getElementById("matrix-col");
+          if (!rowSelect.value) {
+            rowSelect.value = "rarity";
+            colSelect.value = "role";
+          }
+          renderMatrix();
+        }
+        if (id === "tierlist") renderTierList();
+        if (id === "attributes") renderAttributes();
+      }
+
+      document
+        .getElementById("toggle-sidebar")
+        .addEventListener("click", () => {
+          const sb = document.getElementById("sidebar");
+          const btn = document.getElementById("toggle-sidebar");
+          sb.classList.toggle("collapsed");
+          const isCol = sb.classList.contains("collapsed");
+          btn.innerHTML = `<span class="material-symbols-outlined">${isCol ? "menu" : "menu_open"}</span> <span>${isCol ? "" : "Collapse"}</span>`;
+          localStorage.setItem("sidebar_collapsed", isCol);
+        });
+
+      // --- Smart Text Logic ---
+      function smartText(text) {
+        if (!text) return "";
+
+        // 1. Gather all replacement targets
+        // Map ensures unique keys if a Cookie and Element share the exact same name (Cookie takes priority)
+        const targetMap = new Map();
+
+        // Elements (Lower priority in map, but length sort handles matching priority)
+        appData.attributes.element.forEach((e) => {
+          if (e.icon) {
+            targetMap.set(
+              e.name,
+              `<span style="font-weight:800; color:var(--accent-blue); white-space:nowrap;"><img src="${e.icon}" class="rt-icon" style="width:20px;height:20px;vertical-align:middle;margin-right:2px;">${e.name}</span>`,
+            );
+          }
+        });
+
+        // Cookies (Higher priority in map)
+        appData.cookies.forEach((c) => {
+          if (c.images.head) {
+            targetMap.set(
+              c.name,
+              `<span style="font-weight:800; color:var(--accent-pink); white-space:nowrap;"><img src="${c.images.head}" class="rt-icon" style="width:20px;height:20px;vertical-align:middle;margin-right:2px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);">${c.name}</span>`,
+            );
+          }
+        });
+
+        // 2. Create a list of names sorted by length (Longest first)
+        // This ensures "Shadow Milk Cookie" is matched before "Milk Cookie"
+        // and "Poison Mushroom Cookie" is matched before "Poison"
+        const sortedNames = Array.from(targetMap.keys()).sort(
+          (a, b) => b.length - a.length,
+        );
+
+        if (sortedNames.length === 0) return text.replace(/\n/g, "<br>");
+
+        // 3. Build a single RegEx with alternation
+        // Escape special characters for Regex
+        const escapeRegExp = (string) =>
+          string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const pattern = sortedNames.map(escapeRegExp).join("|");
+
+        // Match whole words only (\b) to avoid matching inside other words
+        const regex = new RegExp(`\\b(${pattern})\\b`, "g");
+
+        // 4. Replace
+        const processed = text.replace(regex, (match) => {
+          return targetMap.get(match) || match;
+        });
+
+        return processed.replace(/\n/g, "<br>");
+      }
+
+      // --- Modal Logic ---
+      let currentDetailId = null;
+      let currentSkinIdx = null;
+      let currentPowerupIdx = null;
+
+      function openModal(id) {
+        clearCycles(); // Clear cycles when opening a modal
+        document.getElementById(id).classList.add("open");
+        resetModalScroll(id);
+        initUrlPreviews(); // Re-bind tooltips for form inputs inside modal
+
+        if (id === "modal-skin-form") {
+          const cookiesForDropdown = appData.cookies.map((c) => ({
+            name: c.name,
+            value: c.id,
+            icon: c.images.head,
+          }));
+          if (currentDetailId) {
+            // If opened from context, pre-select
+            setupDropdown("sf-owner", cookiesForDropdown, currentDetailId);
+          } else {
+            setupDropdown("sf-owner", cookiesForDropdown, "");
+          }
+
+          setupDropdown("sf-rarity", appData.attributes.skinRarity, "Common");
+          // Unique sets for datalist
+          const uniqueSets = [
+            ...new Set(appData.costumes.map((c) => c.set).filter(Boolean)),
+          ];
+          document.getElementById("set-list").innerHTML = uniqueSets
+            .map((s) => `<option value="${s}">`)
+            .join("");
+        }
+        if (id === "modal-pu-form") {
+          const cookiesForDropdown = appData.cookies.map((c) => ({
+            name: c.name,
+            value: c.id,
+            icon: c.images.head,
+          }));
+          if (currentDetailId) {
+            setupDropdown("puf-owner", cookiesForDropdown, currentDetailId);
+          } else {
+            setupDropdown("puf-owner", cookiesForDropdown, "");
+          }
+          setupDropdown(
+            "puf-type",
+            appData.attributes.powerupType,
+            "Magic Candy",
+          );
+        }
+      }
+
+      function closeModal(id) {
+        document.getElementById(id).classList.remove("open");
+      }
+
+      // --- Dropdown Logic ---
+      // Stores option data keyed by dropdown id so URLs never go into onclick attrs
+      const _dropdownData = {};
+
+      function setupDropdown(id, options, initialValue) {
+        const container = document.getElementById(id);
+        if (!container) return;
+        const normalizedOptions = options.map((o) => ({
+          name: o.name,
+          value: o.value !== undefined ? o.value : o.name,
+          icon: o.icon || "",
+        }));
+        // Save data for this dropdown
+        _dropdownData[id] = normalizedOptions;
+
+        const selected = normalizedOptions.find(
+          (o) => String(o.value) === String(initialValue),
+        ) ||
+          normalizedOptions[0] || { name: "Select...", value: "", icon: "" };
+        container.dataset.value = selected.value;
+
+        container.innerHTML = `
+          <div class="select-box">
+            ${selected.icon ? `<img class="select-leading-icon" src="${selected.icon}">` : `<span class="select-leading-icon select-leading-icon--empty"></span>`}
+            <input
+              class="select-input"
+              id="${id}-input"
+              type="text"
+              autocomplete="off"
+              value="${selected.name}"
+              placeholder="Search..."
+            >
+            <span class="material-symbols-outlined select-arrow" onclick="toggleCustomDropdown('${id}')">arrow_drop_down</span>
+          </div>
+          <div class="options-container" id="${id}-opts">
+            ${normalizedOptions
+              .map(
+                (o, idx) =>
+                  `<div class="option" data-dropdown-id="${id}" data-idx="${idx}">${o.icon ? `<img src="${o.icon}">` : ""}
+              <span>${o.name}</span></div>`,
+              )
+              .join("")}
+          </div>`;
+
+        // Click on the input box area opens dropdown
+        const inputEl = container.querySelector(".select-input");
+        if (inputEl) {
+          inputEl.addEventListener("click", () => _openDropdown(id));
+          // Typing filters options
+          inputEl.addEventListener("input", (e) => {
+            const q = e.target.value.toLowerCase();
+            let anyVisible = false;
+            container.querySelectorAll(".option[data-idx]").forEach((el) => {
+              const opt = normalizedOptions[parseInt(el.dataset.idx)];
+              const match = !q || opt.name.toLowerCase().includes(q);
+              el.style.display = match ? "" : "none";
+              if (match) anyVisible = true;
+            });
+            let empty = container.querySelector(".options-empty");
+            if (!anyVisible) {
+              if (!empty) {
+                empty = document.createElement("div");
+                empty.className = "options-empty";
+                empty.textContent = "No results";
+                container
+                  .querySelector(".options-container")
+                  .appendChild(empty);
+              }
+              empty.style.display = "";
+            } else if (empty) {
+              empty.style.display = "none";
+            }
+            // keep dropdown open and repositioned
+            _openDropdown(id);
+          });
+        }
+
+        // Attach click listeners directly so no data touches HTML attributes
+        container.querySelectorAll(".option[data-idx]").forEach((el) => {
+          el.addEventListener("click", () => {
+            const opts = _dropdownData[id] || [];
+            const opt = opts[parseInt(el.dataset.idx)];
+            if (opt) _applyDropdownSelection(id, opt);
+          });
+        });
+      }
+
+      function _openDropdown(id) {
+        const container = document.getElementById(id);
+        if (!container) return;
+        const scope =
+          container.closest(".modal-box") ||
+          container.closest(".page") ||
+          document;
+        scope.querySelectorAll(".options-container.active").forEach((el) => {
+          if (el.id !== id + "-opts") el.classList.remove("active");
+        });
+        const optEl = container.querySelector(".options-container");
+        optEl.classList.add("active");
+        _positionDropdown(container, optEl);
+        const box = container.querySelector(".select-box");
+        if (box) box.classList.add("active");
+      }
+
+      function _applyDropdownSelection(id, opt) {
+        const container = document.getElementById(id);
+        if (!container) return;
+        container.dataset.value = opt.value;
+
+        // Update leading icon
+        const leadingIcon = container.querySelector(".select-leading-icon");
+        if (leadingIcon) {
+          if (opt.icon) {
+            leadingIcon.outerHTML = `<img class="select-leading-icon" src="${opt.icon}">`;
+          } else {
+            if (leadingIcon.tagName === "IMG") {
+              leadingIcon.outerHTML = `<span class="select-leading-icon select-leading-icon--empty"></span>`;
+            }
+          }
+        }
+
+        // Update input text
+        const inputEl = container.querySelector(".select-input");
+        if (inputEl) inputEl.value = opt.name;
+
+        // Reset filter — show all options
+        container
+          .querySelectorAll(".option")
+          .forEach((el) => (el.style.display = ""));
+        const empty = container.querySelector(".options-empty");
+        if (empty) empty.style.display = "none";
+
+        // Close dropdown
+        const optContainer = container.querySelector(".options-container");
+        if (optContainer) optContainer.classList.remove("active");
+        const box = container.querySelector(".select-box");
+        if (box) box.classList.remove("active");
+        // Update guest field visibility if rarity changed in cookie form
+        if (id === "cf-rarity") updateGuestFieldVisibility();
+      }
+
+      function _positionDropdown(container, optionsEl) {
+        const rect = container.getBoundingClientRect();
+        optionsEl.style.width = rect.width + "px";
+        optionsEl.style.left = rect.left + "px";
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const dropH = Math.min(250, optionsEl.scrollHeight || 200);
+        if (spaceBelow >= dropH || spaceBelow >= spaceAbove) {
+          optionsEl.style.top = rect.bottom + 4 + "px";
+          optionsEl.style.bottom = "auto";
+        } else {
+          optionsEl.style.bottom = window.innerHeight - rect.top + 4 + "px";
+          optionsEl.style.top = "auto";
+        }
+      }
+
+      function toggleCustomDropdown(id) {
+        const container = document.getElementById(id);
+        if (!container) return;
+        const optEl = container.querySelector(".options-container");
+        const isOpen = optEl.classList.contains("active");
+        if (isOpen) {
+          optEl.classList.remove("active");
+          const box = container.querySelector(".select-box");
+          if (box) box.classList.remove("active");
+          // Restore display text from current value
+          const opts = _dropdownData[id] || [];
+          const cur = opts.find(
+            (o) => String(o.value) === String(container.dataset.value),
+          );
+          const inputEl = container.querySelector(".select-input");
+          if (inputEl && cur) inputEl.value = cur.name;
+          container
+            .querySelectorAll(".option")
+            .forEach((el) => (el.style.display = ""));
+        } else {
+          _openDropdown(id);
+          const inputEl = container.querySelector(".select-input");
+          if (inputEl) {
+            inputEl.select();
+          }
+        }
+      }
+
+      function getDropdownValue(id) {
+        const el = document.getElementById(id);
+        return el ? el.dataset.value : "";
+      }
+
+      // Global Click Listener to close dropdowns
+      document.addEventListener("click", (e) => {
+        if (
+          !e.target.closest(".custom-select") &&
+          !e.target.closest(".multi-select")
+        ) {
+          document
+            .querySelectorAll(".options-container.active")
+            .forEach((el) => {
+              el.classList.remove("active");
+              // Restore input to current selected value
+              const container = el.closest(".custom-select");
+              if (container) {
+                const id = container.id;
+                const opts = _dropdownData[id] || [];
+                const cur = opts.find(
+                  (o) => String(o.value) === String(container.dataset.value),
+                );
+                const inputEl = container.querySelector(".select-input");
+                if (inputEl && cur) inputEl.value = cur.name;
+                container
+                  .querySelectorAll(".option")
+                  .forEach((opt) => (opt.style.display = ""));
+                const empty = container.querySelector(".options-empty");
+                if (empty) empty.style.display = "none";
+              }
+            });
+          document
+            .querySelectorAll(".select-box.active, .multi-select-box.active")
+            .forEach((el) => el.classList.remove("active"));
+        }
+      });
+
+

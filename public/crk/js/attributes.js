@@ -177,3 +177,12 @@
         switchTab(initial);
       }
     
+
+(function(){
+  function updateAttrTabBadges(){
+    document.querySelectorAll('[data-attr-badge]').forEach(el=>{const cat=el.dataset.attrBadge;el.textContent=String((appData.attributes?.[cat]||[]).length);});
+  }
+  const originalRenderAttributes=window.renderAttributes;
+  window.renderAttributes=function(){if(typeof originalRenderAttributes==='function')originalRenderAttributes();updateAttrTabBadges();};
+  setTimeout(updateAttrTabBadges,0);
+})();

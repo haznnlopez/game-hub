@@ -177,6 +177,7 @@
       function openModal(id) {
         clearCycles(); // Clear cycles when opening a modal
         document.getElementById(id).classList.add("open");
+        document.getElementById(id).setAttribute("aria-hidden","false");
         resetModalScroll(id);
         initUrlPreviews(); // Re-bind tooltips for form inputs inside modal
 
@@ -222,8 +223,22 @@
       }
 
       function closeModal(id) {
-        document.getElementById(id).classList.remove("open");
+        const modal=document.getElementById(id);
+        if(!modal)return;
+        modal.classList.remove("open");
+        modal.setAttribute("aria-hidden","true");
       }
+
+      // Reliable modal dismissal: Escape and backdrop click.
+      document.addEventListener("keydown",(e)=>{
+        if(e.key!=="Escape")return;
+        const open=[...document.querySelectorAll(".modal.open")].pop();
+        if(open)closeModal(open.id);
+      });
+      document.addEventListener("click",(e)=>{
+        const modal=e.target.closest(".modal");
+        if(modal && e.target===modal)closeModal(modal.id);
+      });
 
       // --- Dropdown Logic ---
       // Stores option data keyed by dropdown id so URLs never go into onclick attrs

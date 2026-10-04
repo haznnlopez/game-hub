@@ -20,7 +20,7 @@
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
     />
 
-    <link rel="icon" type="image/jpeg" href="images/crk-logo.svg" />
+    <link rel="icon" type="image/jpeg" href="images/crk-logo.jpg" />
     <link rel="stylesheet" href="css/styles.css" />
   
   </head>
@@ -67,7 +67,7 @@
     <div class="app-layout">
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-          <img src="images/crk-logo.svg" class="sidebar-logo" alt="Cookie Run: Kingdom" />
+          <img src="images/crk-logo.jpg" class="sidebar-logo" alt="Cookie Run: Kingdom" />
           <div class="sidebar-title">Cookie Run: Kingdom</div>
         </div>
         <nav class="sidebar-nav" aria-label="Primary navigation">
@@ -124,7 +124,7 @@
           <div class="global-search-shell" id="global-search-shell">
             <span class="material-symbols-outlined global-search-icon">search</span>
             <input id="global-search" class="global-search-input" type="search" autocomplete="off" placeholder="Search cookies, costumes, pages..." aria-label="Global search" />
-            <span class="crk-version">v1.0.0</span>
+            <span class="crk-version">v1.1.0</span>
             <div id="global-search-results" class="global-search-results" hidden></div>
           </div>
         </header>
@@ -232,7 +232,7 @@
           </div>
           <div class="tier-toolbar">
             <div class="tier-mode-pills" id="tier-mode-pills"><button class="filter-pill active" data-tier-mode="pve">PvE</button><button class="filter-pill" data-tier-mode="pvp">PvP</button></div>
-            <div class="tier-version-controls"><label class="version-log-select"><span class="material-symbols-outlined">history</span><select id="tier-version-select"><option value="">Version Logs</option></select></label><button class="btn btn-secondary btn-sm" onclick="saveTierVersion()"><span class="material-symbols-outlined">save</span>Save Version</button><button class="btn btn-secondary btn-sm" onclick="compareTierVersion()"><span class="material-symbols-outlined">compare_arrows</span>Compare</button><button class="btn btn-secondary btn-sm" onclick="restoreTierVersion()"><span class="material-symbols-outlined">restore</span>Restore</button><button class="btn btn-danger btn-sm" onclick="deleteTierVersion()"><span class="material-symbols-outlined">delete</span>Delete</button></div>
+            <div class="tier-version-controls"><label class="version-log-select"><span class="material-symbols-outlined">history</span><select id="tier-version-select"><option value="">Version Logs</option></select></label><button class="btn btn-secondary btn-sm" onclick="restoreTierVersion()"><span class="material-symbols-outlined">restore</span>Restore</button><button class="btn btn-danger btn-sm" onclick="deleteTierVersion()"><span class="material-symbols-outlined">delete</span>Delete</button></div>
           </div>
           <div id="tier-version-diff" class="tier-version-diff" hidden></div>
           <div class="tier-page-layout">
@@ -301,42 +301,42 @@
               data-cat="rarity"
               onclick="switchAttrTab(this, 'rarity')"
             >
-              <span class="material-symbols-outlined">grade</span>Rarity
+              <span class="material-symbols-outlined">grade</span>Rarity <span class="attr-tab-badge" data-attr-badge="rarity">0</span>
             </button>
             <button
               class="attr-tab"
               data-cat="role"
               onclick="switchAttrTab(this, 'role')"
             >
-              <span class="material-symbols-outlined">shield</span>Role
+              <span class="material-symbols-outlined">shield</span>Role <span class="attr-tab-badge" data-attr-badge="role">0</span>
             </button>
             <button
               class="attr-tab"
               data-cat="position"
               onclick="switchAttrTab(this, 'position')"
             >
-              <span class="material-symbols-outlined">location_on</span>Position
+              <span class="material-symbols-outlined">location_on</span>Position <span class="attr-tab-badge" data-attr-badge="position">0</span>
             </button>
             <button
               class="attr-tab"
               data-cat="element"
               onclick="switchAttrTab(this, 'element')"
             >
-              <span class="material-symbols-outlined">bolt</span>Element
+              <span class="material-symbols-outlined">bolt</span>Element <span class="attr-tab-badge" data-attr-badge="element">0</span>
             </button>
             <button
               class="attr-tab"
               data-cat="skinRarity"
               onclick="switchAttrTab(this, 'skinRarity')"
             >
-              <span class="material-symbols-outlined">palette</span>Costume Rarity
+              <span class="material-symbols-outlined">palette</span>Costume Rarity <span class="attr-tab-badge" data-attr-badge="skinRarity">0</span>
             </button>
             <button
               class="attr-tab"
               data-cat="powerupType"
               onclick="switchAttrTab(this, 'powerupType')"
             >
-              <span class="material-symbols-outlined">category</span>Power-up Type
+              <span class="material-symbols-outlined">category</span>Power-up Type <span class="attr-tab-badge" data-attr-badge="powerupType">0</span>
             </button>
           </div>
           <!-- Sticky add bar -->
@@ -442,21 +442,12 @@
     <!-- Detail Modal (READ ONLY) -->
     <div class="modal" id="modal-cookie-detail">
       <div class="modal-box" style="background: var(--bg-dark)">
-        <!-- New standard header inside the modal box -->
-        <div
-          class="modal-header"
-          style="
-            background: var(--bg-panel);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1rem 2rem;
-          "
-        >
-          <div class="modal-header-title-group"><img id="cookie-modal-head" class="modal-header-cookie-head" alt=""><h3 id="cookie-modal-name" style="margin: 0; color: var(--text-main)">Cookie Details</h3></div>
-          <div class="modal-header-actions"><button class="modal-edit-btn" onclick="triggerEditFromDetail()"><span class="material-symbols-outlined">edit</span><span>Edit Cookie</span></button><span
-            class="material-symbols-outlined close-icon"
-            onclick="closeModal('modal-cookie-detail')"
-            >close</span
-          >
+        <div class="modal-header">
+          <div class="modal-header-title-group"><img id="cookie-modal-head" class="modal-header-cookie-head" alt=""><h3 id="cookie-modal-name">Cookie Details</h3></div>
+          <div class="modal-header-actions">
+            <button class="modal-edit-btn" onclick="triggerEditFromDetail()"><span class="material-symbols-outlined">edit</span><span>Edit Cookie</span></button>
+            <button class="modal-btn-circle close" type="button" onclick="closeModal('modal-cookie-detail')" aria-label="Close"><span class="material-symbols-outlined">close</span></button>
+          </div>
         </div>
         <div class="modal-body" style="padding: 0" id="cookie-detail-content">
           <!-- Content injected via JS -->

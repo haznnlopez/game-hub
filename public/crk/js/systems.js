@@ -1085,34 +1085,15 @@
             sets[c.set].push(c);
           }
         });
-        grid.innerHTML = Object.keys(sets)
-          .map((k) => {
-            // Costume Set Cycle Logic - Added sprite fallback
-            const images = sets[k]
-              .map((s) => s.card || s.splash || s.sprite)
-              .filter(Boolean);
-            const cycleId = `set-cycle-${k.replace(/[^a-zA-Z0-9-_]/g, "-")}`; // Safer ID generation
-
-            if (images.length > 1) {
-              registerCycle(cycleId, images, (el, item) => {
-                el.src = item;
-              });
-            }
-            const initialImg = images.length > 0 ? images[0] : "";
-
-            return `
-            <div class="card" onclick="viewSet('${k}')">
-                <img id="${cycleId}" src="${initialImg || "https://placehold.co/400?text=Set"}" class="card-img" style="object-fit:contain; background:var(--bg-darker);">
-                 <div class="card-overlay">
-                    <div class="card-text-wrapper">
-                        <div class="card-name">${k}</div>
-                        <div class="card-sub">${sets[k].length} Costumes</div>
-                    </div>
-                </div>
-            </div>
-        `;
-          })
-          .join("");
+        const cycleJobs=[];
+        grid.innerHTML = Object.keys(sets).map((k) => {
+          const images=sets[k].map(s=>s.card||s.splash||s.sprite).filter(Boolean);
+          const cycleId=`set-cycle-${k.replace(/[^a-zA-Z0-9-_]/g,"-")}`;
+          if(images.length>1)cycleJobs.push([cycleId,images]);
+          const initialImg=images[0]||"";
+          return `<article class="card crk-set-card" onclick="viewSet(${JSON.stringify(k)})"><img id="${cycleId}" src="${initialImg||"https://placehold.co/400?text=Set"}" class="card-img" alt="${k}" style="object-fit:contain; background:var(--bg-darker);"><div class="card-overlay"><div class="set-card-hover"><span class="card-name">${k}</span><span class="set-count-badge">${sets[k].length}</span></div></div></article>`;
+        }).join("");
+        setTimeout(()=>cycleJobs.forEach(([id,images])=>registerCycle(id,images,(el,item)=>{el.src=item;})),0);
       }
 
       // --- Powerups ---
@@ -1412,6 +1393,16 @@
         html += `</tbody></table>`;
         container.innerHTML = html;
       }
+
+      // Public handlers used by the HTML UI and other modules.
+      Object.assign(window, {
+        deleteCookie, deleteSkin, deletePowerup,
+        changeDetailImg, viewSkin, changeSkinImg, editSkinFromDetail,
+        viewSet, viewPowerup, editPowerupFromDetail, triggerEditFromDetail,
+        openCookieForm, toggleMultiSelect, updateMultiSelectLabel, submitCookieForm,
+        openSkinForm, saveSkin, openPowerupForm, savePowerup,
+        renderSets, openMatrixCell
+      });
 
       function openMatrixCell(rowName, colName, ids) {
         if (!ids) return;

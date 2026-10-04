@@ -24,7 +24,7 @@
         list.innerHTML = appData.attributes[cat]
           .map(
             (a, i) => `
-            <div class="attr-square-card">
+            <div class="attr-square-card" draggable="true" data-attr-index="${i}" ondragstart="attrDragStart(event,${i})" ondragover="attrDragOver(event)" ondrop="attrDrop(event,${i})" ondragend="attrDragEnd(event)">
               ${a.icon ? `<img src="${a.icon}" onerror="this.style.display='none'">` : `<span class="material-symbols-outlined" style="font-size:32px;color:rgba(255,255,255,0.2)">category</span>`}
               <div class="attr-name">${a.name}</div>
               ${a.background ? `<div style="font-size:0.6rem;color:#888;position:absolute;bottom:4px;left:0;right:0;text-align:center;">Has BG</div>` : ""}
@@ -97,6 +97,13 @@
           renderAttributes();
         });
       }
+
+      let attrDragIndex = null;
+      function attrDragStart(e, index){attrDragIndex=index;e.currentTarget.classList.add("attr-dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(index));}
+      function attrDragOver(e){e.preventDefault();e.currentTarget.classList.add("attr-drag-over");}
+      function attrDrop(e,targetIndex){e.preventDefault();e.stopPropagation();const cat=document.getElementById("attr-cat").value;const from=attrDragIndex!==null?attrDragIndex:Number(e.dataTransfer.getData("text/plain"));if(Number.isNaN(from)||from===targetIndex)return;const arr=appData.attributes[cat];const [item]=arr.splice(from,1);arr.splice(from<targetIndex?targetIndex-1:targetIndex,0,item);attrDragIndex=null;persistAppData();renderAttributes();showToast("Attribute order updated","success");}
+      function attrDragEnd(e){document.querySelectorAll(".attr-dragging,.attr-drag-over").forEach(x=>x.classList.remove("attr-dragging","attr-drag-over"));attrDragIndex=null;}
+      Object.assign(window,{attrDragStart,attrDragOver,attrDrop,attrDragEnd});
 
       function updateGuestFieldVisibility() {
         const rarity = getDropdownValue("cf-rarity");

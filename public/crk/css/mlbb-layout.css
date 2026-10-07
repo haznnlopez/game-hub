@@ -1,0 +1,70 @@
+/* MLBB-style layout for the CRK wiki.
+   Loaded after styles.css. Keeps the CRK blue/gold theme but uses the MLBB structure:
+   top bar row, page headers with subtitles, KPI dashboard, collapsible Filters panel. */
+
+/* ---------- Top bar: centered search + separate version chip ---------- */
+.global-topbar{position:sticky;top:0;z-index:60;padding:.85rem 1.5rem;background:linear-gradient(180deg,rgba(6,21,41,.96),rgba(6,21,41,.82));backdrop-filter:blur(10px);border-bottom:1px solid rgba(79,141,255,.16)}
+.global-topbar-row{display:grid;grid-template-columns:1fr minmax(0,760px) 1fr;align-items:center;gap:.9rem}
+.global-topbar .global-search-shell,.global-topbar .global-search-shell.global-search-centered{grid-column:2;width:100%!important;max-width:none!important;margin:0!important;position:relative}
+.global-search-shortcut{position:absolute;right:12px;top:50%;transform:translateY(-50%);padding:2px 7px;border-radius:6px;border:1px solid rgba(185,210,240,.25);background:rgba(255,255,255,.05);color:#9db8d1;font:600 .68rem/1.4 inherit;pointer-events:none}
+.global-search-input{padding-right:4.5rem!important}
+.topbar-version-chip{grid-column:3;justify-self:start;display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .75rem;border-radius:999px;border:1px solid rgba(79,141,255,.22);background:rgba(16,47,82,.7);color:#bcd3ea;font-size:.78rem;white-space:nowrap}
+.topbar-version-chip .material-symbols-outlined{font-size:17px;color:var(--crk-gold,#f7d154)}
+.topbar-version-chip strong{font-weight:700;color:#fff}
+@media(max-width:900px){.global-topbar{padding:.7rem 1rem}.global-topbar-row{grid-template-columns:1fr auto}.global-topbar .global-search-shell{grid-column:1}.topbar-version-chip{grid-column:2}.global-search-shortcut{display:none}}
+
+/* ---------- Sidebar name ---------- */
+.sidebar-game-name{margin:0;font-size:1rem;font-weight:800;letter-spacing:.01em}
+
+/* ---------- Page header with subtitle ---------- */
+header.page-header{display:flex!important;align-items:flex-end!important;justify-content:space-between!important;gap:1rem;flex-wrap:wrap}
+header.page-header .page-subtitle{margin:.35rem 0 0!important;color:#9db8d1!important;font-size:.88rem!important;font-weight:500}
+
+/* ---------- Dashboard ---------- */
+.dashboard-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.85rem;margin-bottom:1rem}
+.dashboard-kpi{display:flex;align-items:center;gap:.85rem;padding:1rem;border-radius:14px;border:1px solid rgba(79,141,255,.18);background:linear-gradient(160deg,rgba(16,47,82,.85),rgba(8,26,46,.9));text-align:left}
+.dashboard-kpi[role=button]{cursor:pointer;transition:transform .15s,border-color .15s}
+.dashboard-kpi[role=button]:hover{transform:translateY(-2px);border-color:rgba(247,209,84,.45)}
+.dashboard-kpi>.material-symbols-outlined{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:rgba(79,141,255,.16);color:var(--crk-gold,#f7d154);font-size:24px;flex:0 0 auto}
+.dashboard-kpi small{display:block;color:#9db8d1;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+.dashboard-kpi strong{display:block;font-size:1.6rem;line-height:1.15;color:#fff}
+.dashboard-kpi em{display:block;font-style:normal;color:#7f9ab5;font-size:.74rem;margin-top:2px}
+.dashboard-quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.75rem;margin-bottom:1.25rem}
+.dashboard-quick-actions button{display:flex;align-items:center;gap:.75rem;padding:.8rem 1rem;border-radius:12px;border:1px solid rgba(79,141,255,.2);background:rgba(7,24,44,.8);color:#fff;text-align:left;cursor:pointer;transition:background .15s,border-color .15s}
+.dashboard-quick-actions button:hover{background:rgba(79,141,255,.16);border-color:rgba(247,209,84,.4)}
+.dashboard-quick-actions .material-symbols-outlined{color:var(--crk-gold,#f7d154)}
+.dashboard-quick-actions strong{display:block;font-size:.9rem}.dashboard-quick-actions small{display:block;color:#9db8d1;font-size:.74rem}
+#view-dashboard .dashboard-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:1rem!important}
+.dashboard-panel{padding:1.1rem!important;border-radius:14px!important;border:1px solid rgba(79,141,255,.16)!important;background:rgba(10,32,58,.72)!important;min-width:0}
+.dashboard-panel-wide{grid-column:1/-1}
+.dashboard-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;margin-bottom:.8rem}
+.dashboard-panel-head h2{margin:.1rem 0 0;font-size:1.05rem}
+.dashboard-eyebrow{display:block;color:var(--crk-gold,#f7d154);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;font-weight:800}
+.dashboard-list{display:flex;flex-direction:column;gap:.35rem}
+.dashboard-row{display:flex;align-items:center;gap:.75rem;padding:.5rem .6rem;border-radius:10px;border:1px solid transparent;background:rgba(255,255,255,.03);color:#fff;text-align:left;cursor:pointer;width:100%}
+.dashboard-row:hover{background:rgba(79,141,255,.14);border-color:rgba(79,141,255,.25)}
+.dashboard-row img,.dashboard-row>.material-symbols-outlined{width:38px;height:38px;border-radius:50%;object-fit:cover;flex:0 0 38px;background:#07182c;display:grid;place-items:center}
+.dashboard-row strong{display:block;font-size:.88rem}.dashboard-row small{display:block;color:#9db8d1;font-size:.74rem}
+.dashboard-bars{display:flex;flex-direction:column;gap:.55rem}
+.dashboard-bar{display:grid;grid-template-columns:140px 1fr 36px;align-items:center;gap:.7rem;font-size:.84rem}
+.dashboard-bar>span{display:flex;align-items:center;gap:.4rem;min-width:0}
+.dashboard-bar>div{height:10px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.dashboard-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#4f8dff,var(--crk-gold,#f7d154))}
+.dashboard-bar b{text-align:right}
+@media(max-width:900px){#view-dashboard .dashboard-grid{grid-template-columns:1fr!important}.dashboard-bar{grid-template-columns:100px 1fr 30px}}
+
+/* ---------- Collapsible Filters panel (Cookies / Costumes / Power-ups) ---------- */
+.filter-panel{margin:0 0 1.25rem;border-radius:14px;border:1px solid rgba(79,141,255,.18);background:rgba(16,47,82,.6);overflow:visible}
+.filter-panel-toolbar{display:flex;align-items:center;gap:.7rem;padding:.75rem .85rem}
+.filter-quick-search{position:relative;flex:1 1 auto;min-width:0}
+.filter-quick-search .filter-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#7f9ab5;font-size:20px;pointer-events:none}
+.filter-quick-search .filter-search-input{width:100%;height:42px;padding:0 .9rem 0 2.5rem!important;border-radius:10px}
+.filter-panel-toggle{flex:0 0 auto;display:inline-flex;align-items:center;gap:.4rem;height:42px;padding:0 .85rem;border-radius:10px;border:1px solid rgba(79,141,255,.28);background:rgba(7,24,44,.8);color:#fff;cursor:pointer}
+.filter-panel-toggle.active{border-color:rgba(247,209,84,.55)}
+.filter-panel-toggle .filter-toggle-icon{transition:transform .2s}
+.filter-panel-toggle.active .filter-toggle-icon{transform:rotate(180deg)}
+.filter-active-count{min-width:20px;height:20px;padding:0 6px;border-radius:99px;display:inline-grid;place-items:center;background:rgba(255,255,255,.1);font-size:.7rem;font-weight:800}
+.filter-active-count:not([data-count="0"]){background:var(--crk-gold,#f7d154);color:#07182c}
+.filter-panel-body.collapsible-filters.is-open{padding:.25rem .85rem .85rem!important}
+.filter-sort-bar{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;padding:.65rem .85rem;border-top:1px solid rgba(79,141,255,.14)}
+.filter-sort-label{color:#9db8d1;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;font-weight:800}

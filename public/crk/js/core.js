@@ -1,3 +1,5 @@
+/* Safe single-quoted JS string literal for inline handlers inside double-quoted HTML attributes. */
+window.jsq=function(v){return "'"+String(v==null?'':v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+"'";};
 // --- Data & State ---
       const STORAGE_KEY = "crk_wiki_data";
       const DefaultData = {

@@ -1,6 +1,4 @@
 /* CRK v8 polish / requested UX overhaul. Loaded last so it intentionally overrides legacy renderers. */
-  /* Safe single-quoted JS string literal for use inside double-quoted inline handlers. */
-  const jsq=v=>`'${String(v??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}'`;
 (function(){
   const esc=v=>String(v??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[c]));
   const clean=u=>typeof cleanUrl==='function'?cleanUrl(u||""):String(u||"").trim();
@@ -36,15 +34,29 @@
   /* ---------- Dashboard ---------- */
   window.renderDashboard=function(){
     const host=document.getElementById("dashboard-content");if(!host)return;
-    const cookies=appData.cookies||[], costumes=appData.costumes||[], powerups=appData.powerups||[];
+    const kpiHost=document.getElementById("dashboard-kpis"),quickHost=document.getElementById("dashboard-quick");
+    const cookies=appData.cookies||[],costumes=appData.costumes||[],powerups=appData.powerups||[];
     const sets=new Set(costumes.map(x=>x.set).filter(Boolean));
-    const complete=cookies.filter(c=>!(typeof getCookieMissingFields==='function'?getCookieMissingFields(c):[]).length).length;
-    const withSplash=cookies.filter(c=>c.images?.splash).length;
+    const missingOf=c=>typeof getCookieMissingFields==="function"?getCookieMissingFields(c):[];
+    const incomplete=cookies.map(c=>({c,m:missingOf(c)})).filter(x=>x.m.length);
+    const complete=cookies.length-incomplete.length,pct=cookies.length?Math.round(complete/cookies.length*100):0;
     const withGif=cookies.filter(c=>c.images?.splashGif).length;
-    const recent=[...cookies].slice(-5).reverse();
-    const topRarity=Object.entries(cookies.reduce((m,c)=>(m[c.rarity]=(m[c.rarity]||0)+1,m),{})).sort((a,b)=>b[1]-a[1]).slice(0,5);
-    const cards=[['Cookies',cookies.length,'cookie','Collection'],['Costumes',costumes.length,'checkroom','Cosmetics'],['Costume Sets',sets.size,'collections_bookmark','Named sets'],['Power-ups',powerups.length,'diamond','Upgrades'],['Complete Records',complete,'task_alt',`${cookies.length?Math.round(complete/cookies.length*100):0}% of cookies`],['Splash / GIF',withSplash, 'image','Splash art'],['Animated Splash',withGif,'gif_box','Hover GIFs']];
-    host.innerHTML=`<div class="dashboard-hero"><div><span class="eyebrow">DATABASE OVERVIEW</span><h2>Cookie Run: Kingdom</h2><p>Collection health, coverage, and quick access to the wiki database.</p></div><div class="dashboard-hero-actions"><button class="btn btn-primary" onclick="openCookieForm()"><span class="material-symbols-outlined">add</span>Add Cookie</button><button class="btn btn-secondary" onclick="openStorageManager()"><span class="material-symbols-outlined">database</span>Database</button></div></div><div class="stats-grid dashboard-stats">${cards.map(x=>`<article class="stat-card"><span class="material-symbols-outlined stat-icon">${x[2]}</span><div><strong>${fmt(x[1])}</strong><span>${esc(x[0])}</span><small>${esc(x[3])}</small></div></article>`).join("")}</div><div class="dashboard-two-col"><section class="dashboard-panel"><div class="panel-heading"><div><span class="eyebrow">DISTRIBUTION</span><h2>Cookie Rarity</h2></div><button class="text-link" onclick="switchTab('cookie-count')">View counts</button></div><div class="dashboard-bars">${topRarity.map(([k,n])=>{const pct=cookies.length?Math.round(n/cookies.length*100):0;return `<div class="dash-bar-row"><div>${icon('rarity',k)}<span>${esc(k)}</span><b>${n}</b></div><div class="dash-bar"><i style="width:${pct}%"></i></div></div>`}).join('')||'<div class="empty-inline">No cookie data.</div>'}</div></section><section class="dashboard-panel"><div class="panel-heading"><div><span class="eyebrow">QUICK ACCESS</span><h2>Manage Collection</h2></div></div><div class="quick-actions"><button class="btn btn-secondary" onclick="openCookieForm()"><span class="material-symbols-outlined">cookie</span>Cookie</button><button class="btn btn-secondary" onclick="openSkinForm()"><span class="material-symbols-outlined">checkroom</span>Costume</button><button class="btn btn-secondary" onclick="openPowerupForm()"><span class="material-symbols-outlined">diamond</span>Power-up</button><button class="btn btn-secondary" onclick="switchTab('tierlist')"><span class="material-symbols-outlined">leaderboard</span>Tier List</button></div></section></div><section class="dashboard-panel"><div class="panel-heading"><div><span class="eyebrow">RECENT RECORDS</span><h2>Latest Cookies</h2></div><button class="text-link" onclick="switchTab('cookies')">Open collection</button></div><div class="dashboard-recent">${recent.map(c=>`<button onclick="openCookieDetail('${esc(c.id)}')"><img src="${esc(src(c.images?.head,'https://placehold.co/48?text=?'))}" alt=""><span><strong>${esc(c.name)}</strong><small>${icon('rarity',c.rarity)}${esc(c.rarity||'')}</small></span></button>`).join('')||'<div class="empty-inline">No cookies yet.</div>'}</div></section>`;
+    const kpis=[["Cookies",cookies.length,"cookie","In the collection","cookies"],["Costumes",costumes.length,"checkroom","Cosmetics","costumes"],["Costume Sets",sets.size,"collections_bookmark","Named sets","sets"],["Power-ups",powerups.length,"diamond","Upgrades","powerups"],["Complete Records",pct+"%","task_alt",complete+" of "+cookies.length+" cookies",null],["Animated Splash",withGif,"gif_box","Cookies with hover GIF",null]];
+    if(kpiHost)kpiHost.innerHTML=kpis.map(([l,v,ic,sub,go])=>`<article class="dashboard-kpi"${go?` onclick="switchTab('${go}')" role="button" tabindex="0"`:""}><span class="material-symbols-outlined">${ic}</span><div><small>${l}</small><strong>${v}</strong><em>${sub}</em></div></article>`).join("");
+    const q=(ic,t,sub,act)=>`<button type="button" onclick="${act}"><span class="material-symbols-outlined">${ic}</span><span><strong>${t}</strong><small>${sub}</small></span></button>`;
+    if(quickHost)quickHost.innerHTML=q("person_add","Add Cookie","Create a new cookie","openCookieForm()")+q("add_photo_alternate","Add Costume","Create a new costume","openSkinForm()")+q("diamond","Add Power-up","Create a new power-up","openPowerupForm()")+q("leaderboard","Tier List","Rank your cookies","switchTab('tierlist')");
+    const panel=(eyebrow,title,body,go,wide)=>`<section class="dashboard-panel${wide?" dashboard-panel-wide":""}"><div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">${eyebrow}</span><h2>${title}</h2></div>${go?`<button class="btn btn-secondary btn-sm" onclick="switchTab('${go}')">View all</button>`:""}</div>${body}</section>`;
+    const row=(im,t,sub,act)=>`<button type="button" class="dashboard-row" onclick="${act}">${im}<span><strong>${esc(t)}</strong><small>${esc(sub||"")}</small></span></button>`;
+    const headOf=c=>c?.images?.head?`<img src="${esc(c.images.head)}" alt="" onerror="this.style.visibility='hidden'">`:`<span class="material-symbols-outlined">cookie</span>`;
+    const empty=t=>`<div class="empty-inline">${t}</div>`;
+    const recentCookies=[...cookies].slice(-5).reverse().map(c=>row(headOf(c),c.name,[c.rarity,c.role].filter(Boolean).join(" · "),`openCookieDetail('${esc(c.id)}')`)).join("")||empty("No cookies yet.");
+    const newestCostumes=costumes.map((s,i)=>({s,i})).slice(-5).reverse().map(({s,i})=>{const o=cookies.find(c=>c.id===s.ownerId);return row(headOf(o),s.name,[o?.name,s.rarity].filter(Boolean).join(" · "),`viewSkin(${i})`)}).join("")||empty("No costumes yet.");
+    const byOwner={};costumes.forEach(s=>{byOwner[s.ownerId]=(byOwner[s.ownerId]||0)+1});
+    const leaders=Object.entries(byOwner).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([id,n],i)=>{const c=cookies.find(x=>x.id===id);return row(headOf(c),`${i+1}. ${c?.name||"Unknown"}`,`${n} costume${n===1?"":"s"}`,c?`openCookieDetail('${esc(c.id)}')`:"void 0")}).join("")||empty("No costumes assigned yet.");
+    const rar={};cookies.forEach(c=>{if(c.rarity)rar[c.rarity]=(rar[c.rarity]||0)+1});const maxR=Math.max(1,...Object.values(rar));
+    const bars=Object.entries(rar).sort((a,b)=>b[1]-a[1]).map(([r,n])=>`<div class="dashboard-bar"><span>${icon("rarity",r)}${esc(r)}</span><div><i style="width:${Math.round(n/maxR*100)}%"></i></div><b>${n}</b></div>`).join("")||empty("No data yet.");
+    const health=incomplete.length?incomplete.slice(0,8).map(({c,m})=>row(headOf(c),c.name,"Missing: "+m.join(", "),`openCookieForm('${esc(c.id)}')`)).join(""):`<div class="empty-inline">Every cookie record is complete.</div>`;
+    host.innerHTML=panel("Recent activity","Recently Added Cookies",`<div class="dashboard-list">${recentCookies}</div>`,"cookies",true)+panel("Collection","Newest Costumes",`<div class="dashboard-list">${newestCostumes}</div>`,"costumes")+panel("At a glance","Roster Leaders",`<div class="dashboard-list">${leaders}</div>`,"costume-count")+panel("Breakdown","Cookies by Rarity",`<div class="dashboard-bars">${bars}</div>`,"cookie-count")+panel("Data quality","Missing Inputs",`<div class="dashboard-list">${health}</div>`,null)
   };
 
   /* ---------- Count pages ---------- */
@@ -126,6 +138,11 @@
   /* Initial refresh after DB boot. */
   const originalBoot=window.bootApp;
   patchFilterRail();
+  /* Active-filter counts on the Filters buttons */
+  (function(){
+    const upd=host=>{const n=host.querySelectorAll('.filter-pill.active[onclick*="toggleCatalogFilter("]').length;document.querySelectorAll(`.filter-active-count[data-for="${host.id}"]`).forEach(b=>{b.dataset.count=n;b.textContent=n;});};
+    ["cookie-filter-pills","costume-filter-pills","powerup-filter-pills"].forEach(id=>{const h=document.getElementById(id);if(!h)return;new MutationObserver(()=>upd(h)).observe(h,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});upd(h);});
+  })();
   /* Boot only after every override is installed. */
   window.crkInit();
   bootApp();

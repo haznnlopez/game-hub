@@ -105,17 +105,17 @@
     const page=document.getElementById(`view-${id}`); if(!page)return;
     page.classList.add("active");
     updateNavActive(id);
-    if(id==="dashboard")renderDashboard();
-    if(id==="cookies")renderCookies();
-    if(id==="costumes")renderSkins();
-    if(id==="sets")renderSets();
-    if(id==="powerups")renderAllPowerups();
-    if(id==="cookie-count")renderCookieCount();
-    if(id==="costume-count")renderCostumeCount();
-    if(id==="matrix")renderMatrix();
-    if(id==="tierlist")renderTierList();
-    if(id==="attributes")renderAttributes();
-    if(id==="settings")renderSettingsPage();
+    if(id==="dashboard")window.renderDashboard();
+    if(id==="cookies")window.renderCookies();
+    if(id==="costumes")window.renderSkins();
+    if(id==="sets")window.renderSets();
+    if(id==="powerups")window.renderAllPowerups();
+    if(id==="cookie-count")window.renderCookieCount();
+    if(id==="costume-count")window.renderCostumeCount();
+    if(id==="matrix")window.renderMatrix();
+    if(id==="tierlist")window.renderTierList();
+    if(id==="attributes")window.renderAttributes();
+    if(id==="settings")window.renderSettingsPage();
     scrollToTop();
   };
   window.setupGroupedNavigation=setupGroupedNavigation;
@@ -166,9 +166,8 @@
     document.addEventListener("mouseout",e=>{const el=e.target.closest("[data-native-title]");if(el){el.setAttribute("title",el.dataset.nativeTitle);delete el.dataset.nativeTitle;}tip.classList.remove("visible");});
   }
 
-  function init(){document.title="Cookie Run: Kingdom — Knowledge Hub";document.querySelectorAll(".crk-version").forEach(x=>x.textContent=VERSION);applyUiSettings();initGlobalSearch();initCustomTooltips();setInitialSidebar();setupGroupedNavigation();renderSettingsPage();}
+  function init(){document.title="Cookie Run: Kingdom - Wiki";document.querySelectorAll(".crk-version").forEach(x=>x.textContent=VERSION);applyUiSettings();initGlobalSearch();initCustomTooltips();setInitialSidebar();setupGroupedNavigation();renderSettingsPage();}
 
   // Run the application only after every replacement module has loaded.
-  init();
-  bootApp();
+  window.crkInit=init;
 })();

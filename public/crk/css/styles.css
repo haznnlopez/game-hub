@@ -1273,7 +1273,7 @@ body, button, input, select, textarea { font-family: "Montserrat", sans-serif; }
       /* URL Previewer Tooltip - Updated */
       .url-preview-tooltip {
         position: fixed;
-        z-index: 3000;
+        z-index: 10000;
         background: var(--bg-panel);
         border: 1px solid var(--accent-pink);
         padding: 5px;
@@ -2073,3 +2073,11 @@ body{font-family:"Montserrat",sans-serif!important}
 .costume-splash-hover.is-gif .costume-splash-image{transform:scale(1.015)!important}
 .splash-gif-hint{position:absolute;right:10px;bottom:10px;z-index:2;align-items:center;justify-content:center;padding:4px 8px;border-radius:999px;background:rgba(5,17,32,.78);border:1px solid rgba(255,212,90,.4);color:var(--crk-gold,#ffd45a);font-size:.58rem;font-weight:900;letter-spacing:.08em;pointer-events:none}
 #modal-skin-form .form-help{display:block;margin-top:.35rem;color:var(--text-muted,#9bb0c7);font-size:.68rem;line-height:1.4}
+
+/* Cookie form section rules */
+.form-rule{border:0;border-top:1px solid rgba(79,141,255,.22);margin:1.25rem 0 1rem}
+.form-section-title{margin:0 0 .75rem;color:var(--accent-pink);font-size:.95rem;letter-spacing:.04em;text-transform:uppercase}
+
+/* Page headers: spacing and a rule below */
+.page-header{padding-bottom:.9rem!important;margin-bottom:1.25rem!important;border-bottom:1px solid rgba(79,141,255,.22)!important}
+#view-tierlist .page-header,#view-matrix .page-header{margin-bottom:1rem!important}

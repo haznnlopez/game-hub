@@ -40,7 +40,8 @@
     host.classList.toggle("is-open", !!state.filtersOpen[rerender]);
     host.innerHTML = groups.map((g) => {
       const values = g.values; const selected = filterState[g.key];
-      return `<div class="filter-group"><span class="filter-group-label"><span class="material-symbols-outlined">${iconMap[g.key]||"tune"}</span>${esc(g.label)}</span><div class="filter-group-pills">${pill("All", selected.size === 0, `clearCatalogFilter('${g.key}','${rerender}')`, "", "select_all")}${values.map((v) => pill(v, selected.has(v), `toggleCatalogFilter('${g.key}',${JSON.stringify(v)},'${rerender}')`, "", iconMap[g.key]||"label")).join("")}</div></div>`;
+      const valueIcon=(v)=>{const a=attr(g.key,v);return a?.icon?`<img class="tag-icon filter-attribute-icon" ${img(a.icon)} alt="">`:`<span class="material-symbols-outlined">${iconMap[g.key]||"label"}</span>`};
+      return `<div class="filter-group"><span class="filter-group-label"><span class="material-symbols-outlined">${iconMap[g.key]||"tune"}</span>${esc(g.label)}</span><div class="filter-group-pills"><button type="button" class="filter-pill ${selected.size===0?"active":""}" onclick="clearCatalogFilter('${g.key}','${rerender}')"><span class="material-symbols-outlined">select_all</span><span>All</span></button>${values.map(v=>`<button type="button" class="filter-pill ${selected.has(v)?"active":""}" onclick="toggleCatalogFilter('${g.key}',${JSON.stringify(v)},'${rerender}')">${valueIcon(v)}<span>${esc(v)}</span></button>`).join("")}</div></div>`;
     }).join("");
   }
   window.toggleCatalogFilters=function(target){state.filtersOpen[target]=!state.filtersOpen[target];document.querySelectorAll(`.collapsible-filters[data-filter-target="${target}"]`).forEach(el=>el.classList.toggle("is-open",state.filtersOpen[target]));document.querySelectorAll(`.filter-toggle-btn`).forEach(btn=>{if(btn.getAttribute("onclick")?.includes(`'${target}'`))btn.classList.toggle("active",state.filtersOpen[target]);});};

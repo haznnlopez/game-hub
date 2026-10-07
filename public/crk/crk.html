@@ -4,7 +4,7 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cookie Run: Kingdom - Wiki</title>
+    <title>Cookir Run: Kingdom - Wiki</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -108,7 +108,7 @@
             class="nav-item"
             onclick="openStorageManager()"
           >
-            <span class="material-symbols-outlined">save</span>
+            <span class="material-symbols-outlined">database</span>
             <span>Backup &amp; Database</span>
           </button>
 
@@ -120,11 +120,10 @@
 
       <main class="main-content">
         <header class="crk-topbar">
-          <div class="crk-topbar-brand"><span class="material-symbols-outlined">cookie</span><strong>Cookie Run: Kingdom</strong></div>
-          <div class="global-search-shell" id="global-search-shell">
+          <div class="global-search-shell global-search-centered" id="global-search-shell">
             <span class="material-symbols-outlined global-search-icon">search</span>
             <input id="global-search" class="global-search-input" type="search" autocomplete="off" placeholder="Search cookies, costumes, pages..." aria-label="Global search" />
-            <span class="crk-version">v1.1.0</span>
+            <div class="crk-version-container"><span class="crk-version">v1.1.0</span></div>
             <div id="global-search-results" class="global-search-results" hidden></div>
           </div>
         </header>
@@ -225,7 +224,7 @@
           <div class="page-header" style="padding: 0.5rem 0 1rem">
             <h1>Tier List</h1>
             <div class="tier-header-actions">
-              <button class="btn btn-primary btn-sm" onclick="saveTierList()"><span class="material-symbols-outlined">save</span>Save</button>
+              <button class="btn btn-primary btn-sm" onclick="saveTierVersion()"><span class="material-symbols-outlined">save</span>Save</button>
               <button class="btn btn-secondary btn-sm" onclick="addTierRow()"><span class="material-symbols-outlined">add</span>Add Tier</button>
               <button class="btn btn-danger btn-sm" onclick="resetTierList()"><span class="material-symbols-outlined">restart_alt</span>Reset</button>
             </div>
@@ -278,7 +277,6 @@
         </div>
 
         <!-- Cookie Stats -->
-        <div id="view-cookie-stats" class="page"><div class="page-header"><div><h1>Cookie Stats</h1><p class="page-subtitle">Distribution and completeness of the Cookie collection.</p></div></div><div id="cookie-stats-content" class="stats-grid"></div></div>
         <div id="view-cookie-count" class="page"><div class="page-header"><div><h1>Cookie Count</h1><p class="page-subtitle">Cookie totals by rarity, role, position, and element.</p></div></div><div id="cookie-count-content" class="stats-grid"></div></div>
         <div id="view-costume-count" class="page"><div class="page-header"><div><h1>Costume Count</h1><p class="page-subtitle">Costume totals by rarity, owner, and set.</p></div></div><div id="costume-count-content" class="stats-grid"></div></div>
 
@@ -466,30 +464,14 @@
             padding: 1rem 2rem;
           "
         >
-          <h3 style="margin: 0; color: var(--text-main)">Costume Details</h3>
-          <span
-            class="material-symbols-outlined close-icon"
-            onclick="closeModal('modal-skin-detail')"
-            >close</span
-          >
+          <div class="modal-header-title-group"><img id="skin-modal-head" class="modal-header-costume-head" alt=""><h3 class="modal-header-title">Costume Details</h3></div>
+          <div class="modal-header-actions"><button class="modal-edit-btn" onclick="editSkinFromDetail()"><span class="material-symbols-outlined">edit</span><span>Edit Costume</span></button><button class="modal-btn-circle close" type="button" onclick="closeModal('modal-skin-detail')"><span class="material-symbols-outlined">close</span></button></div>
         </div>
         <div
           class="modal-body"
           style="padding: 0"
           id="skin-detail-content"
         ></div>
-        <div class="modal-footer" style="background: var(--bg-panel)">
-          <button
-            class="btn btn-secondary"
-            id="skin-edit-btn"
-            onclick="editSkinFromDetail()"
-          >
-            <span class="material-symbols-outlined" style="font-size: 18px"
-              >edit</span
-            >
-            Edit Costume
-          </button>
-        </div>
       </div>
     </div>
 
@@ -535,26 +517,10 @@
             padding: 1rem 2rem;
           "
         >
-          <h3 style="margin: 0; color: var(--text-main)">Power-up Details</h3>
-          <span
-            class="material-symbols-outlined close-icon"
-            onclick="closeModal('modal-pu-detail')"
-            >close</span
-          >
+          <div class="modal-header-title-group"><img id="pu-modal-head" class="modal-header-powerup-head" alt=""><h3 class="modal-header-title">Power-up Details</h3></div>
+          <div class="modal-header-actions"><button class="modal-edit-btn" onclick="editPowerupFromDetail()"><span class="material-symbols-outlined">edit</span><span>Edit Power-up</span></button><button class="modal-btn-circle close" type="button" onclick="closeModal('modal-pu-detail')"><span class="material-symbols-outlined">close</span></button></div>
         </div>
         <div class="modal-body" style="padding: 0" id="pu-detail-content"></div>
-        <div class="modal-footer" style="background: var(--bg-panel)">
-          <button
-            class="btn btn-secondary"
-            id="pu-edit-btn"
-            onclick="editPowerupFromDetail()"
-          >
-            <span class="material-symbols-outlined" style="font-size: 18px"
-              >edit</span
-            >
-            Edit Power-up
-          </button>
-        </div>
       </div>
     </div>
 
@@ -572,6 +538,23 @@
         <div class="modal-body">
           <div id="list-view-grid" class="card-grid"></div>
         </div>
+      </div>
+    </div>
+
+
+    <div class="modal" id="modal-admin-login" aria-hidden="true">
+      <div class="modal-box admin-login-box">
+        <div class="modal-header">
+          <div class="modal-header-title-group"><span class="material-symbols-outlined modal-title-icon">lock</span><h3>Admin Sign In</h3></div>
+          <button class="modal-btn-circle close" type="button" onclick="closeAdminLoginModal()" aria-label="Close"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="modal-body">
+          <p class="admin-login-copy">Sign in to add, edit, delete, import, and manage shared database content.</p>
+          <label class="form-label" for="admin-password-input">Admin password</label>
+          <input type="password" id="admin-password-input" class="form-control" autocomplete="current-password" placeholder="Enter admin password">
+          <div id="admin-login-error" class="admin-login-error" hidden></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" type="button" onclick="closeAdminLoginModal()">Cancel</button><button class="btn btn-primary" type="button" id="admin-login-submit">Sign In</button></div>
       </div>
     </div>
 
@@ -651,6 +634,10 @@
                   class="form-control"
                   placeholder="Image URL"
                 autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Splash Hover GIF URL</label>
+                <input id="cf-gif" class="form-control" placeholder="Optional animated GIF URL" autocomplete="off">
               </div>
               <div class="form-group">
                 <label class="form-label">Sprite URL</label
@@ -744,6 +731,11 @@
               class="form-control"
               placeholder="Image URL"
             autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Splash Hover GIF URL</label>
+            <input id="sf-gif" class="form-control" placeholder="Optional animated GIF URL" autocomplete="off">
+            <small class="form-help">The GIF replaces the splash art while hovering over it in the costume detail modal.</small>
           </div>
           <div class="form-group">
             <label class="form-label">Sprite URL</label
@@ -844,5 +836,6 @@
     <script src="js/catalog.js" defer></script>
     <script src="js/modals.js" defer></script>
     <script src="js/dashboard.js" defer></script>
+    <script src="js/v8-overrides.js" defer></script>
   </body>
 </html>

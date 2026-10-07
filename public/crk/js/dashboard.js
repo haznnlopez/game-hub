@@ -20,7 +20,23 @@
       this._localFallback=false;return true;
     }catch(e){this._cache[key]=value;this._localFallback=true;try{localStorage.setItem(key,String(value));showToast("Saved locally — server database unavailable","info");return true;}catch(_){this._cache[key]=prev;showToast("Save failed","info");return false;}}
   };
-  DB.setItemAwaited=DB.setItem;
+  DB.setItemAwaited=async function(key,value){
+    if(!this._token){showToast("Sign in as admin to import data","info");openAdminLoginModal();return false;}
+    const prev=this._cache[key]; this._cache[key]=value;
+    try{
+      const res=await fetch("/api/data/"+encodeURIComponent(key),{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+this._token},body:JSON.stringify({value})});
+      if(!res.ok){
+        if(res.status===401){this._token=null;localStorage.removeItem("crk_admin_token");updateAdminUI();showToast("Session expired — please log in again","info");}
+        else if(res.status===413)showToast(`"${key}" is too large for the server` ,"info");
+        else showToast(`Import failed for "${key}" (HTTP ${res.status})`,"info");
+        this._cache[key]=prev; return false;
+      }
+      this._localFallback=false; return true;
+    }catch(e){
+      this._cache[key]=prev;
+      try{localStorage.setItem(key,String(value));this._localFallback=true;return true;}catch(_){showToast(`Import failed for "${key}"`,"info");return false;}
+    }
+  };
 
   window.getUiSettings=function(){try{return {...UI_DEFAULTS,...JSON.parse(localStorage.getItem(UI_KEY)||"{}")};}catch(_){return {...UI_DEFAULTS};}};
   window.applyUiSettings=function(s=getUiSettings()){document.body.classList.toggle("ui-compact",!!s.compact);document.body.classList.toggle("ui-reduced-motion",!!s.reduceMotion);};
@@ -36,8 +52,7 @@
       {name:"Costumes",value:"costumes",icon:"checkroom"},
       {name:"Costume Sets",value:"sets",icon:"group_work"},
       {name:"Power-ups",value:"powerups",icon:"diamond"},
-      {name:"Cookie Stats",value:"cookie-stats",icon:"monitoring"},
-      {name:"Cookie Count",value:"cookie-count",icon:"groups"},
+            {name:"Cookie Count",value:"cookie-count",icon:"groups"},
       {name:"Costume Count",value:"costume-count",icon:"analytics"},
       {name:"Matrix",value:"matrix",icon:"grid_view"},
       {name:"Tier List",value:"tierlist",icon:"leaderboard"},
@@ -69,7 +84,6 @@
       ["powerups","diamond","Power-ups"]
     ],
     stats:[
-      ["cookie-stats","monitoring","Cookie Stats"],
       ["cookie-count","groups","Cookie Count"],
       ["costume-count","analytics","Costume Count"],
       ["matrix","grid_view","Matrix"]
@@ -84,7 +98,7 @@
     host.hidden=false;
   }
   function updateNavActive(id){document.querySelectorAll(".nav-item[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===navRoot(id)));syncSectionNavigation(id);}
-  function setupGroupedNavigation(){document.querySelectorAll(".nav-item[data-page]").forEach(btn=>{btn.onclick=()=>{const root=btn.dataset.page;const target=root==="collection"?"cookies":root==="stats"?"cookie-stats":root;switchTab(target);};});}
+  function setupGroupedNavigation(){document.querySelectorAll(".nav-item[data-page]").forEach(btn=>{btn.onclick=()=>{const root=btn.dataset.page;const target=root==="collection"?"cookies":root==="stats"?"cookie-count":root;switchTab(target);};});}
   window.switchTab=function(id){
     clearCycles();
     document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
@@ -96,7 +110,6 @@
     if(id==="costumes")renderSkins();
     if(id==="sets")renderSets();
     if(id==="powerups")renderAllPowerups();
-    if(id==="cookie-stats")renderCookieStats();
     if(id==="cookie-count")renderCookieCount();
     if(id==="costume-count")renderCostumeCount();
     if(id==="matrix")renderMatrix();
@@ -117,7 +130,7 @@
   window.renderCostumeCount=renderCostumeCount;
 
   // Global search with debounce and section-aware results.
-  function globalSearch(q){const box=document.getElementById("global-search-results");if(!box)return;const query=q.trim().toLowerCase();if(!query){box.hidden=true;box.innerHTML="";return;}const results=[];appData.cookies.filter(c=>[c.name,c.rarity,c.role,c.position,...(c.elements||[])].join(" ").toLowerCase().includes(query)).slice(0,8).forEach(c=>results.push({icon:"cookie",title:c.name,meta:c.rarity,action:`openCookieDetail('${esc(c.id)}')`}));appData.costumes.filter(s=>[s.name,s.rarity,s.set].join(" ").toLowerCase().includes(query)).slice(0,6).forEach(s=>results.push({icon:"checkroom",title:s.name,meta:s.rarity,action:`viewSkin(${appData.costumes.indexOf(s)})`}));[{id:"dashboard",title:"Dashboard",icon:"dashboard"},{id:"cookies",title:"Cookies",icon:"cookie"},{id:"costumes",title:"Costumes",icon:"checkroom"},{id:"cookie-stats",title:"Cookie Stats",icon:"monitoring"},{id:"cookie-count",title:"Cookie Count",icon:"groups"},{id:"costume-count",title:"Costume Count",icon:"analytics"},{id:"matrix",title:"Matrix",icon:"grid_view"},{id:"tierlist",title:"Tier List",icon:"leaderboard"},{id:"attributes",title:"Attributes",icon:"category"},{id:"settings",title:"Settings",icon:"settings"}].filter(p=>p.title.toLowerCase().includes(query)).forEach(p=>results.push({icon:p.icon,title:p.title,meta:"Page",action:`switchTab('${p.id}')`}));box.innerHTML=results.slice(0,10).map(r=>`<button class="global-search-result" onclick="${r.action};document.getElementById('global-search').value='';document.getElementById('global-search-results').hidden=true"><span class="material-symbols-outlined">${r.icon}</span><span><strong>${esc(r.title)}</strong><small>${esc(r.meta)}</small></span></button>`).join("")||`<div class="global-search-empty">No results</div>`;box.hidden=false;}
+  function globalSearch(q){const box=document.getElementById("global-search-results");if(!box)return;const query=q.trim().toLowerCase();if(!query){box.hidden=true;box.innerHTML="";return;}const results=[];appData.cookies.filter(c=>[c.name,c.rarity,c.role,c.position,...(c.elements||[])].join(" ").toLowerCase().includes(query)).slice(0,8).forEach(c=>results.push({icon:"cookie",title:c.name,meta:c.rarity,action:`openCookieDetail('${esc(c.id)}')`}));appData.costumes.filter(s=>[s.name,s.rarity,s.set].join(" ").toLowerCase().includes(query)).slice(0,6).forEach(s=>results.push({icon:"checkroom",title:s.name,meta:s.rarity,action:`viewSkin(${appData.costumes.indexOf(s)})`}));[{id:"dashboard",title:"Dashboard",icon:"dashboard"},{id:"cookies",title:"Cookies",icon:"cookie"},{id:"costumes",title:"Costumes",icon:"checkroom"},{id:"cookie-count",title:"Cookie Count",icon:"groups"},{id:"costume-count",title:"Costume Count",icon:"analytics"},{id:"matrix",title:"Matrix",icon:"grid_view"},{id:"tierlist",title:"Tier List",icon:"leaderboard"},{id:"attributes",title:"Attributes",icon:"category"},{id:"settings",title:"Settings",icon:"settings"}].filter(p=>p.title.toLowerCase().includes(query)).forEach(p=>results.push({icon:p.icon,title:p.title,meta:"Page",action:`switchTab('${p.id}')`}));box.innerHTML=results.slice(0,10).map(r=>`<button class="global-search-result" onclick="${r.action};document.getElementById('global-search').value='';document.getElementById('global-search-results').hidden=true"><span class="material-symbols-outlined">${r.icon}</span><span><strong>${esc(r.title)}</strong><small>${esc(r.meta)}</small></span></button>`).join("")||`<div class="global-search-empty">No results</div>`;box.hidden=false;}
   function initGlobalSearch(){const input=document.getElementById("global-search");if(!input)return;let timer;input.addEventListener("input",()=>{clearTimeout(timer);timer=setTimeout(()=>globalSearch(input.value),220);});input.addEventListener("keydown",e=>{if(e.key==="Escape"){input.value="";globalSearch("");input.blur();}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();input.focus();input.select();}});document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();input.focus();input.select();}});document.addEventListener("click",e=>{if(!e.target.closest(".global-search-shell")){document.getElementById("global-search-results")?.setAttribute("hidden","");}});}
 
   // MLBB-style Matrix: sticky inspector on the right and clickable overlap cells.

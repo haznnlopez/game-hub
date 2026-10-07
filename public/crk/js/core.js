@@ -315,33 +315,23 @@
       }
 
       function openAdminLoginModal() {
-        const existing = document.querySelector(".confirm-modal-overlay");
-        if (existing) existing.remove();
-        const overlay = document.createElement("div");
-        overlay.className = "confirm-modal-overlay";
-        overlay.innerHTML = `<div class="confirm-modal"><h3 style="margin-top:0;">Admin Sign In</h3><p style="color:var(--text-med);font-size:0.85rem;">Visitors can browse everything. Signing in lets you add, edit, and delete entries — changes save for everyone.</p><input type="password" id="admin-password-input" class="form-input" placeholder="Admin password" style="margin-bottom:0.75rem;"><div id="admin-login-error" style="color:#f87171;font-size:0.8rem;display:none;margin-bottom:0.5rem;"></div><div class="confirm-actions"><button class="btn btn-secondary" id="admin-login-cancel">Cancel</button><button class="btn btn-primary" id="admin-login-submit">Sign In</button></div></div>`;
-        document.body.appendChild(overlay);
-        const input = document.getElementById("admin-password-input");
-        const errEl = document.getElementById("admin-login-error");
-        input.focus();
-        const submit = async () => {
-          const pw = input.value;
-          if (!pw) return;
-          try {
-            await ADMIN.login(pw);
-            overlay.remove();
-            showToast("Signed in as admin", "success");
-          } catch (e) {
-            errEl.textContent = e.message || "Login failed";
-            errEl.style.display = "block";
-          }
-        };
-        document.getElementById("admin-login-cancel").onclick = () =>
-          overlay.remove();
-        document.getElementById("admin-login-submit").onclick = submit;
-        input.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") submit();
-        });
+        const modal=document.getElementById("modal-admin-login");
+        if(!modal){return;}
+        openModal("modal-admin-login");
+        const input=document.getElementById("admin-password-input");
+        const errEl=document.getElementById("admin-login-error");
+        if(errEl){errEl.hidden=true;errEl.textContent="";}
+        if(input){input.value="";setTimeout(()=>{input.focus();input.select();},40);}
+        const submit=document.getElementById("admin-login-submit");
+        if(submit && !submit.dataset.bound){
+          submit.dataset.bound="1";
+          submit.addEventListener("click",async()=>{
+            const pw=input?.value||""; if(!pw)return;
+            try{await ADMIN.login(pw);closeModal("modal-admin-login");if(input)input.value="";showToast("Signed in as admin","success");}
+            catch(e){if(errEl){errEl.textContent=e.message||"Login failed";errEl.hidden=false;}input?.focus();}
+          });
+        }
+        if(input && !input.dataset.bound){input.dataset.bound="1";input.addEventListener("keydown",e=>{if(e.key==="Enter")submit?.click();if(e.key==="Escape")closeModal("modal-admin-login");});}
       }
 
       function toggleAdminAuth() {
@@ -445,30 +435,15 @@
         return results;
       }
       function exportAllData() {
-        const data = {};
-        for (let i = 0; i < DB.length; i++) {
-          const k = DB.key(i);
-          data[k] = DB.getItem(k);
-        }
-        const payload = {
-          app: "crk-cookie-database",
-          exportedAt: new Date().toISOString(),
-          data,
-        };
-        const blob = new Blob([JSON.stringify(payload)], {
-          type: "application/json",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        const ts = new Date().toISOString().replace(/[:.]/g, "-");
-        a.href = url;
-        a.download = `crk-backup-${ts}.json`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        showToast("Backup downloaded", "success");
+        const raw=DB.getItem(STORAGE_KEY)||JSON.stringify(appData);
+        const payload={app:"crk-cookie-database",version:1,exportedAt:new Date().toISOString(),data:{[STORAGE_KEY]:raw}};
+        const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+        const url=URL.createObjectURL(blob),a=document.createElement("a");
+        a.href=url;a.download=`crk-backup-${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
+        document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500);
+        showToast("JSON backup exported","success");
       }
+
       function importAllDataFromFile(file) {
         const reader = new FileReader();
         reader.onload = () => {
@@ -479,7 +454,8 @@
             showToast("Invalid backup file", "info");
             return;
           }
-          const data = payload && payload.data ? payload.data : payload;
+          let data = payload && payload.data ? payload.data : payload;
+          if (data && data.cookies && !data[STORAGE_KEY]) data = {[STORAGE_KEY]: JSON.stringify(data)};
           if (!data || typeof data !== "object" || Array.isArray(data)) {
             showToast("Invalid backup file", "info");
             return;
@@ -574,7 +550,7 @@
         const sb = document.getElementById("sidebar");
         const btn = document.getElementById("toggle-sidebar");
         sb.classList.add("collapsed");
-        btn.innerHTML = `<span class="material-symbols-outlined">menu</span>`;
+        btn.innerHTML = `<span class="material-symbols-outlined">chevron_right</span>`;
       }
 
       // Helper to capitalize first letter

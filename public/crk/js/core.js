@@ -1,11 +1,11 @@
-window.APP_VERSION="v1.2.3"; /* single place to bump the version shown in the top bar */
+window.APP_VERSION="v1.2.4"; /* single place to bump the version shown in the top bar */
 /* Safe single-quoted JS string literal for inline handlers inside double-quoted HTML attributes. */
 window.jsq=function(v){return "'"+String(v==null?'':v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+"'";};
 /* Shared helpers used across files (single source of truth). */
 window.crk=(function(){
   const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
   const NO_IMG="https://placehold.co/900x650/193b68/fff?text=No+Image";
-  const attrOf=(cat,name)=>(window.appData?.attributes?.[cat]||[]).find(x=>x.name===name);
+  const attrOf=(cat,name)=>(appData?.attributes?.[cat]||[]).find(x=>x.name===name);
   const attrIco=(cat,v,cls="attr-ico")=>{const a=attrOf(cat,v);return a?.icon?`<img class="${cls}" src="${esc(a.icon)}" alt="">`:"";};
   const pic=(u,cls="")=>`<img class="${cls}" src="${esc(u||NO_IMG)}" alt="" onerror="this.onerror=null;this.src='${NO_IMG}'">`;
   const ownerOf=id=>(appData.cookies||[]).find(c=>c.id===id);

@@ -56,6 +56,9 @@
   /* ===== Forms, detail modals, set modal ===== */
   {
   const {esc,NO_IMG,attrOf,attrIco,pic,ownerOf,headOf,headImg,glyph,isGlyph,clean}=window.crk;
+  /* Attribute icon when the attribute has one, otherwise a neutral glyph. */
+  const ico = (cat, v) => attrIco(cat, v) || glyph(({ rarity: "workspace_premium", skinRarity: "workspace_premium", role: "shield", position: "location_on", element: "local_fire_department", powerupType: "diamond" })[cat] || "label", "fact-glyph");
+  const cardTitle = (cookie, text) => `<h4 class="card-title">${cookie ? headImg(cookie, "", "title-head") : ""}<span>${esc(text)}</span></h4>`;
   /* Costume set dropdown: "No Set" + each set, cycling through the heads of its costumes. */
   function setOptions(){
     const sets={};
@@ -96,15 +99,15 @@
     bgFor(box, c.images?.bg);
     const costumes = (appData.costumes || []).filter(x => x.ownerId === id), powerups = (appData.powerups || []).filter(x => x.ownerId === id);
     const splash = c.images?.splash || c.images?.head || "", gif = c.images?.splashGif || "";
-    const els = (c.elements || []).map(e => `<span class="fact-chip">${attrIco("element", e)}${esc(e)}</span>`).join("");
+    const els = (c.elements || []).map(e => `<span class="fact-chip">${ico("element", e)}${esc(e)}</span>`).join("");
     document.getElementById("cookie-detail-content").innerHTML = `
       <div class="detail-images">${splashBlock(splash, gif, c.name, "modal-cookie-detail")}
         <div class="detail-thumbs">${thumb("Sprite", c.images?.sprite || splash, c.name, "modal-cookie-detail")}${thumb("Card", c.images?.card || splash, c.name, "modal-cookie-detail")}</div></div>
       <div class="detail-cols">
-        <div class="info-card"><h4>About</h4><p>${esc(c.description || "No description recorded.")}</p></div>
-        <div class="info-card"><h4>Details</h4><dl class="facts facts-stack">${fact("Rarity", c.rarity, attrIco("rarity", c.rarity))}${fact("Role", c.role, attrIco("role", c.role))}${fact("Position", c.position, attrIco("position", c.position))}${els ? `<div class="fact"><dt>Elements</dt><dd class="fact-chips">${els}</dd></div>` : ""}${fact("PvE tier", tierFor(id, "pve"))}${fact("PvP tier", tierFor(id, "pvp"))}</dl></div>
+        <div class="info-card">${cardTitle(c, "About " + c.name)}<p>${esc(c.description || "No description recorded.")}</p></div>
+        <div class="info-card"><h4>Details</h4><dl class="facts facts-stack">${fact("Rarity", c.rarity, ico("rarity", c.rarity))}${fact("Role", c.role, ico("role", c.role))}${fact("Position", c.position, ico("position", c.position))}${els ? `<div class="fact"><dt>Elements</dt><dd class="fact-chips">${els}</dd></div>` : ""}${fact("PvE tier", tierFor(id, "pve"), glyph("leaderboard", "fact-glyph"))}${fact("PvP tier", tierFor(id, "pvp"), glyph("leaderboard", "fact-glyph"))}</dl></div>
       </div>
-      <div class="info-card skill-card"><h4>Skill</h4><div class="skill-line">${c.skill?.icon ? pic(c.skill.icon, "skill-icon") : ""}<div><strong>${esc(c.skill?.name || "No skill recorded")}</strong><p>${esc(c.skill?.desc || "")}</p></div></div></div>
+      <div class="info-card skill-card">${cardTitle(c, c.name + "'s skill")}<div class="skill-line">${c.skill?.icon ? pic(c.skill.icon, "skill-icon") : ""}<div><strong>${esc(c.skill?.name || "No skill recorded")}</strong><p>${esc(c.skill?.desc || "")}</p></div></div></div>
       ${section("Costumes", costumes.length, `<div class="related-square-grid">${costumes.map(relCostume).join("")}${addTile(`openSkinForm(null,${jsq(id)})`)}</div>`)}
       ${section("Power-ups", powerups.length, `<div class="related-square-grid">${powerups.map(relPower).join("")}${addTile(`openPowerupForm(null,${jsq(id)})`)}</div>`)}`;
     openModal("modal-cookie-detail"); resetModalScroll("modal-cookie-detail");
@@ -124,8 +127,8 @@
       <div class="detail-images">${splashBlock(splash, gif, s.name, "modal-skin-detail")}
         <div class="detail-thumbs">${thumb("Card", s.card || splash, s.name, "modal-skin-detail")}${thumb("Sprite", s.sprite || splash, s.name, "modal-skin-detail")}</div></div>
       <div class="detail-cols">
-        <div class="info-card"><h4>About</h4><p>${esc(s.desc || "No description recorded.")}</p></div>
-        <div class="info-card"><h4>Details</h4><dl class="facts facts-stack">${fact("Cookie", owner?.name || "Unknown cookie", owner ? headImg(owner, "", "fact-head") : "")}${fact("Rarity", s.rarity, attrIco("skinRarity", s.rarity))}${fact("Set", s.set, glyph("collections_bookmark", "fact-glyph"))}</dl></div>
+        <div class="info-card">${cardTitle(owner, "About " + s.name)}<p>${esc(s.desc || "No description recorded.")}</p></div>
+        <div class="info-card"><h4>Details</h4><dl class="facts facts-stack">${fact("Cookie", owner?.name || "Unknown cookie", owner ? headImg(owner, "", "fact-head") : "")}${fact("Rarity", s.rarity, ico("skinRarity", s.rarity))}${fact("Set", s.set, glyph("collections_bookmark", "fact-glyph"))}</dl></div>
       </div>
       ${same.length ? section("More in this set", same.length, `<div class="related-square-grid">${same.map(relCostume).join("")}</div>`) : ""}`;
     openModal("modal-skin-detail"); resetModalScroll("modal-skin-detail");
@@ -141,8 +144,8 @@
     document.getElementById("pu-detail-content").innerHTML = `
       <div class="pu-images">${imgs.map(x => thumb(x[0], x[1], p.name, "modal-pu-detail")).join("") || `<div class="empty-inline">No images recorded.</div>`}</div>
       <div class="detail-cols">
-        <div class="info-card"><h4>About</h4><p>${esc(p.desc || "No description recorded.")}</p></div>
-        <div class="info-card"><h4>Details</h4><dl class="facts facts-stack">${fact("Category", p.type, attrIco("powerupType", p.type))}${fact("Cookie", owner?.name || "Unknown cookie", owner ? headImg(owner, "", "fact-head") : "")}</dl></div>
+        <div class="info-card">${cardTitle(owner, "About " + p.name)}<p>${esc(p.desc || "No description recorded.")}</p></div>
+        <div class="info-card"><h4>Details</h4><dl class="facts facts-stack">${fact("Category", p.type, ico("powerupType", p.type))}${fact("Cookie", owner?.name || "Unknown cookie", owner ? headImg(owner, "", "fact-head") : "")}</dl></div>
       </div>
       ${p.ingredientName || p.ingredientUrl ? section("Ingredient", null, `<div class="ingredient-row">${p.ingredientUrl ? pic(p.ingredientUrl, "ingredient-image") : ""}<div class="ingredient-name">${esc(p.ingredientName || "Ingredient")}</div></div>`) : ""}`;
     openModal("modal-pu-detail"); resetModalScroll("modal-pu-detail");

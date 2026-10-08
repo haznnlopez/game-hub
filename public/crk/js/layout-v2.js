@@ -148,12 +148,10 @@
     if (title) title.textContent = p.name; if (head) head.src = headOf(owner) || NO_IMG;
     const imgs = [["Base", p.url10], ["+10", p.url20], ["+20", p.url30]].filter(x => x[1]);
     document.getElementById("pu-detail-content").innerHTML = `
-      <div class="detail-top">
-        <div class="detail-media"><div class="detail-thumbs detail-thumbs-large">${imgs.map(x => thumb(x[0], x[1], p.name, "modal-pu-detail")).join("") || `<div class="empty-inline">No images recorded.</div>`}</div></div>
-        <div class="detail-info">
-          <div class="info-card"><h4>About</h4><p>${esc(p.desc || "No description recorded.")}</p></div>
-          <div class="info-card"><h4>Details</h4><dl class="facts">${fact("Category", p.type, attrIco("powerupType", p.type))}${fact("Cookie", owner?.name || "Unknown cookie", owner ? headImg(owner, "", "fact-head") : "")}</dl></div>
-        </div>
+      <div class="pu-images">${imgs.map(x => thumb(x[0], x[1], p.name, "modal-pu-detail")).join("") || `<div class="empty-inline">No images recorded.</div>`}</div>
+      <div class="pu-cols">
+        <div class="info-card"><h4>About</h4><p>${esc(p.desc || "No description recorded.")}</p></div>
+        <div class="info-card"><h4>Details</h4><dl class="facts facts-stack">${fact("Category", p.type, attrIco("powerupType", p.type))}${fact("Cookie", owner?.name || "Unknown cookie", owner ? headImg(owner, "", "fact-head") : "")}</dl></div>
       </div>
       ${p.ingredientName || p.ingredientUrl ? section("Ingredient", null, `<div class="ingredient-row">${p.ingredientUrl ? pic(p.ingredientUrl, "ingredient-image") : ""}<div class="ingredient-name">${esc(p.ingredientName || "Ingredient")}</div></div>`) : ""}`;
     openModal("modal-pu-detail"); resetModalScroll("modal-pu-detail");
@@ -164,6 +162,28 @@
   const cs = { cookie: { group: "rarity", q: "", closed: new Set(), chart: false }, costume: { group: "cookie", q: "", closed: new Set(), chart: false } };
   const GROUPS = { cookie: [["rarity", "Rarity", "workspace_premium"], ["role", "Role", "shield"], ["position", "Position", "location_on"], ["element", "Element", "local_fire_department"]], costume: [["cookie", "Cookies", "cookie"], ["rarity", "Rarity", "workspace_premium"], ["role", "Role", "shield"], ["position", "Position", "location_on"], ["element", "Element", "local_fire_department"]] };
   const catFor = (type, g) => (type === "costume" && g === "rarity") ? "skinRarity" : g;
+  const sum0 = entries => entries.reduce((n, [, a]) => n + a.length, 0);
+  function pieSlices(type, ents, sum) {
+    if (!sum) return "";
+    const R = 92, r = 56, pt = (rad, a) => [(rad * Math.cos(a)).toFixed(2), (rad * Math.sin(a)).toFixed(2)];
+    let ang = -Math.PI / 2;
+    return ents.map(([n, c], i) => {
+      const color = PALETTE[i % PALETTE.length], frac = c / sum;
+      if (frac >= 0.9999) return `<circle class="pie-slice" data-i="${i}" r="${(R + r) / 2}" fill="none" stroke="${color}" stroke-width="${R - r}" onmouseenter="countPieHover('${type}',${i})" onmouseleave="countPieHover('${type}',-1)"><title>${esc(n)}: ${c}</title></circle>`;
+      const a0 = ang, a1 = ang + frac * Math.PI * 2; ang = a1;
+      const big = frac > 0.5 ? 1 : 0, [x0, y0] = pt(R, a0), [x1, y1] = pt(R, a1), [x2, y2] = pt(r, a1), [x3, y3] = pt(r, a0);
+      return `<path class="pie-slice" data-i="${i}" d="M${x0} ${y0} A${R} ${R} 0 ${big} 1 ${x1} ${y1} L${x2} ${y2} A${r} ${r} 0 ${big} 0 ${x3} ${y3} Z" fill="${color}" onmouseenter="countPieHover('${type}',${i})" onmouseleave="countPieHover('${type}',-1)"><title>${esc(n)}: ${c}</title></path>`;
+    }).join("");
+  }
+  window.countPieHover = function (type, i) {
+    const st = cs[type], c = document.getElementById(`cc-pie-center-${type}`), host = document.getElementById(`cc-chart-${type}`);
+    if (!c || !host) return;
+    host.querySelectorAll(".pie-slice,.legend-row").forEach(e => e.classList.toggle("hot", +e.dataset.i === i));
+    host.classList.toggle("has-hot", i >= 0);
+    if (i < 0 || !st.entries[i]) { c.innerHTML = `<strong>${st.sum}</strong><span>memberships</span>`; return; }
+    const [n, v] = st.entries[i];
+    c.innerHTML = `<strong>${v}</strong><span>${esc(n)}</span><em>${Math.round(v / (st.sum || 1) * 100)}%</em>`;
+  };
   function buildGroups(type) {
     const { group, q } = cs[type], m = {};
     const add = (k, v) => { if (k) (m[k] ??= []).push(v); };
@@ -178,7 +198,7 @@
         if (q && !String(s.name).toLowerCase().includes(q)) return;
         const o = ownerOf(s.ownerId);
         const keys = group === "cookie" ? [o?.name || "Unknown cookie"] : group === "element" ? (o?.elements || []) : group === "rarity" ? [s.rarity] : [o?.[group]];
-        keys.forEach(k => add(k, { name: s.name, img: headOf(o, s.card || s.sprite), click: `viewSkin(${i})` }));
+        keys.forEach(k => add(k, { name: s.name, img: s.card || s.sprite || s.splash || headOf(o), click: `viewSkin(${i})` }));
       });
     }
     return m;
@@ -217,14 +237,13 @@
       analytics += `<div class="count-top5"><h4>Top 5 cookies by costumes</h4>${top.map(([id, n], i) => { const o = ownerOf(id); return `<div class="top5-row"><b>${i + 1}</b>${headImg(o, "", "group-head")}<span>${esc(o?.name || "Unknown")}</span><strong>${n}</strong></div>`; }).join("") || `<div class="empty-inline">No costumes yet.</div>`}</div>`;
     }
     set(`cc-analytics-${type}`, analytics);
-    // chart
-    const sum = memberships || 1; let cur = 0;
-    const stops = entries.map(([, a], i) => { const s0 = cur; cur += a.length / sum * 360; return `${PALETTE[i % PALETTE.length]} ${s0}deg ${cur}deg`; });
-    set(`cc-chart-${type}`, entries.length ? `<div class="count-pie" style="background:conic-gradient(${stops.join(",")})"><div><strong>${memberships}</strong><span>memberships</span></div></div><div class="count-legend">${entries.map(([n, a], i) => `<div><i style="background:${PALETTE[i % PALETTE.length]}"></i><span>${esc(n)}</span><b>${a.length}</b><em>${Math.round(a.length / sum * 100)}%</em></div>`).join("")}</div>` : `<div class="empty-inline">Nothing to chart.</div>`);
+    // chart: hoverable donut + legend
+    st.entries = entries.map(([n, a]) => [n, a.length]); st.sum = sum0(entries);
+    set(`cc-chart-${type}`, entries.length ? `<div class="count-pie-wrap"><svg class="count-pie" viewBox="-100 -100 200 200" role="img" aria-label="Distribution chart">${pieSlices(type, st.entries, st.sum)}</svg><div class="count-pie-center" id="cc-pie-center-${type}"><strong>${st.sum}</strong><span>memberships</span></div></div><div class="count-legend">${st.entries.map(([n, c], i) => `<div class="legend-row" data-i="${i}" onmouseenter="countPieHover('${type}',${i})" onmouseleave="countPieHover('${type}',-1)"><i style="background:${PALETTE[i % PALETTE.length]}"></i><span>${esc(n)}</span><b>${c}</b><em>${Math.round(c / (st.sum || 1) * 100)}%</em></div>`).join("")}</div>` : `<div class="empty-inline">Nothing to chart.</div>`);
     // list
     set(`cc-list-${type}`, entries.map(([name, items]) => {
       const closed = st.closed.has(name);
-      return `<section class="count-group${closed ? " collapsed" : ""}"><button type="button" class="count-group-head" onclick="toggleCountGroup('${type}',${jsq(name)})">${glyph(closed ? "chevron_right" : "expand_more", "chev")}<span class="count-group-title">${groupIcon(type, name)}<strong>${esc(name)}</strong></span><span class="count-badge">${items.length}</span></button><div class="count-group-body">${items.map(x => `<button type="button" class="count-member" onclick="${x.click}">${x.img ? pic(x.img, "member-head") : glyph("cookie", "member-head member-empty")}<span>${esc(x.name)}</span></button>`).join("")}</div></section>`;
+      return `<section class="count-group${closed ? " collapsed" : ""}"><button type="button" class="count-group-head" onclick="toggleCountGroup('${type}',${jsq(name)})">${glyph(closed ? "chevron_right" : "expand_more", "chev")}<span class="count-group-title">${groupIcon(type, name)}<strong>${esc(name)}</strong></span><span class="count-badge">${items.length}</span></button><div class="count-group-body">${items.map(x => `<button type="button" class="count-card" data-tip="${esc(x.name)}" aria-label="${esc(x.name)}" onclick="${x.click}">${x.img ? pic(x.img, "count-card-img") : glyph("cookie", "count-card-img member-empty")}</button>`).join("")}</div></section>`;
     }).join("") || `<div class="empty-state"><span class="material-symbols-outlined">search_off</span><strong>Nothing found</strong></div>`);
     // header toolbar
     const header = document.getElementById(`view-${type}-count`)?.querySelector(".page-header");

@@ -33,6 +33,20 @@
     return `<button type="button" class="filter-pill ${active ? "active" : ""}" ${extra} onclick="${action}">${icon ? `<span class="material-symbols-outlined pill-icon">${esc(icon)}</span>` : ""}<span>${esc(label)}</span></button>`;
   }
 
+  /* Cookies with several elements show one element icon at a time and cycle through them. */
+  function elementTags(elements) {
+    const icons = (elements || []).map((e) => iconFor("element", e));
+    if (icons.length < 2) return icons.join("");
+    return `<div class="element-cycle">${icons.map((h, i) => `<span class="el-slide${i === 0 ? " active" : ""}">${h}</span>`).join("")}</div>`;
+  }
+  setInterval(() => {
+    document.querySelectorAll(".element-cycle").forEach((w) => {
+      const slides = [...w.children], i = slides.findIndex((x) => x.classList.contains("active"));
+      slides[i]?.classList.remove("active");
+      slides[(i + 1) % slides.length].classList.add("active");
+    });
+  }, 1800);
+
   function renderFilterRail(id, groups, filterState, rerender) {
     const host = document.getElementById(id);
     if (!host) return;
@@ -43,6 +57,8 @@
       const valueIcon=(v)=>{const a=attr(g.cat||g.key,v);return a?.icon?`<img class="tag-icon filter-attribute-icon" ${img(a.icon)} alt="">`:`<span class="material-symbols-outlined">${iconMap[g.key]||"label"}</span>`};
       return `<div class="filter-group"><span class="filter-group-label"><span class="material-symbols-outlined">${iconMap[g.key]||"tune"}</span>${esc(g.label)}</span><div class="filter-group-pills"><button type="button" class="filter-pill ${selected.size===0?"active":""}" onclick="clearCatalogFilter('${g.key}','${rerender}')"><span class="material-symbols-outlined">select_all</span><span>All</span></button>${values.map(v=>`<button type="button" class="filter-pill ${selected.has(v)?"active":""}" onclick="toggleCatalogFilter('${g.key}',${jsq(v)},'${rerender}')">${valueIcon(v)}<span>${esc(v)}</span></button>`).join("")}</div></div>`;
     }).join("");
+    const active = groups.reduce((t, g) => t + (filterState[g.key]?.size || 0), 0);
+    document.querySelectorAll(`.filter-active-count[data-for="${id}"]`).forEach((b) => { b.dataset.count = active; b.textContent = active; });
   }
   window.toggleCatalogFilters=function(target){state.filtersOpen[target]=!state.filtersOpen[target];document.querySelectorAll(`.collapsible-filters[data-filter-target="${target}"]`).forEach(el=>el.classList.toggle("is-open",state.filtersOpen[target]));document.querySelectorAll(`.filter-toggle-btn`).forEach(btn=>{if(btn.getAttribute("onclick")?.includes(`'${target}'`))btn.classList.toggle("active",state.filtersOpen[target]);});};
 
@@ -109,7 +125,7 @@
     if (!list.length) { container.innerHTML = `<div class="empty-state"><span class="material-symbols-outlined">search_off</span><strong>No cookies found</strong><span>Try another search or filter.</span></div>`; return; }
     container.innerHTML = `<div class="card-grid crk-cookie-grid">${list.map((c) => {
       const isGuest = c.rarity === "Guest";
-      const tags = isGuest ? "" : `<div class="cookie-card-left-tags">${iconFor("role", c.role)}${iconFor("position", c.position)}${(c.elements || []).map((e) => iconFor("element", e)).join("")}</div>`;
+      const tags = isGuest ? "" : `<div class="cookie-card-left-tags">${iconFor("role", c.role)}${iconFor("position", c.position)}${elementTags(c.elements)}</div>`;
       const wk = "cookie_" + c.id, mf = getCookieMissingFields(c);
       registerWarning(wk, mf, () => renderCookies());
       return `<article class="card crk-cookie-card" onclick="openCookieDetail('${esc(c.id)}')">
@@ -167,19 +183,11 @@
     renderFilterRail("powerup-filter-pills",[{key:"type",label:"Category",values:optionNames("powerupType")}],state.powerupFilters,"powerups");
     renderSortPills("powerup-sort-pills",[["name","Name","sort_by_alpha"],["type","Category","category"]],state.powerupSort,"powerups");
     if(!list.length){container.innerHTML=`<div class="empty-state"><span class="material-symbols-outlined">search_off</span><strong>No power-ups found</strong></div>`;return;}
-    const jobs=[];container.innerHTML=`<div class="pu-grid crk-powerup-grid">${list.map(p=>{const idx=appData.powerups.indexOf(p),owner=appData.cookies.find(c=>c.id===p.ownerId),type=attr("powerupType",p.type);const source=[p.url10,p.url20,p.url30].filter(Boolean);const first=source[0]||owner?.images?.head||"";const cid=`pu-catalog-${idx}`;if(source.length>1)jobs.push([cid,source]);return `<article class="pu-card crk-powerup-card" onclick="viewPowerup(${idx})"><div class="pu-img-container"${type?.background?` style="background-image:url('${esc(type.background)}');background-size:cover;background-position:center"`:""}><img id="${cid}" class="pu-cycle-img" ${img(first)} alt="${esc(p.name)}"></div>${owner?.images?.head?`<div class="costume-card-owner"><img ${img(owner.images.head)} alt=""></div>`:""}<div class="card-overlay"><div class="card-text-wrapper crk-card-name-pop"><div class="card-name">${esc(p.name)}</div><div class="card-sub">${type?.icon?`<img class="tag-icon" ${img(type.icon)}>`:""}${esc(p.type)}</div></div></div>${cardActions("powerup",idx)}</article>`;}).join("")}</div>`;setTimeout(()=>jobs.forEach(([id,images])=>registerCycle(id,images,(el,item)=>{el.src=item;})),0);
+    const jobs=[];container.innerHTML=`<div class="pu-grid crk-powerup-grid">${list.map(p=>{const idx=appData.powerups.indexOf(p),owner=appData.cookies.find(c=>c.id===p.ownerId),type=attr("powerupType",p.type);const levels=[["Base",p.url10],["+10",p.url20],["+20",p.url30]].filter(l=>l[1]);const source=levels.map(l=>l[1]);const first=source[0]||owner?.images?.head||"";const cid=`pu-catalog-${idx}`;if(source.length>1)jobs.push([cid,source,levels.map(l=>l[0]),`pu-level-${idx}`]);return `<article class="pu-card crk-powerup-card" onclick="viewPowerup(${idx})"><div class="pu-img-container"${type?.background?` style="background-image:url('${esc(type.background)}');background-size:cover;background-position:center"`:""}><img id="${cid}" class="pu-cycle-img" ${img(first)} alt="${esc(p.name)}"></div>${owner?.images?.head?`<div class="costume-card-owner"><img ${img(owner.images.head)} alt=""></div>`:""}${source.length>1?`<span class="pu-level-tag" id="pu-level-${idx}">${levels[0][0]}</span>`:""}<div class="card-overlay"><div class="card-text-wrapper crk-card-name-pop"><div class="card-name">${esc(p.name)}</div><div class="card-sub">${type?.icon?`<img class="tag-icon" ${img(type.icon)}>`:""}${esc(p.type)}</div></div></div>${cardActions("powerup",idx)}</article>`;}).join("")}</div>`;setTimeout(()=>jobs.forEach(([id,images,labels,tagId])=>registerCycle(id,images,(el,item)=>{el.src=item;const tag=document.getElementById(tagId);if(tag)tag.textContent=labels[images.indexOf(item)]||"";})),0);
   };
 
   // Non-editable, autocomplete-free custom dropdowns. Selection still stores the same dataset value used by the original forms.
-  window.setupDropdown = function (id, options, initialValue) {
-    const container=document.getElementById(id); if(!container)return;
-    const normalized=(options||[]).map(o=>({name:o.name,value:o.value!==undefined?o.value:o.name,icon:o.icon||""}));
-    const selected=normalized.find(o=>String(o.value)===String(initialValue))||normalized[0]||{name:"Select...",value:"",icon:""};
-    container.dataset.value=selected.value;
-    container.innerHTML=`<button type="button" class="select-box crk-select-button" onclick="toggleCustomDropdown('${esc(id)}')"><span class="crk-selected-value">${selected.icon?`<img class="select-leading-icon" ${img(selected.icon)} alt="">`:""}<span>${esc(selected.name)}</span></span><span class="material-symbols-outlined select-arrow">arrow_drop_down</span></button><div class="options-container" id="${esc(id)}-opts">${normalized.map((o,i)=>`<button type="button" class="option" data-dropdown-id="${esc(id)}" data-idx="${i}">${o.icon?`<img ${img(o.icon)} alt="">`:""}<span>${esc(o.name)}</span></button>`).join("")}</div>`;
-    container.querySelectorAll(".option").forEach(el=>el.addEventListener("click",()=>{const o=normalized[+el.dataset.idx];container.dataset.value=o.value;const v=container.querySelector(".crk-selected-value");v.innerHTML=`${o.icon?`<img class="select-leading-icon" ${img(o.icon)} alt="">`:""}<span>${esc(o.name)}</span>`;container.querySelector(".options-container")?.classList.remove("active");container.querySelector(".select-box")?.classList.remove("active");if(id==="cf-rarity")updateGuestFieldVisibility();}));
-  };
-
+  
   function bindSearch(id,key,render){const el=document.getElementById(id);if(!el||el.dataset.crkBound)return;el.dataset.crkBound="1";el.addEventListener("input",()=>{state[key]=el.value.trim().toLowerCase();debounce(id,render,260);});}
   function initCatalog(){
     bindSearch("search-cookie","cookieSearch",renderCookies);bindSearch("search-skins","costumeSearch",renderSkins);bindSearch("search-powerups","powerupSearch",renderAllPowerups);

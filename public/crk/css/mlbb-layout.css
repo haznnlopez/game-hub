@@ -151,9 +151,6 @@ header.page-header .page-subtitle{margin:.35rem 0 0!important;color:#9db8d1!impo
 #cookie-modal-name,.modal-header-title,#set-detail-title{font-size:1.65rem!important;font-weight:800!important;line-height:1.15}
 
 /* ---------- Detail modals ---------- */
-.detail-top{display:grid;grid-template-columns:minmax(260px,380px) 1fr;gap:1.25rem;align-items:start;margin-bottom:1.25rem}
-@media(max-width:820px){.detail-top{grid-template-columns:1fr}}
-.detail-media{display:flex;flex-direction:column;gap:.85rem;min-width:0}
 .detail-splash{position:relative;display:block;width:100%;aspect-ratio:4/3;padding:0;border-radius:14px;border:1px solid rgba(79,141,255,.22);background:#06152a;overflow:hidden;cursor:zoom-in}
 .detail-splash img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain!important;transition:opacity .18s}
 .detail-splash-gif{opacity:0}
@@ -341,3 +338,58 @@ header.page-header .page-subtitle{margin:.35rem 0 0!important;color:#9db8d1!impo
 .tier-pool-grid{display:flex!important;flex-wrap:wrap!important;justify-content:center!important;align-content:flex-start;gap:8px!important}
 .tier-head:not(.drag-over-left):not(.drag-over-right){border:0!important;outline:0!important;box-shadow:none!important}
 .tier-head:hover{border:0!important}
+
+/* =====================================================================
+   v1.2.2
+   ===================================================================== */
+
+/* Top bar: search truly centered, version chip vertically centered with it */
+.global-topbar-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,760px) minmax(0,1fr)!important;align-items:center!important;position:static!important;min-height:44px}
+.global-topbar .global-search-shell,.global-topbar .global-search-shell.global-search-centered{grid-column:2!important;width:100%!important;max-width:none!important;margin:0!important;flex:none!important}
+.topbar-version-chip{position:static!important;transform:none!important;grid-column:3!important;justify-self:end;align-self:center!important;height:34px;margin:0!important}
+@media(max-width:760px){
+  .global-topbar-row{grid-template-columns:minmax(0,1fr) auto!important}
+  .global-topbar .global-search-shell{grid-column:1!important}
+  .topbar-version-chip{grid-column:2!important}
+}
+
+/* Cookie cards: elements cycle one at a time */
+.element-cycle{position:relative;width:28px;height:28px}
+.element-cycle .el-slide{position:absolute;inset:0;display:flex;opacity:0;transition:opacity .4s}
+.element-cycle .el-slide.active{opacity:1}
+.element-cycle .el-slide>*{width:28px;height:28px}
+
+/* =====================================================================
+   v1.2.3
+   ===================================================================== */
+
+/* Modal layout: images (splash row + sprite/card row), About 2/3 + Details 1/3, Skill row */
+.detail-images{display:flex;flex-direction:column;gap:.85rem;margin-bottom:1.1rem}
+.detail-images .detail-splash{aspect-ratio:auto;height:clamp(240px,38vh,400px)}
+.detail-images .detail-thumb-img{aspect-ratio:16/10}
+.detail-cols,.pu-cols{display:grid;grid-template-columns:2fr 1fr;gap:1rem;align-items:start;margin-bottom:1rem}
+.detail-cols .facts-stack{grid-template-columns:1fr!important}
+.skill-card{margin-bottom:.25rem}
+@media(max-width:700px){.detail-cols,.pu-cols{grid-template-columns:1fr}}
+
+/* GIF hover: the still image disappears while the GIF shows, and returns afterwards */
+.detail-splash.has-gif:hover .detail-splash-static,.detail-splash.has-gif:focus-visible .detail-splash-static{opacity:0}
+
+/* Related costumes/power-ups: hover uses the same bottom gradient as the cookie cards */
+.related-square-card .related-hover{position:absolute!important;inset:auto 0 0 0!important;display:flex!important;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding:.65rem .5rem .55rem!important;text-align:center;background:linear-gradient(to top,rgba(3,12,23,.96) 55%,rgba(3,12,23,.55))!important;border:0!important;border-radius:0!important;transform:none!important}
+.related-square-card .related-hover strong{font-size:.92rem!important;line-height:1.2!important}
+.related-square-card .related-hover small{display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.76rem!important;color:#d4e3f3!important}
+
+/* Power-up cards: level label under the owner head while cycling */
+.pu-level-tag{position:absolute;left:9px;top:48px;z-index:25;padding:.12rem .45rem;border-radius:99px;background:rgba(5,17,32,.85);border:1px solid rgba(247,209,84,.5);color:var(--crk-gold,#f7d154);font-size:.68rem;font-weight:800;line-height:1.3;pointer-events:none}
+
+/* Stats chart: big pie (about 2/3), small scrollable list (about 1/3) */
+.count-chart{display:grid!important;grid-template-columns:2fr 1fr;gap:1.5rem!important;align-items:center;justify-items:center}
+.count-pie-wrap{width:min(100%,460px)!important;height:auto!important;aspect-ratio:1/1}
+.count-pie-center{padding:0 22%!important}
+.count-pie-center strong{font-size:clamp(1.9rem,5vw,3rem)!important}
+.count-pie-center span{font-size:.82rem!important}
+.count-legend{width:100%;min-width:0!important;max-height:min(460px,60vh);overflow-y:auto;padding-right:.35rem;font-size:.78rem}
+.count-legend>div{grid-template-columns:10px 1fr auto 38px!important;gap:.45rem!important;font-size:.78rem!important}
+.count-legend i{width:10px!important;height:10px!important}
+@media(max-width:800px){.count-chart{grid-template-columns:1fr}.count-legend{max-height:240px}}

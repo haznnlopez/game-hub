@@ -1,6 +1,21 @@
-window.APP_VERSION="v1.2.1"; /* single place to bump the version shown in the top bar */
+window.APP_VERSION="v1.2.3"; /* single place to bump the version shown in the top bar */
 /* Safe single-quoted JS string literal for inline handlers inside double-quoted HTML attributes. */
 window.jsq=function(v){return "'"+String(v==null?'':v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+"'";};
+/* Shared helpers used across files (single source of truth). */
+window.crk=(function(){
+  const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+  const NO_IMG="https://placehold.co/900x650/193b68/fff?text=No+Image";
+  const attrOf=(cat,name)=>(window.appData?.attributes?.[cat]||[]).find(x=>x.name===name);
+  const attrIco=(cat,v,cls="attr-ico")=>{const a=attrOf(cat,v);return a?.icon?`<img class="${cls}" src="${esc(a.icon)}" alt="">`:"";};
+  const pic=(u,cls="")=>`<img class="${cls}" src="${esc(u||NO_IMG)}" alt="" onerror="this.onerror=null;this.src='${NO_IMG}'">`;
+  const ownerOf=id=>(appData.cookies||[]).find(c=>c.id===id);
+  const headOf=(c,fb)=>c?.images?.head||fb||"";
+  const glyph=(n,cls="")=>`<span class="material-symbols-outlined ${cls}">${n}</span>`;
+  const headImg=(c,fb,cls="mini-head")=>{const u=headOf(c,fb);return u?pic(u,cls):`<span class="${cls} mini-head-empty material-symbols-outlined">cookie</span>`;};
+  const isGlyph=s=>/^[a-z][a-z0-9_]*$/.test(s||"");
+  const clean=u=>typeof cleanUrl==="function"?cleanUrl(u||""):String(u||"").trim();
+  return {esc,NO_IMG,attrOf,attrIco,pic,ownerOf,headOf,headImg,glyph,isGlyph,clean};
+})();
 // --- Data & State ---
       const STORAGE_KEY = "crk_wiki_data";
       const DefaultData = {
@@ -506,45 +521,7 @@ window.jsq=function(v){return "'"+String(v==null?'':v).replace(/\\/g,'\\\\').rep
         };
         reader.readAsText(file);
       }
-      function openStorageManager() {
-        const existing = document.querySelector(".confirm-modal-overlay");
-        if (existing) existing.remove();
-        const { rows, total } = getStorageReport();
-        const oversized = findOversizedFields();
-        const rowsHtml =
-          rows
-            .filter((r) => r.bytes > 0)
-            .map(
-              (r) =>
-                `<div style="display:flex;justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.85rem;"><span>${r.label}</span><span style="color:var(--text-muted);">${formatBytes(r.bytes)}</span></div>`,
-            )
-            .join("") ||
-          `<div style="color:var(--text-muted);font-size:0.85rem;">No data stored yet.</div>`;
-        const oversizedHtml = oversized.length
-          ? `<div style="margin-top:1rem;"><div class="form-label" style="color:#f87171;">Unusually large fields (likely a pasted image instead of a link)</div>${oversized
-              .slice(0, 8)
-              .map(
-                (o) =>
-                  `<div style="font-size:0.78rem;color:var(--text-muted);padding:0.2rem 0;">${o.source} "${o.name}" → ${o.field} (${formatBytes(o.bytes)})</div>`,
-              )
-              .join("")}</div>`
-          : "";
-        const overlay = document.createElement("div");
-        overlay.className = "confirm-modal-overlay";
-        overlay.innerHTML = `<div class="confirm-modal" style="min-width:380px;text-align:left;"><h3 style="margin-top:0;text-align:center;">Backup &amp; Database</h3><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;"><span class="form-label" style="margin:0;">Total stored</span><span style="font-weight:700;">${formatBytes(total)}</span></div><div style="max-height:220px;overflow-y:auto;margin-bottom:0.5rem;">${rowsHtml}</div>${oversizedHtml}<p style="color:var(--text-muted);font-size:0.8rem;margin:1rem 0 0.5rem;">Data lives in the server database and is shared by everyone. Exporting works for all visitors; importing a backup overwrites the shared database and requires Admin Sign In.</p><input type="file" id="import-file-input" accept="application/json" style="display:none;"><div class="confirm-actions" style="flex-wrap:wrap;"><button class="btn btn-secondary" id="storage-close">Close</button><button class="btn btn-secondary" id="storage-import">Restore Backup</button><button class="btn btn-primary" id="storage-export">Export Backup</button></div></div>`;
-        document.body.appendChild(overlay);
-        document.getElementById("storage-close").onclick = () =>
-          overlay.remove();
-        document.getElementById("storage-export").onclick = () =>
-          exportAllData();
-        document.getElementById("storage-import").onclick = () =>
-          document.getElementById("import-file-input").click();
-        document.getElementById("import-file-input").onchange = (e) => {
-          const file = e.target.files[0];
-          if (file) importAllDataFromFile(file);
-        };
-      }
-
+      
       let appData = DefaultData;
 
       // Sidebar State Persistence
@@ -631,3 +608,61 @@ window.jsq=function(v){return "'"+String(v==null?'':v).replace(/\\/g,'\\\\').rep
       }
 
 
+
+/* ---------- Admin login close + backup/database dialog ---------- */
+(function(){
+  const {esc,NO_IMG,attrOf,attrIco,pic,ownerOf,headOf,headImg,glyph,isGlyph,clean}=window.crk;
+  window.closeAdminLoginModal=function(){closeModal('modal-admin-login');const i=document.getElementById('admin-password-input');if(i)i.value='';};
+
+  const closeDialog = () => document.querySelector(".confirm-modal-overlay")?.remove();
+  window.openStorageManager = function () {
+    closeDialog();
+    const { rows, total } = getStorageReport();
+    const fmtB = typeof formatBytes === "function" ? formatBytes : n => n + " B";
+    const rowsHtml = rows.filter(r => r.bytes > 0).map(r => `<div class="bk-row"><span>${esc(r.label)}</span><b>${fmtB(r.bytes)}</b></div>`).join("") || `<div class="empty-inline">No data stored yet.</div>`;
+    const ov = document.createElement("div");
+    ov.className = "confirm-modal-overlay";
+    ov.innerHTML = `<div class="confirm-modal bk-dialog" role="dialog" aria-modal="true"><div class="bk-head">${glyph("database")}<h3>Backup &amp; database</h3><button type="button" class="bk-x" id="bk-close" aria-label="Close">${glyph("close")}</button></div>
+      <div class="bk-body" id="bk-body"><div class="bk-section"><div class="bk-label">Stored data</div>${rowsHtml}<div class="bk-row bk-total"><span>Total</span><b>${fmtB(total)}</b></div></div>
+      <div class="bk-actions"><button type="button" class="btn btn-secondary" id="bk-export">${glyph("download")}Export JSON</button><button type="button" class="btn btn-primary" id="bk-import">${glyph("upload")}Import JSON</button></div>
+      <input type="file" id="bk-file" accept=".json,application/json" hidden></div></div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener("click", e => { if (e.target === ov) closeDialog(); });
+    document.getElementById("bk-close").onclick = closeDialog;
+    document.getElementById("bk-export").onclick = () => exportAllData();
+    const file = document.getElementById("bk-file");
+    document.getElementById("bk-import").onclick = () => file.click();
+    file.onchange = () => { const f = file.files[0]; if (f) previewImport(f); file.value = ""; };
+  };
+  function previewImport(f) {
+    const rd = new FileReader();
+    rd.onerror = () => showToast("Couldn't read that file", "error");
+    rd.onload = () => {
+      let payload; try { payload = JSON.parse(rd.result); } catch (_) { showToast("That isn't valid JSON", "error"); return; }
+      let data = payload && payload.data ? payload.data : payload;
+      if (data && data.cookies && !data[STORAGE_KEY]) data = { [STORAGE_KEY]: JSON.stringify(data) };
+      if (!data || typeof data !== "object" || Array.isArray(data) || !Object.keys(data).length) { showToast("No backup data found in that file", "error"); return; }
+      const keys = Object.keys(data);
+      const info = k => { try { const o = typeof data[k] === "string" ? JSON.parse(data[k]) : data[k]; return o && o.cookies ? `${(o.cookies || []).length} cookies, ${(o.costumes || []).length} costumes, ${(o.powerups || []).length} power-ups` : "data"; } catch (_) { return "data"; } };
+      const body = document.getElementById("bk-body"); if (!body) return;
+      body.innerHTML = `<div class="bk-section"><div class="bk-label">Ready to restore from ${esc(f.name)}</div>${keys.map(k => `<div class="bk-row" data-key="${esc(k)}"><span>${esc(k)}<small>${esc(info(k))}</small></span><b class="bk-status">Waiting</b></div>`).join("")}<p class="bk-warn">${glyph("warning")}This replaces the live database for everyone. Export a backup first if unsure.</p></div>
+        <div class="bk-actions"><button type="button" class="btn btn-secondary" id="bk-cancel">Cancel</button><button type="button" class="btn btn-primary" id="bk-restore">${glyph("restore")}Restore</button></div>`;
+      document.getElementById("bk-cancel").onclick = () => openStorageManager();
+      document.getElementById("bk-restore").onclick = async () => {
+        if (!ADMIN.isAdmin) { showToast("Sign in as admin to restore", "info"); closeDialog(); openAdminLoginModal(); return; }
+        document.getElementById("bk-restore").disabled = true; document.getElementById("bk-cancel").disabled = true;
+        let failed = 0;
+        for (const k of keys) { // one key at a time, waiting for each save
+          const row = body.querySelector(`[data-key="${CSS.escape(k)}"] .bk-status`); if (row) row.textContent = "Saving…";
+          const ok = await DB.setItemAwaited(k, data[k]); if (!ok) failed++;
+          if (row) { row.textContent = ok ? "Done" : "Failed"; row.className = "bk-status " + (ok ? "ok" : "bad"); }
+        }
+        if (failed) { showToast(`${failed} item(s) failed to save`, "error"); document.getElementById("bk-cancel").disabled = false; }
+        else { showToast("Backup restored", "success"); setTimeout(() => location.reload(), 900); }
+      };
+    };
+    rd.readAsText(f);
+  }
+
+
+})();

@@ -106,15 +106,7 @@
           confirmCallback = null;
         });
 
-      function showToast(msg, type = "success") {
-        const c = document.getElementById("toast-container");
-        const t = document.createElement("div");
-        t.className = `toast ${type}`;
-        t.innerHTML = `<span class="material-symbols-outlined">${type === "success" ? "check_circle" : "error"}</span> <span>${msg}</span>`;
-        c.appendChild(t);
-        setTimeout(() => t.remove(), 3000);
-      }
-
+      
       // --- Smart Text Logic ---
       function smartText(text) {
         if (!text) return "";
@@ -244,89 +236,7 @@
       // Stores option data keyed by dropdown id so URLs never go into onclick attrs
       const _dropdownData = {};
 
-      function setupDropdown(id, options, initialValue) {
-        const container = document.getElementById(id);
-        if (!container) return;
-        const normalizedOptions = options.map((o) => ({
-          name: o.name,
-          value: o.value !== undefined ? o.value : o.name,
-          icon: o.icon || "",
-        }));
-        // Save data for this dropdown
-        _dropdownData[id] = normalizedOptions;
-
-        const selected = normalizedOptions.find(
-          (o) => String(o.value) === String(initialValue),
-        ) ||
-          normalizedOptions[0] || { name: "Select...", value: "", icon: "" };
-        container.dataset.value = selected.value;
-
-        container.innerHTML = `
-          <div class="select-box">
-            ${selected.icon ? `<img class="select-leading-icon" src="${selected.icon}">` : `<span class="select-leading-icon select-leading-icon--empty"></span>`}
-            <input
-              class="select-input"
-              id="${id}-input"
-              type="text"
-              autocomplete="off"
-              value="${selected.name}"
-              placeholder="Search..."
-            >
-            <span class="material-symbols-outlined select-arrow" onclick="toggleCustomDropdown('${id}')">arrow_drop_down</span>
-          </div>
-          <div class="options-container" id="${id}-opts">
-            ${normalizedOptions
-              .map(
-                (o, idx) =>
-                  `<div class="option" data-dropdown-id="${id}" data-idx="${idx}">${o.icon ? `<img src="${o.icon}">` : ""}
-              <span>${o.name}</span></div>`,
-              )
-              .join("")}
-          </div>`;
-
-        // Click on the input box area opens dropdown
-        const inputEl = container.querySelector(".select-input");
-        if (inputEl) {
-          inputEl.addEventListener("click", () => _openDropdown(id));
-          // Typing filters options
-          inputEl.addEventListener("input", (e) => {
-            const q = e.target.value.toLowerCase();
-            let anyVisible = false;
-            container.querySelectorAll(".option[data-idx]").forEach((el) => {
-              const opt = normalizedOptions[parseInt(el.dataset.idx)];
-              const match = !q || opt.name.toLowerCase().includes(q);
-              el.style.display = match ? "" : "none";
-              if (match) anyVisible = true;
-            });
-            let empty = container.querySelector(".options-empty");
-            if (!anyVisible) {
-              if (!empty) {
-                empty = document.createElement("div");
-                empty.className = "options-empty";
-                empty.textContent = "No results";
-                container
-                  .querySelector(".options-container")
-                  .appendChild(empty);
-              }
-              empty.style.display = "";
-            } else if (empty) {
-              empty.style.display = "none";
-            }
-            // keep dropdown open and repositioned
-            _openDropdown(id);
-          });
-        }
-
-        // Attach click listeners directly so no data touches HTML attributes
-        container.querySelectorAll(".option[data-idx]").forEach((el) => {
-          el.addEventListener("click", () => {
-            const opts = _dropdownData[id] || [];
-            const opt = opts[parseInt(el.dataset.idx)];
-            if (opt) _applyDropdownSelection(id, opt);
-          });
-        });
-      }
-
+      
       function _openDropdown(id) {
         const container = document.getElementById(id);
         if (!container) return;
@@ -464,3 +374,53 @@
       });
 
 
+
+/* ---------- Toast + custom dropdowns ---------- */
+(function(){
+  const {esc,NO_IMG,attrOf,attrIco,pic,ownerOf,headOf,headImg,glyph,isGlyph,clean}=window.crk;
+  window.showToast = function (msg, type = "success") {
+    const host = document.getElementById("toast-container"); if (!host) return;
+    const ic = { success: "check_circle", error: "cancel", info: "info" }[type] || "info";
+    const t = document.createElement("div");
+    t.className = `toast toast-simple ${type}`;
+    t.innerHTML = `${glyph(ic, "toast-icon")}<span>${esc(msg)}</span>`;
+    host.appendChild(t);
+    setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 220); }, 2300);
+  };
+
+
+  const optIcon = o => {
+    if (!o.icon) return "";
+    if (isGlyph(o.icon)) return glyph(o.icon, "opt-glyph");
+    const cyc = o.cycle && o.cycle.length > 1 ? ` data-cycle='${esc(JSON.stringify(o.cycle))}' data-ci="0"` : "";
+    return `<img class="select-leading-icon" src="${esc(o.icon)}" alt=""${cyc}>`;
+  };
+  setInterval(() => {
+    document.querySelectorAll("img[data-cycle]").forEach(im => {
+      try { const l = JSON.parse(im.dataset.cycle); im.dataset.ci = (+im.dataset.ci + 1) % l.length; im.src = l[im.dataset.ci]; } catch (_) {}
+    });
+  }, 1400);
+  window.setupDropdown = function (id, options, initialValue) {
+    const c = document.getElementById(id); if (!c) return;
+    const list = (options || []).map(o => ({ name: o.name, value: o.value !== undefined ? o.value : o.name, icon: o.icon || "", cycle: o.cycle }));
+    const sel = list.find(o => String(o.value) === String(initialValue)) || list[0] || { name: "Select...", value: "", icon: "" };
+    c.dataset.value = sel.value;
+    c.innerHTML = `<button type="button" class="select-box crk-select-button" aria-haspopup="listbox" aria-expanded="false"><span class="crk-selected-value">${optIcon(sel)}<span>${esc(sel.name)}</span></span>${glyph("expand_more", "select-arrow")}</button><div class="options-container crk-options" role="listbox">${list.map((o, i) => `<button type="button" class="option crk-option" data-idx="${i}" role="option">${optIcon(o)}<span>${esc(o.name)}</span></button>`).join("")}</div>`;
+    const btn = c.querySelector(".crk-select-button"), opts = c.querySelector(".crk-options");
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      document.querySelectorAll(".crk-options.active").forEach(x => { if (x !== opts) x.classList.remove("active"); });
+      opts.classList.toggle("active"); btn.classList.toggle("active", opts.classList.contains("active"));
+      btn.setAttribute("aria-expanded", opts.classList.contains("active"));
+    });
+    c.querySelectorAll(".crk-option").forEach(o => o.addEventListener("click", e => {
+      e.stopPropagation();
+      const x = list[+o.dataset.idx]; c.dataset.value = x.value;
+      c.querySelector(".crk-selected-value").innerHTML = `${optIcon(x)}<span>${esc(x.name)}</span>`;
+      opts.classList.remove("active"); btn.classList.remove("active"); btn.setAttribute("aria-expanded", "false");
+      if (id === "cf-rarity" && typeof updateGuestFieldVisibility === "function") updateGuestFieldVisibility();
+    }));
+  };
+
+
+})();

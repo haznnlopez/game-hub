@@ -47,10 +47,10 @@
     if(quickHost)quickHost.innerHTML=q("person_add","Add Cookie","Create a new cookie","openCookieForm()")+q("add_photo_alternate","Add Costume","Create a new costume","openSkinForm()")+q("diamond","Add Power-up","Create a new power-up","openPowerupForm()")+q("leaderboard","Tier List","Rank your cookies","switchTab('tierlist')");
     const panel=(eyebrow,title,body,go,wide)=>`<section class="dashboard-panel${wide?" dashboard-panel-wide":""}"><div class="dashboard-panel-head"><div><span class="dashboard-eyebrow">${eyebrow}</span><h2>${title}</h2></div>${go?`<button class="btn btn-secondary btn-sm" onclick="switchTab('${go}')">View all</button>`:""}</div>${body}</section>`;
     const row=(im,t,sub,act)=>`<button type="button" class="dashboard-row" onclick="${act}">${im}<span><strong>${esc(t)}</strong><small>${esc(sub||"")}</small></span></button>`;
-    const headOf=c=>c?.images?.head?`<img src="${esc(c.images.head)}" alt="" onerror="this.style.visibility='hidden'">`:`<span class="material-symbols-outlined">cookie</span>`;
+    const headOf=(c,fb)=>{const u=c?.images?.head||fb;return u?`<img src="${esc(u)}" alt="" onerror="this.style.visibility='hidden'">`:`<span class="material-symbols-outlined">cookie</span>`};
     const empty=t=>`<div class="empty-inline">${t}</div>`;
     const recentCookies=[...cookies].slice(-5).reverse().map(c=>row(headOf(c),c.name,[c.rarity,c.role].filter(Boolean).join(" · "),`openCookieDetail('${esc(c.id)}')`)).join("")||empty("No cookies yet.");
-    const newestCostumes=costumes.map((s,i)=>({s,i})).slice(-5).reverse().map(({s,i})=>{const o=cookies.find(c=>c.id===s.ownerId);return row(headOf(o),s.name,[o?.name,s.rarity].filter(Boolean).join(" · "),`viewSkin(${i})`)}).join("")||empty("No costumes yet.");
+    const newestCostumes=costumes.map((s,i)=>({s,i})).slice(-5).reverse().map(({s,i})=>{const o=cookies.find(c=>c.id===s.ownerId);return row(headOf(o,s.card||s.sprite||s.splash),s.name,[o?.name,s.rarity].filter(Boolean).join(" · "),`viewSkin(${i})`)}).join("")||empty("No costumes yet.");
     const byOwner={};costumes.forEach(s=>{byOwner[s.ownerId]=(byOwner[s.ownerId]||0)+1});
     const leaders=Object.entries(byOwner).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([id,n],i)=>{const c=cookies.find(x=>x.id===id);return row(headOf(c),`${i+1}. ${c?.name||"Unknown"}`,`${n} costume${n===1?"":"s"}`,c?`openCookieDetail('${esc(c.id)}')`:"void 0")}).join("")||empty("No costumes assigned yet.");
     const rar={};cookies.forEach(c=>{if(c.rarity)rar[c.rarity]=(rar[c.rarity]||0)+1});const maxR=Math.max(1,...Object.values(rar));
@@ -143,7 +143,4 @@
     const upd=host=>{const n=host.querySelectorAll('.filter-pill.active[onclick*="toggleCatalogFilter("]').length;document.querySelectorAll(`.filter-active-count[data-for="${host.id}"]`).forEach(b=>{b.dataset.count=n;b.textContent=n;});};
     ["cookie-filter-pills","costume-filter-pills","powerup-filter-pills"].forEach(id=>{const h=document.getElementById(id);if(!h)return;new MutationObserver(()=>upd(h)).observe(h,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});upd(h);});
   })();
-  /* Boot only after every override is installed. */
-  window.crkInit();
-  bootApp();
 })();

@@ -1,6 +1,6 @@
 /* CRK dashboard/system layer — navigation, stats, settings, global search and DB fallback. */
 (function () {
-  const VERSION="v1.1.0";
+  const VERSION=window.APP_VERSION||"v1.2.0";
   const UI_KEY="crk_ui_settings_v1";
   const UI_DEFAULTS={defaultPage:"dashboard",compact:false,reduceMotion:false};
   const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
@@ -48,13 +48,13 @@
     const select=document.getElementById("settings-default-page");
     if(select && typeof setupDropdown==="function") setupDropdown("settings-default-page",[
       {name:"Dashboard",value:"dashboard",icon:"dashboard"},
-      {name:"Cookies",value:"cookies",icon:"cookie"},
-      {name:"Costumes",value:"costumes",icon:"checkroom"},
-      {name:"Costume Sets",value:"sets",icon:"group_work"},
-      {name:"Power-ups",value:"powerups",icon:"diamond"},
-            {name:"Cookie Count",value:"cookie-count",icon:"groups"},
-      {name:"Costume Count",value:"costume-count",icon:"analytics"},
-      {name:"Matrix",value:"matrix",icon:"grid_view"},
+      {name:"Cookies",value:"cookies",icon:"collections_bookmark"},
+      {name:"Costumes",value:"costumes",icon:"collections_bookmark"},
+      {name:"Costume Sets",value:"sets",icon:"collections_bookmark"},
+      {name:"Power-ups",value:"powerups",icon:"collections_bookmark"},
+            {name:"Cookie Count",value:"cookie-count",icon:"monitoring"},
+      {name:"Costume Count",value:"costume-count",icon:"monitoring"},
+      {name:"Matrix",value:"matrix",icon:"monitoring"},
       {name:"Tier List",value:"tierlist",icon:"leaderboard"},
       {name:"Attributes",value:"attributes",icon:"category"},
       {name:"Settings",value:"settings",icon:"settings"}

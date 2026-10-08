@@ -40,7 +40,7 @@
     host.classList.toggle("is-open", !!state.filtersOpen[rerender]);
     host.innerHTML = groups.map((g) => {
       const values = g.values; const selected = filterState[g.key];
-      const valueIcon=(v)=>{const a=attr(g.key,v);return a?.icon?`<img class="tag-icon filter-attribute-icon" ${img(a.icon)} alt="">`:`<span class="material-symbols-outlined">${iconMap[g.key]||"label"}</span>`};
+      const valueIcon=(v)=>{const a=attr(g.cat||g.key,v);return a?.icon?`<img class="tag-icon filter-attribute-icon" ${img(a.icon)} alt="">`:`<span class="material-symbols-outlined">${iconMap[g.key]||"label"}</span>`};
       return `<div class="filter-group"><span class="filter-group-label"><span class="material-symbols-outlined">${iconMap[g.key]||"tune"}</span>${esc(g.label)}</span><div class="filter-group-pills"><button type="button" class="filter-pill ${selected.size===0?"active":""}" onclick="clearCatalogFilter('${g.key}','${rerender}')"><span class="material-symbols-outlined">select_all</span><span>All</span></button>${values.map(v=>`<button type="button" class="filter-pill ${selected.has(v)?"active":""}" onclick="toggleCatalogFilter('${g.key}',${jsq(v)},'${rerender}')">${valueIcon(v)}<span>${esc(v)}</span></button>`).join("")}</div></div>`;
     }).join("");
   }
@@ -143,7 +143,7 @@
     const owners = [...new Set(appData.cookies.map(c=>c.name).filter(Boolean))].sort();
     const sets = [...new Set((appData.costumes||[]).map(c=>c.set||"No Set"))].sort();
     renderFilterRail("costume-filter-pills", [
-      { key:"rarity", label:"Rarity", values:optionNames("skinRarity") },
+      { key:"rarity", cat:"skinRarity", label:"Rarity", values:optionNames("skinRarity") },
       { key:"owner", label:"Cookie", values:owners },
       { key:"set", label:"Set", values:sets },
     ], state.costumeFilters, "costumes");

@@ -1,3 +1,4 @@
+window.APP_VERSION="v1.2.0"; /* single place to bump the version shown in the top bar */
 /* Safe single-quoted JS string literal for inline handlers inside double-quoted HTML attributes. */
 window.jsq=function(v){return "'"+String(v==null?'':v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+"'";};
 // --- Data & State ---

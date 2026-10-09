@@ -34,7 +34,6 @@
   
   
     
-  window.editSkinFromDetail=function(){if(currentSkinIdx!==null){closeModal("modal-skin-detail");openSkinForm(currentSkinIdx);}};
 
   function bindFormUrlPreview(){
     document.querySelectorAll("#modal-cookie-form input,#modal-skin-form input,#modal-pu-form input").forEach(el=>{el.autocomplete="off";});
@@ -56,6 +55,29 @@
   /* ===== Forms, detail modals, set modal ===== */
   {
   const {esc,NO_IMG,attrOf,attrIco,pic,ownerOf,headOf,headImg,glyph,isGlyph,clean}=window.crk;
+  /* Re-render any open detail modal after data changes (save, edit, delete), keeping scroll position. */
+  let currentSkinRef = null, currentPowerupRef = null;
+  window.refreshOpenDetails = function () {
+    const isOpen = id => document.getElementById(id)?.classList.contains("open");
+    if (isOpen("modal-cookie-detail") && currentDetailId) {
+      if (ownerOf(currentDetailId)) openCookieDetail(currentDetailId, true); else closeModal("modal-cookie-detail");
+    }
+    if (isOpen("modal-skin-detail") && currentSkinRef) {
+      const i = appData.costumes.indexOf(currentSkinRef);
+      if (i >= 0) viewSkin(i, true); else closeModal("modal-skin-detail");
+    }
+    if (isOpen("modal-pu-detail") && currentPowerupRef) {
+      const i = appData.powerups.indexOf(currentPowerupRef);
+      if (i >= 0) viewPowerup(i, true); else closeModal("modal-pu-detail");
+    }
+    window.refreshActivePage?.();
+  };
+
+  /* Editing from a detail modal closes it; reopen it (updated) once the change is saved. */
+  let reopenSkin = null, reopenPowerup = null;
+  window.editSkinFromDetail = function () { if (currentSkinIdx !== null) { reopenSkin = currentSkinRef; closeModal("modal-skin-detail"); openSkinForm(currentSkinIdx); } };
+  window.editPowerupFromDetail = function () { if (currentPowerupIdx !== null) { reopenPowerup = currentPowerupRef; closeModal("modal-pu-detail"); openPowerupForm(currentPowerupIdx); } };
+
   /* Attribute icon when the attribute has one, otherwise a neutral glyph. */
   const ico = (cat, v) => attrIco(cat, v) || glyph(({ rarity: "workspace_premium", skinRarity: "workspace_premium", role: "shield", position: "location_on", element: "local_fire_department", powerupType: "diamond" })[cat] || "label", "fact-glyph");
   const cardTitle = (cookie, text) => `<h4 class="card-title">${cookie ? headImg(cookie, "", "title-head") : ""}<span>${esc(text)}</span></h4>`;
@@ -66,12 +88,12 @@
     return [{name:'No Set',value:'',icon:'block'},...Object.keys(sets).map(n=>({name:n,value:n,icon:sets[n][0]||'collections_bookmark',cycle:sets[n]}))];
   }
   window.openCookieForm=function(id=null){const f=document.getElementById('cookie-form');f?.reset();document.getElementById('cookie-form-title').textContent=id?'Edit Cookie':'Add Cookie';document.getElementById('cf-id').value=id||('c'+Date.now());const c=id?appData.cookies.find(x=>x.id===id):null;setupDropdown('cf-rarity',appData.attributes.rarity,c?.rarity||'Common');setupDropdown('cf-role',appData.attributes.role,c?.role||'Charge');setupDropdown('cf-pos',appData.attributes.position,c?.position||'Front');setupMultiSelect('cf-elements',appData.attributes.element||[],c?.elements||[]);if(c){document.getElementById('cf-name').value=c.name||'';document.getElementById('cf-description').value=c.description||'';document.getElementById('cf-head').value=c.images?.head||'';document.getElementById('cf-splash').value=c.images?.splash||'';document.getElementById('cf-gif').value=c.images?.splashGif||'';document.getElementById('cf-sprite').value=c.images?.sprite||'';document.getElementById('cf-card').value=c.images?.card||'';document.getElementById('cf-bg').value=c.images?.bg||'';document.getElementById('cf-skill-name').value=c.skill?.name||'';document.getElementById('cf-skill-icon').value=c.skill?.icon||'';document.getElementById('cf-skill-desc').value=c.skill?.desc||'';}openModal('modal-cookie-form');setTimeout(()=>{updateGuestFieldVisibility?.();autoHDFields();resetModalScroll('modal-cookie-form');},20);};
-  window.submitCookieForm=function(){const id=document.getElementById('cf-id').value,existing=appData.cookies.find(x=>x.id===id),rarity=getDropdownValue('cf-rarity'),guest=rarity==='Guest';const data={id,name:document.getElementById('cf-name').value.trim(),description:document.getElementById('cf-description').value.trim(),rarity,role:guest?'':getDropdownValue('cf-role'),position:guest?'':getDropdownValue('cf-pos'),elements:guest?[]:getMultiSelectValues('cf-elements'),images:{head:clean(document.getElementById('cf-head').value),splash:clean(document.getElementById('cf-splash').value),splashGif:clean(document.getElementById('cf-gif').value),sprite:clean(document.getElementById('cf-sprite').value),card:clean(document.getElementById('cf-card').value),bg:clean(document.getElementById('cf-bg').value)},skill:guest?{}:{name:document.getElementById('cf-skill-name').value.trim(),icon:clean(document.getElementById('cf-skill-icon').value),desc:document.getElementById('cf-skill-desc').value.trim()}};if(!data.name){showToast('Cookie name is required','info');return;}if(existing)Object.assign(existing,data);else appData.cookies.push(data);persistAppData();closeModal('modal-cookie-form');renderCookies();showToast('Cookie saved','success');};
+  window.submitCookieForm=function(){const id=document.getElementById('cf-id').value,existing=appData.cookies.find(x=>x.id===id),rarity=getDropdownValue('cf-rarity'),guest=rarity==='Guest';const data={id,name:document.getElementById('cf-name').value.trim(),description:document.getElementById('cf-description').value.trim(),rarity,role:guest?'':getDropdownValue('cf-role'),position:guest?'':getDropdownValue('cf-pos'),elements:guest?[]:getMultiSelectValues('cf-elements'),images:{head:clean(document.getElementById('cf-head').value),splash:clean(document.getElementById('cf-splash').value),splashGif:clean(document.getElementById('cf-gif').value),sprite:clean(document.getElementById('cf-sprite').value),card:clean(document.getElementById('cf-card').value),bg:clean(document.getElementById('cf-bg').value)},skill:guest?{}:{name:document.getElementById('cf-skill-name').value.trim(),icon:clean(document.getElementById('cf-skill-icon').value),desc:document.getElementById('cf-skill-desc').value.trim()}};if(!data.name){showToast('Cookie name is required','info');return;}if(existing)Object.assign(existing,data);else appData.cookies.push(data);persistAppData();closeModal('modal-cookie-form');renderCookies();refreshOpenDetails();showToast('Cookie saved','success');};
 
   window.openSkinForm=function(idx=null,ownerId=null){const s=idx!==null?appData.costumes[idx]:null;document.getElementById('sf-idx').value=idx===null?'':idx;document.getElementById('skin-form-title').textContent=s?'Edit Costume':'Add Costume';setupDropdown('sf-owner',appData.cookies.map(c=>({name:c.name,value:c.id,icon:c.images?.head})),s?.ownerId||ownerId||appData.cookies[0]?.id||'');setupDropdown('sf-rarity',appData.attributes.skinRarity||[],s?.rarity||appData.attributes.skinRarity?.[0]?.name||'');setupDropdown('sf-set',setOptions(),s?.set||'');document.getElementById('sf-name').value=s?.name||'';document.getElementById('sf-desc').value=s?.desc||'';document.getElementById('sf-bg').value=s?.bg||'';document.getElementById('sf-card').value=s?.card||'';document.getElementById('sf-splash').value=s?.splash||'';document.getElementById('sf-gif').value=s?.splashGif||s?.gif||'';document.getElementById('sf-sprite').value=s?.sprite||'';openModal('modal-skin-form');setTimeout(()=>{autoHDFields();resetModalScroll('modal-skin-form')},20);};
-  window.saveSkin=function(){const raw=document.getElementById('sf-idx').value,s={name:document.getElementById('sf-name').value.trim(),ownerId:getDropdownValue('sf-owner'),rarity:getDropdownValue('sf-rarity'),set:getDropdownValue('sf-set'),desc:document.getElementById('sf-desc').value.trim(),bg:clean(document.getElementById('sf-bg').value),card:clean(document.getElementById('sf-card').value),splash:clean(document.getElementById('sf-splash').value),splashGif:clean(document.getElementById('sf-gif').value),sprite:clean(document.getElementById('sf-sprite').value)};if(!s.name){showToast('Costume name is required','info');return;}if(raw!=='')appData.costumes[+raw]=s;else{appData.costumes.push({...s,_addedAt:Date.now()});}persistAppData();closeModal('modal-skin-form');renderSkins();showToast('Costume saved','success');};
+  window.saveSkin=function(){const raw=document.getElementById('sf-idx').value,s={name:document.getElementById('sf-name').value.trim(),ownerId:getDropdownValue('sf-owner'),rarity:getDropdownValue('sf-rarity'),set:getDropdownValue('sf-set'),desc:document.getElementById('sf-desc').value.trim(),bg:clean(document.getElementById('sf-bg').value),card:clean(document.getElementById('sf-card').value),splash:clean(document.getElementById('sf-splash').value),splashGif:clean(document.getElementById('sf-gif').value),sprite:clean(document.getElementById('sf-sprite').value)};if(!s.name){showToast('Costume name is required','info');return;}if(raw!=='')Object.assign(appData.costumes[+raw],s);else{appData.costumes.push({...s,_addedAt:Date.now()});}persistAppData();closeModal('modal-skin-form');renderSkins();refreshOpenDetails();if(raw!==''&&reopenSkin&&appData.costumes[+raw]===reopenSkin)viewSkin(+raw);reopenSkin=null;showToast('Costume saved','success');};
   window.openPowerupForm=function(idx=null,ownerId=null){const p=idx!==null?appData.powerups[idx]:null;document.getElementById('puf-idx').value=idx===null?'':idx;document.getElementById('pu-form-title').textContent=p?'Edit Power-up':'Add Power-up';setupDropdown('puf-owner',appData.cookies.map(c=>({name:c.name,value:c.id,icon:c.images?.head})),p?.ownerId||ownerId||appData.cookies[0]?.id||'');setupDropdown('puf-type',appData.attributes.powerupType||[],p?.type||appData.attributes.powerupType?.[0]?.name||'');document.getElementById('puf-name').value=p?.name||'';document.getElementById('puf-desc').value=p?.desc||'';document.getElementById('puf-ingredient-name').value=p?.ingredientName||'';document.getElementById('puf-ingredient-url').value=p?.ingredientUrl||'';document.getElementById('puf-10-url').value=p?.url10||'';document.getElementById('puf-20-url').value=p?.url20||'';document.getElementById('puf-30-url').value=p?.url30||'';openModal('modal-pu-form');setTimeout(()=>{autoHDFields();resetModalScroll('modal-pu-form')},20);};
-  window.savePowerup=function(){const raw=document.getElementById('puf-idx').value,p={name:document.getElementById('puf-name').value.trim(),ownerId:getDropdownValue('puf-owner'),type:getDropdownValue('puf-type'),desc:document.getElementById('puf-desc').value.trim(),ingredientName:document.getElementById('puf-ingredient-name').value.trim(),ingredientUrl:clean(document.getElementById('puf-ingredient-url').value),url10:clean(document.getElementById('puf-10-url').value),url20:clean(document.getElementById('puf-20-url').value),url30:clean(document.getElementById('puf-30-url').value)};if(!p.name){showToast('Power-up name is required','info');return;}if(raw!=='')appData.powerups[+raw]=p;else appData.powerups.push({...p,_addedAt:Date.now()});persistAppData();closeModal('modal-pu-form');renderAllPowerups();showToast('Power-up saved','success');};
+  window.savePowerup=function(){const raw=document.getElementById('puf-idx').value,p={name:document.getElementById('puf-name').value.trim(),ownerId:getDropdownValue('puf-owner'),type:getDropdownValue('puf-type'),desc:document.getElementById('puf-desc').value.trim(),ingredientName:document.getElementById('puf-ingredient-name').value.trim(),ingredientUrl:clean(document.getElementById('puf-ingredient-url').value),url10:clean(document.getElementById('puf-10-url').value),url20:clean(document.getElementById('puf-20-url').value),url30:clean(document.getElementById('puf-30-url').value)};if(!p.name){showToast('Power-up name is required','info');return;}if(raw!=='')Object.assign(appData.powerups[+raw],p);else appData.powerups.push({...p,_addedAt:Date.now()});persistAppData();closeModal('modal-pu-form');renderAllPowerups();refreshOpenDetails();if(raw!==''&&reopenPowerup&&appData.powerups[+raw]===reopenPowerup)viewPowerup(+raw);reopenPowerup=null;showToast('Power-up saved','success');};
 
 
   window.autoHDFields=function(){document.querySelectorAll('#modal-cookie-form input[placeholder*="URL"],#modal-skin-form input[placeholder*="URL"],#modal-pu-form input[placeholder*="URL"]').forEach(input=>{if(input.dataset.hdBound)return;input.dataset.hdBound='1';const cleanNow=()=>{if(input.value){const before=input.value;const after=typeof hdFier==='function'?hdFier(before):before;if(after&&after!==before)input.value=after;}};input.addEventListener('input',cleanNow);input.addEventListener('blur',cleanNow);});};
@@ -88,9 +110,13 @@
   const relCostume = s => { const i = appData.costumes.indexOf(s); return `<article class="related-square-card" onclick="viewSkin(${i})">${pic(s.card || s.splash || s.sprite, "related-square-image")}<div class="related-hover"><strong>${esc(s.name)}</strong><small>${attrIco("skinRarity", s.rarity)}${esc(s.rarity || "")}</small></div></article>`; };
   const relPower = p => { const i = appData.powerups.indexOf(p), o = ownerOf(p.ownerId); return `<article class="related-square-card" onclick="viewPowerup(${i})">${pic(p.url10 || p.url20 || p.url30 || o?.images?.head, "related-square-image")}<div class="related-hover"><strong>${esc(p.name)}</strong><small>${attrIco("powerupType", p.type)}${esc(p.type || "")}</small></div></article>`; };
   const addTile = onclick => `<button type="button" class="related-add" onclick="${onclick}"><span class="material-symbols-outlined">add</span><span>Add</span></button>`;
-  const bgFor = (box, bg) => { box.style.backgroundImage = bg ? `linear-gradient(rgba(5,17,32,.88),rgba(5,17,32,.97)),url('${String(bg).replace(/'/g, "%27")}')` : "none"; };
+  const bgFor = (box, bg) => {
+    /* The image goes in a CSS variable; mlbb-layout.css draws it under a dark overlay (low opacity). */
+    if (bg) { box.style.setProperty("--modal-bg", `url(${JSON.stringify(String(bg))})`); box.classList.add("has-bg"); }
+    else { box.style.removeProperty("--modal-bg"); box.classList.remove("has-bg"); }
+  };
 
-  window.openCookieDetail = function (id) {
+  window.openCookieDetail = function (id, refresh = false) {
     const c = appData.cookies.find(x => x.id === id); if (!c) return;
     currentDetailId = id;
     const modal = document.getElementById("modal-cookie-detail"), box = modal.querySelector(".modal-box");
@@ -110,12 +136,12 @@
       <div class="info-card skill-card">${cardTitle(c, c.name + "'s skill")}<div class="skill-line">${c.skill?.icon ? pic(c.skill.icon, "skill-icon") : ""}<div><strong>${esc(c.skill?.name || "No skill recorded")}</strong><p>${esc(c.skill?.desc || "")}</p></div></div></div>
       ${section("Costumes", costumes.length, `<div class="related-square-grid">${costumes.map(relCostume).join("")}${addTile(`openSkinForm(null,${jsq(id)})`)}</div>`)}
       ${section("Power-ups", powerups.length, `<div class="related-square-grid">${powerups.map(relPower).join("")}${addTile(`openPowerupForm(null,${jsq(id)})`)}</div>`)}`;
-    openModal("modal-cookie-detail"); resetModalScroll("modal-cookie-detail");
+    if (!refresh) { openModal("modal-cookie-detail"); resetModalScroll("modal-cookie-detail"); }
   };
 
-  window.viewSkin = function (idx) {
+  window.viewSkin = function (idx, refresh = false) {
     const s = appData.costumes[idx]; if (!s) return;
-    currentSkinIdx = idx;
+    currentSkinIdx = idx; currentSkinRef = s;
     const owner = ownerOf(s.ownerId), modal = document.getElementById("modal-skin-detail"), box = modal.querySelector(".modal-box");
     const head = modal.querySelector(".modal-header-costume-head"), title = modal.querySelector(".modal-header-title");
     if (head) { head.src = headOf(owner, s.card || s.sprite) || NO_IMG; head.alt = owner?.name || ""; }
@@ -131,12 +157,12 @@
         <div class="info-card"><h4>Details</h4><dl class="facts facts-stack">${fact("Cookie", owner?.name || "Unknown cookie", owner ? headImg(owner, "", "fact-head") : "")}${fact("Rarity", s.rarity, ico("skinRarity", s.rarity))}${fact("Set", s.set, glyph("collections_bookmark", "fact-glyph"))}</dl></div>
       </div>
       ${same.length ? section("More in this set", same.length, `<div class="related-square-grid">${same.map(relCostume).join("")}</div>`) : ""}`;
-    openModal("modal-skin-detail"); resetModalScroll("modal-skin-detail");
+    if (!refresh) { openModal("modal-skin-detail"); resetModalScroll("modal-skin-detail"); }
   };
 
-  window.viewPowerup = function (idx) {
+  window.viewPowerup = function (idx, refresh = false) {
     const p = appData.powerups[idx]; if (!p) return;
-    currentPowerupIdx = idx;
+    currentPowerupIdx = idx; currentPowerupRef = p;
     const owner = ownerOf(p.ownerId), modal = document.getElementById("modal-pu-detail");
     const title = modal.querySelector(".modal-header-title"), head = modal.querySelector(".modal-header-powerup-head");
     if (title) title.textContent = p.name; if (head) head.src = headOf(owner) || NO_IMG;
@@ -148,7 +174,7 @@
         <div class="info-card"><h4>Details</h4><dl class="facts facts-stack">${fact("Category", p.type, ico("powerupType", p.type))}${fact("Cookie", owner?.name || "Unknown cookie", owner ? headImg(owner, "", "fact-head") : "")}</dl></div>
       </div>
       ${p.ingredientName || p.ingredientUrl ? section("Ingredient", null, `<div class="ingredient-row">${p.ingredientUrl ? pic(p.ingredientUrl, "ingredient-image") : ""}<div class="ingredient-name">${esc(p.ingredientName || "Ingredient")}</div></div>`) : ""}`;
-    openModal("modal-pu-detail"); resetModalScroll("modal-pu-detail");
+    if (!refresh) { openModal("modal-pu-detail"); resetModalScroll("modal-pu-detail"); }
   };
 
 

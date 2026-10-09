@@ -118,6 +118,13 @@
     if(id==="settings")window.renderSettingsPage();
     scrollToTop();
   };
+  /* After data changes, re-render whichever page is open so counts, groups and the matrix stay current.
+     (Cookie, costume and power-up lists are re-rendered by their own save/delete handlers.) */
+  window.refreshActivePage=function(){
+    const id=document.querySelector(".page.active")?.id.replace("view-","");
+    const map={dashboard:"renderDashboard",sets:"renderSets","cookie-count":"renderCookieCount","costume-count":"renderCostumeCount",matrix:"renderMatrix",tierlist:"renderTierList"};
+    if(map[id]){clearCycles();window[map[id]]();}
+  };
   window.setupGroupedNavigation=setupGroupedNavigation;
 
                 

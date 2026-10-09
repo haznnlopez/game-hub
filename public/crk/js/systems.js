@@ -223,6 +223,7 @@
           appData.powerups = appData.powerups.filter((p) => p.ownerId !== id);
           persistAppData();
           renderCookies();
+          refreshOpenDetails();
           showToast("Cookie Deleted");
         });
       }
@@ -230,13 +231,8 @@
         showConfirm("Delete Costume?", () => {
           appData.costumes.splice(idx, 1);
           persistAppData();
-          if (
-            document
-              .getElementById("modal-cookie-detail")
-              .classList.contains("open")
-          )
-            openCookieDetail(currentDetailId);
-          else renderSkins();
+          renderSkins();
+          refreshOpenDetails();
           showToast("Costume Deleted");
         });
       }
@@ -244,13 +240,8 @@
         showConfirm("Delete Power-up?", () => {
           appData.powerups.splice(idx, 1);
           persistAppData();
-          if (
-            document
-              .getElementById("modal-cookie-detail")
-              .classList.contains("open")
-          )
-            openCookieDetail(currentDetailId);
-          else renderAllPowerups();
+          renderAllPowerups();
+          refreshOpenDetails();
           showToast("Power-up Deleted");
         });
       }
@@ -279,13 +270,6 @@
       
       
       
-      function editPowerupFromDetail() {
-        if (currentPowerupIdx !== null) {
-          closeModal("modal-pu-detail");
-          openPowerupForm(currentPowerupIdx);
-        }
-      }
-
       function triggerEditFromDetail() {
         if (currentDetailId) {
           closeModal("modal-cookie-detail");
@@ -329,7 +313,7 @@
       Object.assign(window, {
         deleteCookie, deleteSkin, deletePowerup,
         changeDetailImg, changeSkinImg,
-        editPowerupFromDetail, triggerEditFromDetail,
+        triggerEditFromDetail,
         renderSets
       });
 

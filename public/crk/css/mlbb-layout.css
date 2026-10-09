@@ -419,3 +419,6 @@ header.page-header .page-subtitle{margin:.35rem 0 0!important;color:#9db8d1!impo
 .crk-multi-option .multi-check{margin-left:auto;font-size:20px!important;color:var(--crk-gold,#f7d154);opacity:0}
 .crk-multi-option.selected{background:rgba(79,141,255,.18)!important}
 .crk-multi-option.selected .multi-check{opacity:1}
+
+/* Cookie / costume modal background: their own bg image, shown at low opacity under a dark overlay */
+#modal-cookie-detail .modal-box.has-bg,#modal-skin-detail .modal-box.has-bg{background-image:linear-gradient(rgba(8,26,46,.74),rgba(8,26,46,.88)),var(--modal-bg)!important;background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important}

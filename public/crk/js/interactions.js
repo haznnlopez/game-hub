@@ -366,7 +366,7 @@
     const c = document.getElementById(id); if (!c) return;
     const list = (options || []).map(o => ({ name: o.name, icon: o.icon || "" }));
     const chosen = new Set((selected || []).filter(n => list.some(o => o.name === n)));
-    c.classList.add("crk-multi");
+    c.classList.add("custom-select", "crk-multi");
     c.innerHTML = `<button type="button" class="select-box crk-select-button crk-multi-button" aria-haspopup="listbox" aria-expanded="false"><span class="crk-multi-value"></span>${glyph("expand_more", "select-arrow")}</button><div class="options-container crk-options crk-multi-options" role="listbox" aria-multiselectable="true">${list.map((o, i) => `<button type="button" class="option crk-option crk-multi-option" data-idx="${i}" role="option" aria-selected="false">${optIcon(o)}<span>${esc(o.name)}</span>${glyph("check", "multi-check")}</button>`).join("") || `<div class="empty-inline">No options available.</div>`}</div>`;
     const btn = c.querySelector(".crk-multi-button"), opts = c.querySelector(".crk-options"), val = c.querySelector(".crk-multi-value");
     const render = () => {

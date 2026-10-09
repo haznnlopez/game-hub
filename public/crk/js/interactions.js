@@ -173,45 +173,6 @@
         resetModalScroll(id);
         initUrlPreviews(); // Re-bind tooltips for form inputs inside modal
 
-        if (id === "modal-skin-form") {
-          const cookiesForDropdown = appData.cookies.map((c) => ({
-            name: c.name,
-            value: c.id,
-            icon: c.images.head,
-          }));
-          if (currentDetailId) {
-            // If opened from context, pre-select
-            setupDropdown("sf-owner", cookiesForDropdown, currentDetailId);
-          } else {
-            setupDropdown("sf-owner", cookiesForDropdown, "");
-          }
-
-          setupDropdown("sf-rarity", appData.attributes.skinRarity, "Common");
-          // Unique sets for datalist
-          const uniqueSets = [
-            ...new Set(appData.costumes.map((c) => c.set).filter(Boolean)),
-          ];
-          document.getElementById("set-list").innerHTML = uniqueSets
-            .map((s) => `<option value="${s}">`)
-            .join("");
-        }
-        if (id === "modal-pu-form") {
-          const cookiesForDropdown = appData.cookies.map((c) => ({
-            name: c.name,
-            value: c.id,
-            icon: c.images.head,
-          }));
-          if (currentDetailId) {
-            setupDropdown("puf-owner", cookiesForDropdown, currentDetailId);
-          } else {
-            setupDropdown("puf-owner", cookiesForDropdown, "");
-          }
-          setupDropdown(
-            "puf-type",
-            appData.attributes.powerupType,
-            "Magic Candy",
-          );
-        }
       }
 
       function closeModal(id) {
@@ -400,6 +361,34 @@
       try { const l = JSON.parse(im.dataset.cycle); im.dataset.ci = (+im.dataset.ci + 1) % l.length; im.src = l[im.dataset.ci]; } catch (_) {}
     });
   }, 1400);
+  /* Multi-select dropdown (e.g. cookie elements): chips with attribute icons, options toggle without closing. */
+  window.setupMultiSelect = function (id, options, selected) {
+    const c = document.getElementById(id); if (!c) return;
+    const list = (options || []).map(o => ({ name: o.name, icon: o.icon || "" }));
+    const chosen = new Set((selected || []).filter(n => list.some(o => o.name === n)));
+    c.classList.add("crk-multi");
+    c.innerHTML = `<button type="button" class="select-box crk-select-button crk-multi-button" aria-haspopup="listbox" aria-expanded="false"><span class="crk-multi-value"></span>${glyph("expand_more", "select-arrow")}</button><div class="options-container crk-options crk-multi-options" role="listbox" aria-multiselectable="true">${list.map((o, i) => `<button type="button" class="option crk-option crk-multi-option" data-idx="${i}" role="option" aria-selected="false">${optIcon(o)}<span>${esc(o.name)}</span>${glyph("check", "multi-check")}</button>`).join("") || `<div class="empty-inline">No options available.</div>`}</div>`;
+    const btn = c.querySelector(".crk-multi-button"), opts = c.querySelector(".crk-options"), val = c.querySelector(".crk-multi-value");
+    const render = () => {
+      const picked = list.filter(o => chosen.has(o.name));
+      val.innerHTML = picked.length ? picked.map(o => `<span class="multi-chip">${optIcon(o)}<span>${esc(o.name)}</span></span>`).join("") : `<span class="multi-placeholder">Select...</span>`;
+      c.querySelectorAll(".crk-multi-option").forEach(el => { const on = chosen.has(list[+el.dataset.idx].name); el.classList.toggle("selected", on); el.setAttribute("aria-selected", on); });
+      c.dataset.values = JSON.stringify(picked.map(o => o.name));
+    };
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      document.querySelectorAll(".crk-options.active").forEach(x => { if (x !== opts) x.classList.remove("active"); });
+      opts.classList.toggle("active"); btn.classList.toggle("active", opts.classList.contains("active"));
+      btn.setAttribute("aria-expanded", opts.classList.contains("active"));
+    });
+    c.querySelectorAll(".crk-multi-option").forEach(el => el.addEventListener("click", e => {
+      e.stopPropagation();
+      const n = list[+el.dataset.idx].name; chosen.has(n) ? chosen.delete(n) : chosen.add(n); render();
+    }));
+    render();
+  };
+  window.getMultiSelectValues = id => { try { return JSON.parse(document.getElementById(id)?.dataset.values || "[]"); } catch (_) { return []; } };
+
   window.setupDropdown = function (id, options, initialValue) {
     const c = document.getElementById(id); if (!c) return;
     const list = (options || []).map(o => ({ name: o.name, value: o.value !== undefined ? o.value : o.name, icon: o.icon || "", cycle: o.cycle }));

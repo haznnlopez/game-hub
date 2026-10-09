@@ -295,32 +295,6 @@
 
       // --- Edit Form Logic ---
       
-      // Dropdown Helpers
-      function toggleMultiSelect(e) {
-        if (e) e.stopPropagation();
-        const opts = document.getElementById("element-options");
-        opts.classList.toggle("active");
-        document.querySelector(".select-box").classList.toggle("active");
-      }
-
-      function closeMultiSelectOutside(e) {
-        const ms = document.getElementById("element-multiselect");
-        if (ms && !ms.contains(e.target)) {
-          document.getElementById("element-options").classList.remove("active");
-          document.querySelector(".select-box").classList.remove("active");
-        }
-      }
-
-      function updateMultiSelectLabel() {
-        const checked = Array.from(
-          document.querySelectorAll("#element-options input:checked"),
-        ).map((cb) => cb.value);
-        const label = document.getElementById("selected-text");
-        if (checked.length === 0) label.innerText = "Select Elements...";
-        else label.innerText = checked.join(", ");
-      }
-
-      
       // --- Costumes & Sets ---
       
       
@@ -356,7 +330,6 @@
         deleteCookie, deleteSkin, deletePowerup,
         changeDetailImg, changeSkinImg,
         editPowerupFromDetail, triggerEditFromDetail,
-        toggleMultiSelect, updateMultiSelectLabel,
         renderSets
       });
 

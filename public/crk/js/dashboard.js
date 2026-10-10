@@ -52,6 +52,7 @@
       {name:"Costumes",value:"costumes",icon:"collections_bookmark"},
       {name:"Costume Sets",value:"sets",icon:"collections_bookmark"},
       {name:"Power-ups",value:"powerups",icon:"collections_bookmark"},
+            {name:"Cookie Stats",value:"cookie-stats",icon:"monitoring"},
             {name:"Cookie Count",value:"cookie-count",icon:"monitoring"},
       {name:"Costume Count",value:"costume-count",icon:"monitoring"},
       {name:"Matrix",value:"matrix",icon:"monitoring"},
@@ -84,6 +85,7 @@
       ["powerups","diamond","Power-ups"]
     ],
     stats:[
+      ["cookie-stats","bar_chart","Cookie Stats"],
       ["cookie-count","groups","Cookie Count"],
       ["costume-count","analytics","Costume Count"],
       ["matrix","grid_view","Matrix"]
@@ -98,7 +100,7 @@
     host.hidden=false;
   }
   function updateNavActive(id){document.querySelectorAll(".nav-item[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===navRoot(id)));syncSectionNavigation(id);}
-  function setupGroupedNavigation(){document.querySelectorAll(".nav-item[data-page]").forEach(btn=>{btn.onclick=()=>{const root=btn.dataset.page;const target=root==="collection"?"cookies":root==="stats"?"cookie-count":root;switchTab(target);};});}
+  function setupGroupedNavigation(){document.querySelectorAll(".nav-item[data-page]").forEach(btn=>{btn.onclick=()=>{const root=btn.dataset.page;const target=root==="collection"?"cookies":root==="stats"?"cookie-stats":root;switchTab(target);};});}
   window.switchTab=function(id){
     clearCycles();
     document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
@@ -110,6 +112,7 @@
     if(id==="costumes")window.renderSkins();
     if(id==="sets")window.renderSets();
     if(id==="powerups")window.renderAllPowerups();
+    if(id==="cookie-stats")window.renderCookieStats();
     if(id==="cookie-count")window.renderCookieCount();
     if(id==="costume-count")window.renderCostumeCount();
     if(id==="matrix")window.renderMatrix();
@@ -122,7 +125,7 @@
      (Cookie, costume and power-up lists are re-rendered by their own save/delete handlers.) */
   window.refreshActivePage=function(){
     const id=document.querySelector(".page.active")?.id.replace("view-","");
-    const map={dashboard:"renderDashboard",sets:"renderSets","cookie-count":"renderCookieCount","costume-count":"renderCostumeCount",matrix:"renderMatrix",tierlist:"renderTierList"};
+    const map={dashboard:"renderDashboard",sets:"renderSets","cookie-stats":"renderCookieStats","cookie-count":"renderCookieCount","costume-count":"renderCostumeCount",matrix:"renderMatrix",tierlist:"renderTierList"};
     if(map[id]){clearCycles();window[map[id]]();}
   };
   window.setupGroupedNavigation=setupGroupedNavigation;
@@ -320,6 +323,51 @@
   };
 
 
+  }
+
+
+  /* ===== Cookie Stats page (modeled on MLBB's Hero Stats) ===== */
+  {
+  const { esc, pic, headOf, glyph } = window.crk;
+  const COLS = [["hp", "HP", "favorite"], ["atk", "ATK", "swords"], ["def", "DEF", "shield"], ["crit", "Crit %", "bolt"]];
+  const st = { metric: "hp", dir: "desc" };
+  const val = (c, k) => { const v = c.stats?.[k]; return v == null || v === "" || Number.isNaN(Number(v)) ? null : Number(v); };
+  const fmt = (k, v) => v == null ? "—" : k === "crit" ? `${v.toLocaleString(undefined, { maximumFractionDigits: 1 })}%` : Math.round(v).toLocaleString();
+  const label = k => COLS.find(c => c[0] === k)[1];
+  const headTag = c => headOf(c) ? pic(headOf(c), "cs-head") : `<span class="cs-head cs-head-empty">${glyph("cookie")}</span>`;
+  window.setCookieStatMetric = k => { st.metric = k; st.dir = "desc"; renderCookieStats(); };
+  window.sortCookieStats = k => { if (st.metric === k) st.dir = st.dir === "desc" ? "asc" : "desc"; else { st.metric = k; st.dir = "desc"; } renderCookieStats(); };
+  window.renderCookieStats = function () {
+    const pills = document.getElementById("cookie-stats-pills"); if (!pills) return;
+    const q = (document.getElementById("cookie-stats-search")?.value || "").trim().toLowerCase();
+    const roster = (appData.cookies || []).filter(c => c.rarity !== "Guest");
+    const m = st.metric, name = label(m);
+    const ranked = roster.filter(c => val(c, m) != null).sort((a, b) => val(b, m) - val(a, m));
+    const rankOf = new Map(ranked.map((c, i) => [c.id, i + 1]));
+    const match = c => !q || String(c.name).toLowerCase().includes(q);
+
+    pills.innerHTML = COLS.map(([k, l, ic]) => `<button type="button" class="cookie-stats-pill${k === m ? " active" : ""}" onclick="setCookieStatMetric('${k}')">${glyph(ic)}<span>${l}</span></button>`).join("");
+
+    /* rank 1 / group average / data coverage, always across the whole roster */
+    const top = ranked[0], vals = ranked.map(c => val(c, m));
+    const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    const cov = roster.length ? Math.round(ranked.length / roster.length * 100) : 0;
+    document.getElementById("cookie-stats-summary").innerHTML =
+      `<article class="cs-card cs-card-top">${glyph("emoji_events", "cs-card-icon")}<div><small>Rank 1 · ${name}</small>${top ? `<button type="button" class="cs-top-cookie" onclick="openCookieDetail(${jsq(top.id)})">${headTag(top)}<span><strong>${esc(top.name)}</strong><em>${fmt(m, val(top, m))}</em></span></button>` : `<strong class="cs-muted">No data yet</strong>`}</div></article>` +
+      `<article class="cs-card">${glyph("functions", "cs-card-icon")}<div><small>Group average · ${name}</small><strong>${avg == null ? "—" : fmt(m, avg)}</strong><em>${vals.length ? `Range ${fmt(m, Math.min(...vals))} – ${fmt(m, Math.max(...vals))}` : "Add stats to see the average"}</em></div></article>` +
+      `<article class="cs-card">${glyph("donut_large", "cs-card-icon")}<div><small>Data coverage · ${name}</small><strong>${ranked.length} of ${roster.length}</strong><em>${cov}% of cookies have this stat</em><div class="cs-bar"><i style="width:${cov}%"></i></div></div></article>`;
+
+    /* leaderboard: top 15, scrollable */
+    document.getElementById("cookie-stats-board-title").textContent = `Top cookies by ${name}`;
+    const maxV = vals.length ? Math.max(...vals) : 1;
+    const rows = ranked.filter(match).slice(0, 15);
+    document.getElementById("cookie-stats-leaderboard").innerHTML = rows.map(c => { const r = rankOf.get(c.id), v = val(c, m); return `<button type="button" class="cs-row" onclick="openCookieDetail(${jsq(c.id)})"><b class="cs-rank cs-rank-${r <= 3 ? r : "n"}">${r}</b>${headTag(c)}<span class="cs-row-main"><strong>${esc(c.name)}</strong><i class="cs-meter"><u style="width:${Math.max(4, Math.round(v / (maxV || 1) * 100))}%"></u></i></span><span class="cs-row-val">${fmt(m, v)}</span></button>`; }).join("") || `<div class="empty-inline">${ranked.length ? "No cookies match your search." : `No cookies have ${name} recorded yet.`}</div>`;
+
+    /* full roster: sortable column headings */
+    const list = roster.filter(match).sort((a, b) => { const x = val(a, m), y = val(b, m); if (x == null && y == null) return String(a.name).localeCompare(b.name); if (x == null) return 1; if (y == null) return -1; return st.dir === "desc" ? y - x : x - y; });
+    const arrow = k => k === m ? glyph(st.dir === "desc" ? "arrow_downward" : "arrow_upward", "cs-sort") : "";
+    document.getElementById("cookie-stats-table").innerHTML = `<table class="cs-table"><thead><tr><th class="cs-th-cookie">Cookie</th>${COLS.map(([k, l]) => `<th class="${k === m ? "active" : ""}"><button type="button" onclick="sortCookieStats('${k}')">${l}${arrow(k)}</button></th>`).join("")}</tr></thead><tbody>${list.map(c => `<tr onclick="openCookieDetail(${jsq(c.id)})"><td class="cs-td-cookie">${headTag(c)}<span>${esc(c.name)}</span></td>${COLS.map(([k]) => `<td class="${k === m ? "active" : ""}${val(c, k) == null ? " cs-na" : ""}">${fmt(k, val(c, k))}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="5" class="cs-empty">No cookies match.</td></tr>`}</tbody></table>`;
+  };
   }
 
   /* ===== Boot (after every definition above) ===== */
